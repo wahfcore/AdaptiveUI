@@ -1,0 +1,26 @@
+{
+  "BarlowSemiCondensed-Medium": {
+    "role": "body",
+    "source": "https://raw.githubusercontent.com/jpt/barlow/dc2940e2e04ef4ec96c07e23e0f02aefbddd343b/fonts/ttf/BarlowSemiCondensed-Medium.ttf",
+    "source_sha256": "b5961bc7009f4e08ffce90931ddca85545357b8f260f2ed1b37c3241ce71c2db",
+    "license": "https://raw.githubusercontent.com/jpt/barlow/dc2940e2e04ef4ec96c07e23e0f02aefbddd343b/OFL.txt"
+  },
+  "BarlowSemiCondensed-SemiBold": {
+    "role": "heading (default)",
+    "source": "https://raw.githubusercontent.com/jpt/barlow/dc2940e2e04ef4ec96c07e23e0f02aefbddd343b/fonts/ttf/BarlowSemiCondensed-SemiBold.ttf",
+    "source_sha256": "76b0db666060f767d7f9707d1fe8f668eeb114c0a2eab90fd657e454ab6b171c",
+    "license": "https://raw.githubusercontent.com/jpt/barlow/dc2940e2e04ef4ec96c07e23e0f02aefbddd343b/OFL.txt"
+  },
+  "ChakraPetch-SemiBold": {
+    "role": "heading (option)",
+    "source": "https://raw.githubusercontent.com/google/fonts/a4c8c2a0f77efa06765d596d64d077af1d7f0dae/ofl/chakrapetch/ChakraPetch-SemiBold.ttf",
+    "source_sha256": "45264de3204ddbd5fb3e14a2402acd5c630d16650ae5fc221d2c52da46a6734b",
+    "license": "https://raw.githubusercontent.com/google/fonts/a4c8c2a0f77efa06765d596d64d077af1d7f0dae/ofl/chakrapetch/OFL.txt"
+  },
+  "Spectral-SemiBold": {
+    "role": "heading (option, Dusk over Elwynn)",
+    "source": "https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/spectral/Spectral-SemiBold.ttf",
+    "source_sha256": "5f86915a744832ecf6e4a17ab04bea091b9fa992ef5164ff65ae34c1da2fe94b",
+    "license": "https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/spectral/OFL.txt"
+  }
+}

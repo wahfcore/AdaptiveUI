@@ -1,0 +1,38 @@
+﻿## Interface: 16001
+## Title: AdaptiveUI
+## Notes: A WoW dad's answer to off-night couch gaming. A controller-first HUD that only restyles; your keybinds and controls are never touched.
+## Author: Wahf
+## Version: 0.60.3-beta
+## SavedVariables: AdaptiveUIDB
+## SavedVariablesPerCharacter: AdaptiveUICharDB, AdaptiveUIInspectDB
+## IconTexture: Interface\AddOns\AdaptiveUI\Art\crest
+## AddonCompartmentFunc: AdaptiveUI_OnAddonCompartmentClick
+
+Compatibility.lua
+ArtSlots.lua
+Theme.lua
+Options.lua
+OptionsWords.lua
+Persistence.lua
+Casts.lua
+Layout.lua
+Camera.lua
+Units.lua
+UnitClicks.lua
+KeyboardBars.lua
+Info.lua
+CastBars.lua
+Movers.lua
+Elements.lua
+Presentation.lua
+NativeUI.lua
+Chrome.lua
+Pass7.lua
+SettingsNavigation.lua
+OptionsUI.lua
+OptionsSections.lua
+Welcome.lua
+Help.lua
+InputSwitch.lua
+HUD.lua
+Core.lua

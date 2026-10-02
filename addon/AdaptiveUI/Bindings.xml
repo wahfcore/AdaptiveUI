@@ -1,0 +1,9 @@
+<Bindings>
+	
+
+
+
+	<Binding name="ADAPTIVEUI_OPTIONS" header="ADAPTIVEUI" category="ADDONS">
+		AdaptiveUI_ToggleOptions()
+	</Binding>
+</Bindings>
