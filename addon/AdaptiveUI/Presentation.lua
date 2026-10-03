@@ -1568,6 +1568,24 @@ function A:StyleNativeModule(key, state)
 
 
         self:StyleNativeCastBars(state, stripChrome, fonts)
+
+
+
+
+
+        for _, name in ipairs({ "SwingTimerMainHandFrame", "SwingTimerOffHandFrame", "SwingTimerRangedFrame" }) do
+            local timer = _G[name]
+            local bar = timer and timer.StatusBar
+            if bar then
+                self.NativeGlassPanel(self, state, timer, "cast", timer, -2, 2, timer, 2, -2, self:Surface("base"), 1, false, "base")
+                for _, region in ipairs({ timer.Background, timer.Border, bar.TypeLabelShadow }) do
+                    if region then self:HoldHidden(state, region) end
+                end
+                state.decorations[bar] = state.decorations[bar] or {}
+                self:BarFinish(state.decorations[bar], bar, "cast")
+                fonts(self, state, timer, self:Type("caption"))
+            end
+        end
     elseif key == "party" then
         for _, name in ipairs({ "PartyFrame", "CompactPartyFrame", "CompactRaidFrameContainer" }) do
             local root = _G[name]
@@ -2133,7 +2151,18 @@ function A:StyleNativeModule(key, state)
         end
         if WorldMapFrame and WorldMapFrame.BorderFrame then
             local border = WorldMapFrame.BorderFrame
-            nineSlice(self, state, border.NineSlice)
+
+
+
+
+
+            local slice = border.NineSlice
+            if slice then
+                for _, piece in ipairs({ "TopLeftCorner", "TopRightCorner", "BottomLeftCorner", "BottomRightCorner",
+                    "TopEdge", "BottomEdge", "LeftEdge", "RightEdge", "Center" }) do
+                    if slice[piece] then self:HoldHidden(state, slice[piece]) end
+                end
+            end
             self.NativeBorder(self, state, border, 2)
             font(self, state, border.TitleText or (border.TitleContainer and border.TitleContainer.TitleText), self.tokens.type.hero, true)
             if WorldMapFrame.OverscrollBG then self.NativeTint(self, state, WorldMapFrame.OverscrollBG.Texture) end

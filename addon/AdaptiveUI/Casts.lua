@@ -25,8 +25,18 @@ local function readCast(self, fn, unit, channel)
         if not self:IsPublic(empowered) then return nil, "restricted" end
         if empowered then return nil, "empowered: native display" end
     end
-    return { name = name, startTime = startTime / 1000, endTime = endTime / 1000, channel = channel,
+    return { name = self:CleanCastName(name), startTime = startTime / 1000, endTime = endTime / 1000, channel = channel,
         texture = texture, notInterruptible = shield }, "public"
+end
+
+
+
+
+
+function A:CleanCastName(name)
+    if type(name) ~= "string" then return name end
+    local clean = name:gsub("%s*%-%s*[Nn]o [Tt]ext%s*$", "")
+    return clean ~= "" and clean or name
 end
 
 function A:GetPublicCast(unit)

@@ -56,7 +56,7 @@ A.optionGroups = {
     { key = "gauges", label = "Gauges and marks" },
     { key = "plustext", label = "Plate text" },
     { key = "pluscolor", label = "Plate colors" },
-    { key = "plusparty", label = "Party / ToT" },
+    { key = "plusparty", label = "Party / pet / ToT" },
     { key = "damage", label = "Damage strip" },
     { key = "info", label = "Info strips" },
     { key = "infomore", label = "More strips" },
@@ -439,6 +439,9 @@ A.options = {
     { key = "plusShowLevel", group = "plustext", label = "Show level", type = "bool", default = true },
     { key = "plusShowTag", group = "plustext", label = "Elite / rare tag", type = "bool", default = true },
     { key = "plusShowMarker", group = "plustext", label = "Raid marker on target / focus", type = "bool", default = true },
+    { key = "plusShowPvp", group = "plusparty", label = "PvP flag beside the level", type = "bool", default = true },
+    { key = "plusTargetAuras", group = "plusparty", label = "Target's buffs and debuffs under its plate", type = "bool", default = true },
+    { key = "plusShowPetMood", group = "plusparty", label = "Hunter pet's mood on the pet plate", type = "bool", default = true },
     { key = "plusColorPlayer", group = "pluscolor", label = "Player health color", type = "enum", default = "auto", values = COLORMODES },
     { key = "plusColorTarget", group = "pluscolor", label = "Target health color", type = "enum", default = "auto", values = COLORMODES },
     { key = "plusColorFocus", group = "pluscolor", label = "Focus health color", type = "enum", default = "auto", values = COLORMODES },
@@ -1201,7 +1204,7 @@ A.options = {
 
 
 
-    { key = "plateSmallSkin", label = "Small plates", type = "enum", default = "inlay", values = {
+    { key = "plateSmallSkin", label = "Small plates", type = "enum", default = "tile", values = {
           { value = "tile", label = "Raid tile" },
           { value = "inlay", label = "The plate painting (0.52)" },
       } },
@@ -2034,11 +2037,10 @@ end
 
 
 A.chromeV2Back = "Back to 0.52: /aui set mapSkin card, windowSkin flat, trackerStyle boxed, "
-    .. "chatStyle boxed, raidSkin native"
+    .. "chatStyle boxed, raidSkin native, plateSmallSkin inlay"
 A.chromeV2Note = "chrome v2: your map and options panels are the map card and the Settings window, the "
     .. "chat input shows only while you type, the objectives lost their header boxes, and the raid frames "
-    .. "wear your raid tile. " .. A.chromeV2Back .. ". To try the raid tile on the small plates too: "
-    .. "/aui set plateSmallSkin tile"
+    .. "and the small plates wear your raid tile. " .. A.chromeV2Back .. "."
 function A:SettleChromeV2(profile)
     if profile.chromeV2Settled == true then return false end
     profile.chromeV2Settled = true

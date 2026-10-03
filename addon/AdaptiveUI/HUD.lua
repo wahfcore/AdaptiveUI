@@ -24,47 +24,13 @@ function A:SyncIntegratedHUD()
     if not self.hud or self:IsCombat() then return end
     if self.unitIntegrated and not self.sessionDisabled then
         self.hud:Hide()
-        if not self.compactHUD then
-            local frame = CreateFrame("Frame", "AdaptiveUICompactResource", UIParent)
-            self.compactHUD = frame
-            frame:SetSize(232, 38)
-            frame:EnableMouse(false)
-            frame.plate = self:Panel(frame, 0, 0, 232, 38, "panel")
-            frame.combo = bar(frame, 12, -25, 208, 7, -5)
-            frame.mask = self:ArtTexture(frame.combo.value, "combo", 0, 0, 208, 7, "OVERLAY")
 
 
-            self:Tint(frame.mask, "well", "vertex")
-            self:SetThemedFont(frame.combo.label, self.tokens.type.caption, true)
-            self:SetThemedFont(frame.combo.text, self.tokens.type.caption, false)
-        end
-        local frame = self.compactHUD
-        frame:ClearAllPoints()
-
-        local unitScale = self:LayoutMetrics().unitScale * self:MoverScale("compact")
-        frame:SetScale(unitScale)
-        local ox, oy = self:MoverOffset("compact")
-        frame:SetPoint("TOP", (self.plusActive and self.plus) and self.plus.player or PlayerFrame, "BOTTOM",
-            ox / unitScale, -2 + oy / unitScale)
-        frame.plate:SetAlpha(self.db.opacity)
-        frame.combo.value:SetStatusBarColor(unpack(self:Style().combo))
-        self:UpdateCompactHUD(self.identity)
+        self:SyncClassBar()
     else
         if self.compactHUD then self.compactHUD:Hide() end
         if self.db.enabled and not self.sessionDisabled then self.hud:Show() else self.hud:Hide() end
     end
-end
-
-function A:UpdateCompactHUD(identity)
-    local frame = self.compactHUD
-    if not frame then return end
-    if not self.unitIntegrated or not self.db.enabled or self.sessionDisabled
-        or not identity or identity.classToken ~= "DRUID" or identity.powerToken ~= "ENERGY" then
-        frame:Hide()
-        return
-    end
-    self:UpdateBar(frame.combo, "COMBO", UnitPower, UnitPowerMax, "player", self.comboType)
-    frame:Show()
 end
 
 function A:CreateHUD()

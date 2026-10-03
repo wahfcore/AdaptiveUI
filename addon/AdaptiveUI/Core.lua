@@ -562,6 +562,9 @@ for _, event in ipairs({
 
 
     "DAMAGE_METER_COMBAT_SESSION_UPDATED", "DAMAGE_METER_CURRENT_SESSION_UPDATED", "DAMAGE_METER_RESET",
+
+    "PLAYER_TOTEM_UPDATE", "BAG_UPDATE_DELAYED", "UNIT_PET", "UNIT_HAPPINESS", "PET_UI_UPDATE",
+    "PLAYER_FLAGS_CHANGED", "UNIT_FACTION",
 }) do A:RegisterOptionalEvent(events, event) end
 events:SetScript("OnEvent", function(_, event, ...)
 
@@ -721,6 +724,7 @@ events:SetScript("OnUpdate", function(_, elapsed)
     if A.TickBumpers then A:TickBumpers(elapsed) end
     if A.TickXpLane then A:TickXpLane(elapsed) end
     if A.TickInputSwitch then A:TickInputSwitch(elapsed) end
+    if A.TickClassBar then A:TickClassBar(elapsed) end
     elapsedTime = elapsedTime + elapsed
     if elapsedTime < 0.10 then return end
     elapsedTime = 0

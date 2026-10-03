@@ -839,7 +839,55 @@ function A:RaidTile(state, frame, on)
         self:DressPaintedRegion(entries[key], "tile-plain")
     end
     if frame.background then self:HoldHidden(state, frame.background) end
+    self:RaidTileFace(entries, frame, cap)
     state.count = state.count + 1
+end
+
+
+
+
+
+
+
+
+
+function A:RaidTileFace(entries, frame, cap)
+    local bar = frame.healthBar
+    if type(bar) ~= "table" or type(bar.CreateTexture) ~= "function" then return end
+    if not entries.tileFaceLum then
+        entries.tileFaceLum = self:Own(bar:CreateTexture(nil, "OVERLAY", nil, -8))
+        entries.tileFaceLum:SetBlendMode("MOD")
+        entries.tileFaceLum:SetTexture(self.artPath .. "tile-plain-lum.tga", "CLAMP", "CLAMP")
+        entries.tileFaceLum:SetAllPoints(bar)
+        local art = self.tileArts.plain
+        local capU = self.raidTileCap / art.ratio
+        for _, key in ipairs({ "tileFaceL", "tileFaceM", "tileFaceR" }) do
+            entries[key] = self:Own(bar:CreateTexture(nil, "OVERLAY", nil, 6))
+        end
+        entries.tileFaceL:SetTexCoord(0, capU, 0, 1)
+        entries.tileFaceR:SetTexCoord(1 - capU, 1, 0, 1)
+        entries.tileFaceM:SetTexCoord(capU, 1 - capU, 0, 1)
+    end
+    if entries.tileFaceSize ~= cap then
+        entries.tileFaceSize = cap
+        local b = self.raidTileBleed
+        entries.tileFaceL:ClearAllPoints()
+        entries.tileFaceL:SetPoint("TOPLEFT", frame, "TOPLEFT", -b, b)
+        entries.tileFaceL:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", -b, -b)
+        entries.tileFaceL:SetWidth(cap + b)
+        entries.tileFaceR:ClearAllPoints()
+        entries.tileFaceR:SetPoint("TOPRIGHT", frame, "TOPRIGHT", b, b)
+        entries.tileFaceR:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", b, -b)
+        entries.tileFaceR:SetWidth(cap + b)
+        entries.tileFaceM:ClearAllPoints()
+        entries.tileFaceM:SetPoint("TOPLEFT", entries.tileFaceL, "TOPRIGHT", 0, 0)
+        entries.tileFaceM:SetPoint("BOTTOMRIGHT", entries.tileFaceR, "BOTTOMLEFT", 0, 0)
+    end
+    if not entries.tileFaceLum:IsShown() then entries.tileFaceLum:Show() end
+    for _, key in ipairs({ "tileFaceL", "tileFaceM", "tileFaceR" }) do
+        if not entries[key]:IsShown() then entries[key]:Show() end
+        self:DressPaintedRegion(entries[key], "tile-plain-cap")
+    end
 end
 
 

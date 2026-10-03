@@ -3295,6 +3295,8 @@ function A:CreatePlusUnits()
     for _, plate in ipairs({ plus.player, plus.target, plus.focus, plus.pet, plus.tot, plus.focustarget,
         plus.focustargettarget, plus.party }) do plate:Hide() end
     self.plus = plus
+
+    if self.CreatePlateAuras then self:CreatePlateAuras(plus.target, "target") end
     return plus
 end
 
@@ -3640,6 +3642,7 @@ function A:LayoutPlus()
         local rowH = compact and self:PlusCompactRow() or self:PlusNameRow()
         local mirror = mirrorOn and plate.mirror == true and not isParty
         local lead = mirror and "RIGHT" or "LEFT"
+        plate.leadSide = lead
         local tail = mirror and "LEFT" or "RIGHT"
         local sign = mirror and -1 or 1
 
@@ -5378,6 +5381,55 @@ end
 local ROLE_ATLAS = { TANK = "roleicon-tiny-tank", HEALER = "roleicon-tiny-healer", DAMAGER = "roleicon-tiny-dps" }
 
 
+
+
+
+A.factionColour = { Horde = { 0.90, 0.30, 0.24 }, Alliance = { 0.36, 0.58, 1.00 } }
+A.petMood = { [1] = { "Unhappy", 0.90, 0.30, 0.24 }, [2] = { "Content", 0.95, 0.80, 0.30 }, [3] = { "Happy", 0.45, 0.85, 0.40 } }
+
+function A:PlateBadge(plate, text, r, g, b)
+    if not plate or not plate.level then return end
+    local badge = plate.flagBadge
+    if not text then
+        if badge then badge:Hide() end
+        return
+    end
+    if not badge then
+        badge = plate:CreateFontString(nil, "OVERLAY")
+        plate.flagBadge = badge
+    end
+    self:SetPixelFont(badge, "caption", self:UnitScale(), false)
+    local lead = plate.leadSide or "LEFT"
+    badge:ClearAllPoints()
+    badge:SetPoint(lead == "LEFT" and "RIGHT" or "LEFT", plate.level, lead, lead == "LEFT" and -4 or 4, 0)
+    badge:SetText(text)
+    badge:SetTextColor(r or 1, g or 1, b or 1)
+    badge:Show()
+end
+
+
+function A:PvpBadge(unit)
+    if not self:GetOption("plusShowPvp") then return nil end
+    local ffa, fs = self:Read(UnitIsPVPFreeForAll, 1, unit)
+    if fs == "public" and ffa == true then return "FFA", 0.95, 0.80, 0.30 end
+    local pvp, ps = self:Read(UnitIsPVP, 1, unit)
+    if ps ~= "public" or pvp ~= true then return nil end
+    local faction = self:Text(UnitFactionGroup, 1, unit)
+    local c = A.factionColour[faction or ""] or { 0.95, 0.80, 0.30 }
+    return "PvP", c[1], c[2], c[3]
+end
+
+
+function A:PetMoodBadge()
+    if not self:GetOption("plusShowPetMood") or type(GetPetHappiness) ~= "function" then return nil end
+    local mood, status = self:Read(GetPetHappiness, 1)
+    if status ~= "public" or type(mood) ~= "number" then return nil end
+    local m = A.petMood[mood]
+    if not m then return nil end
+    return m[1], m[2], m[3], m[4]
+end
+
+
 local function updateUnitPlate(self, plate, unit, def, optionKey)
     self:FitPlateName(plate, not plate.hero,
         self:FormatPlusName(self:Text(UnitName, 1, unit) or (def and def.id == "pet" and "Pet") or "Unit"))
@@ -5387,6 +5439,11 @@ local function updateUnitPlate(self, plate, unit, def, optionKey)
         tag = ({ elite = "+", rareelite = "+", worldboss = "B", rare = "R" })[self:Text(UnitClassification, 1, unit) or ""] or ""
     end
     plate.level:SetText(level and ((level < 0 and "??" or tostring(level)) .. tag) or "")
+    if def and def.id == "pet" then
+        self:PlateBadge(plate, self:PetMoodBadge())
+    else
+        self:PlateBadge(plate, self:PvpBadge(unit))
+    end
     local hr, hg, hb = healthColor(self, unit, optionKey)
     setColor(plate.health, hr, hg, hb)
 
@@ -5411,6 +5468,7 @@ local function updateUnitPlate(self, plate, unit, def, optionKey)
         end
     end
     plate:Show()
+    if def and def.id == "target" and self.PlaceTargetAuras then self:PlaceTargetAuras() end
 end
 
 function A:UpdatePlusUnits()
@@ -5426,6 +5484,7 @@ function A:UpdatePlusUnits()
             self:FitPlateName(player, false, self:FormatPlusName(identity.name))
             local level = self:Number(UnitLevel, 1, "player")
             player.level:SetText(level and tostring(level) or "")
+            self:PlateBadge(player, self:PvpBadge("player"))
             setColor(player.health, healthColor(self, "player", "plusColorPlayer"))
             self:UpdateBar(player.health, "HEALTH", UnitHealth, UnitHealthMax, "player")
             self:PlusCarveColour(player.health, "player", "health")

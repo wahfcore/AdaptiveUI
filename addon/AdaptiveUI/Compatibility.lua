@@ -4,7 +4,7 @@ A.name = addonName
 
 
 
-A.version = "0.60.3-beta"
+A.version = "0.61.0-beta"
 do
     local getMeta = (type(C_AddOns) == "table" and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
     if type(getMeta) == "function" then
@@ -336,7 +336,7 @@ end
 
 
 A.AUDITED_VERSION, A.AUDITED_INTERFACE = "1.60.1", 16001
-A.auditedBuilds = { ["69893"] = true, ["69913"] = true, ["69977"] = true, ["70009"] = true, ["70058"] = true, ["70124"] = true, ["70170"] = true }
+A.auditedBuilds = { ["69893"] = true, ["69913"] = true, ["69977"] = true, ["70009"] = true, ["70058"] = true, ["70124"] = true, ["70170"] = true, ["70205"] = true }
 
 
 
