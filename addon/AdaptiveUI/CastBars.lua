@@ -120,6 +120,24 @@ end
 
 
 
+
+
+
+
+function A:TargetCastUnderRow()
+    local def = BARS[2]
+    if not def or def.id ~= "target" then return 0 end
+
+
+
+    if self:GetOption(def.option) ~= "custom" or self:GetOption(def.anchorOption) ~= "anchored"
+        or self:GetOption("unitMode") ~= "plus" or self:GetOption(def.plateOption) ~= true then return 0 end
+    if self:GetOption("plateMantleCast") == "above" then return 0 end
+    local row = (self.PlusNameRow and self:PlusNameRow() or 0) + (self.PlusGaugeGap and self:PlusGaugeGap() or 0)
+
+    return self.PlusSnap and self:PlusSnap(row) or row
+end
+
 function A:CastEffectiveMode(def)
     local mode = self:GetOption(def.option)
     if mode ~= "custom" then return "native" end
@@ -727,7 +745,34 @@ function A:ApplyCastBars()
                 local timerInset = cut + sp.xs
                 strip.timeText:ClearAllPoints()
                 strip.nameText:ClearAllPoints()
-                if barSkin then
+
+
+
+
+
+
+
+
+
+                local under = barSkin and castMode == "seam" and def.id ~= "player"
+                if under then
+                    local inb = tailEnd
+                    local dir = mirrored and 1 or -1
+
+
+                    local span = math.max(80, width)
+                    local down = -self:PlusGaugeGap()
+                    strip.icon:ClearAllPoints()
+                    strip.icon:SetPoint("TOP" .. inb, strip, "BOTTOM" .. inb, 0, down)
+                    local nameX = self:GetOption("castShowIcon") and (icon + sp.xs) or 0
+                    strip.nameText:SetPoint("TOP" .. inb, strip, "BOTTOM" .. inb, dir * nameX, down)
+                    strip.nameText:SetHeight(rowH)
+                    strip.nameText:SetWidth(math.max(16, span - nameX - 52))
+                    strip.nameText:SetJustifyH(inb)
+                    strip.timeText:SetPoint("TOP" .. lead, strip, "BOTTOM" .. inb, dir * span, down)
+                    strip.timeText:SetHeight(rowH)
+                    strip.timeText:SetJustifyH(lead)
+                elseif barSkin then
 
 
 
@@ -762,8 +807,10 @@ function A:ApplyCastBars()
 
                 local floatFlags = (barSkin and self.PlusFloatType and self:PlusFloatType())
                     or "OUTLINE"
+
+
                 self:SetPixelFont(strip.nameText,
-                    (barSkin or h >= 20 * lift) and "body" or "caption", hostScale, false, floatFlags)
+                    barSkin and "title" or (h >= 20 * lift and "body" or "caption"), hostScale, false, floatFlags)
 
                 self:SetPixelNumberFont(strip.timeText,
                     castMode == "seam" and "body" or "caption", hostScale, floatFlags)
@@ -1139,8 +1186,10 @@ function A:UpdateCastBars()
 
                     if self:DrawRestrictedCast(def, strip) then
                         self:Note("cast " .. def.id, "restricted: drawn through sinks, no timer")
+                        if self.castProbeArmed then self:CastProbeCapture(def, strip, "restricted") end
                         return
                     end
+                    if self.castProbeArmed then self:CastProbeCapture(def, strip, "restricted, not drawn") end
                     if def.holdFrame and not self.castRestricted[def.id] then
 
                         self.castRestricted[def.id] = true
@@ -1176,6 +1225,7 @@ function A:UpdateCastBars()
                     showIcon(strip, self:GetOption("castShowIcon") and strip.hasIcon)
                 end
                 strip.frame:Show()
+                if self.castProbeArmed then self:CastProbeCapture(def, strip, "public") end
             end)
             if not ok then strip.frame:Hide() end
         end
@@ -1191,5 +1241,74 @@ function A:CastFallbackNotices()
             .. "bar's own setters; " .. (plusHolds(self, id)
             and "in Plus mode the native bar is hidden with its frame, so the strip shows nothing while it is restricted. Use Native for this bar, or Lite unit frames."
             or "showing the native cast bar for it again."))
+    end
+end
+
+
+
+
+
+
+
+local function probeShow(self, v)
+    if not self:IsPublic(v) then return "secret" end
+    if type(v) == "number" then return string.format("%.1f", v) end
+    if v == nil or type(v) == "boolean" or type(v) == "string" then return tostring(v) end
+    return type(v)
+end
+
+local function probeCall(self, obj, name, ...)
+    if type(obj) ~= "table" then return "none" end
+    local okIndex, fn = pcall(function() return obj[name] end)
+    if not okIndex or type(fn) ~= "function" then return "n/a" end
+    local res = { pcall(fn, obj, ...) }
+    if not res[1] then return "error" end
+    local out = {}
+    for i = 2, math.min(#res, 5) do out[#out + 1] = probeShow(self, res[i]) end
+    return #out > 0 and table.concat(out, " ") or "-"
+end
+
+function A:CastProbeCommand()
+    self.castProbeArmed = true
+    self:Print("castprobe: armed. Target something that casts; the next cast on your target's bar is recorded "
+        .. "(nothing is changed). Then /reload and send AdaptiveUIInspectDB.")
+end
+
+function A:CastProbeCapture(def, strip, path)
+    if not self.castProbeArmed or def.id ~= "target" then return end
+    self.castProbeArmed = nil
+    local out = { "-- castprobe --" }
+    local function say(text) self:Print(text); out[#out + 1] = text end
+    local ok, err = pcall(function()
+        local values = { pcall(UnitCastingInfo, "target") }
+        local channel = false
+        if not values[1] or values[2] == nil then
+            values = { pcall(UnitChannelInfo, "target") }
+            channel = true
+        end
+        say(string.format("  path %s | channel %s | mode %s | skin %s | castMode %s", tostring(path), tostring(channel),
+            tostring(self:CastEffectiveMode(def)), tostring(strip.castMode ~= nil and "docked" or "free"), tostring(strip.castMode)))
+        say("  the game's name: " .. (values[1] and (self:IsPublic(values[2]) and "public" or "secret") or "error")
+            .. " | start " .. (values[1] and probeShow(self, values[5]) or "?") .. " | end " .. (values[1] and probeShow(self, values[6]) or "?")
+            .. " | icon " .. (values[1] and probeShow(self, values[4]) or "?"))
+        say("  options: name " .. tostring(self:GetOption("castShowName")) .. " | icon " .. tostring(self:GetOption("castShowIcon"))
+            .. " | restricted strip " .. tostring(self:GetOption("castRestrictedStrip"))
+            .. " | sink failed " .. tostring(self.castSinkFailed and self.castSinkFailed[def.id]))
+        local fs = strip.nameText
+        say("  strip shown " .. probeCall(self, strip.frame, "IsShown") .. " | visible " .. probeCall(self, strip.frame, "IsVisible")
+            .. " | rect " .. probeCall(self, strip.frame, "GetRect"))
+        say("  name text shown " .. probeCall(self, fs, "IsShown") .. " | visible " .. probeCall(self, fs, "IsVisible")
+            .. " | alpha " .. probeCall(self, fs, "GetEffectiveAlpha") .. " | rect " .. probeCall(self, fs, "GetRect"))
+        say("  name text: font " .. probeCall(self, fs, "GetFont") .. " | text " .. probeCall(self, fs, "GetText")
+            .. " | width " .. probeCall(self, fs, "GetStringWidth") .. " | colour " .. probeCall(self, fs, "GetTextColor"))
+        say("  timer text shown " .. probeCall(self, strip.timeText, "IsShown") .. " | text " .. probeCall(self, strip.timeText, "GetText")
+            .. " | icon shown " .. probeCall(self, strip.icon, "IsShown"))
+    end)
+    if not ok then say("  probe error: " .. tostring(err):sub(1, 160)) end
+    local text = table.concat(out, "\n")
+    local prior = type(self.inspectText) == "string" and (self.inspectText .. "\n") or ""
+    self.inspectText = prior .. text
+    if self.StoreInspectReport and self:StoreInspectReport(self.inspectText) then
+        self:Print("castprobe saved with the inspect dump: /reload and send AdaptiveUIInspectDB.")
     end
 end

@@ -33,23 +33,43 @@ A.plateAuras = { size = 24, spacing = 3, perRow = 8, debuffs = 8, buffs = 16, ga
 
 
 
+
+
+
+
+
+
+
+
+
 local function initButton(button)
     local c = A.plateAuras
+    local s = c.size
+
+
+
+    local corner = A.plateAuraCorner or "TOPLEFT"
+    local hx = corner:find("LEFT") and 1 or -1
+    local vy = corner:find("TOP") and -1 or 1
+    pcall(button.SetSize, button, s, s)
+    local icon
     pcall(function()
-        local icon = button:CreateTexture(nil, "ARTWORK")
-        icon:SetAllPoints(button)
+        icon = button:CreateTexture(nil, "ARTWORK")
+        icon:SetPoint(corner, button, corner, 0, 0)
+        icon:SetSize(s, s)
         icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         button:SetIcon(icon)
     end)
     pcall(function()
         local edge = button:CreateTexture(nil, "BACKGROUND")
-        edge:SetPoint("TOPLEFT", button, "TOPLEFT", -1, 1)
-        edge:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 1, -1)
+        edge:SetPoint(corner, button, corner, -hx, -vy)
+        edge:SetSize(s + 2, s + 2)
         A:Tint(edge, "shadow", "color", 0.85)
     end)
     pcall(function()
         local cd = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
-        cd:SetAllPoints(button)
+        cd:SetPoint(corner, button, corner, 0, 0)
+        cd:SetSize(s, s)
         if cd.SetDrawEdge then cd:SetDrawEdge(false) end
         if cd.SetHideCountdownNumbers then cd:SetHideCountdownNumbers(true) end
         button:SetDurationCooldown(cd)
@@ -58,7 +78,8 @@ local function initButton(button)
         local count = button:CreateFontString(nil, "OVERLAY")
 
         count:SetFont(A:FontPath(false), c.countPx or 11, "OUTLINE")
-        count:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 1, -1)
+        if icon then count:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1)
+        else count:SetPoint(corner, button, corner, 0, 0) end
         button:SetApplicationCount(count)
     end)
 end
@@ -69,6 +90,9 @@ local function configure(container, unit)
     local layout = { elementWidth = c.size, elementHeight = c.size, elementSpacing = c.spacing,
         lineSpacing = c.spacing, groupLineSpacing = c.spacing, forceNewLine = true }
     container:SetUnit(unit)
+
+
+    pcall(container.SetFlowLayoutMaximumLineSize, container, c.perRow * (c.size + c.spacing))
     container:AddAuraGroup("debuffs", "HARMFUL", { maxFrameCount = c.debuffs, layout = layout, initializeFrame = initButton })
     container:AddAuraGroup("buffs", "HELPFUL", { maxFrameCount = c.buffs, layout = layout, initializeFrame = initButton })
 
@@ -103,7 +127,24 @@ function A:CreatePlateAuras(plate, unit)
 
 
     local mirrored = self.db and self:GetOption("plusMirror") and plate.mirror == true
-    local side = mirrored and "TOPRIGHT" or "TOPLEFT"
+
+
+
+
+
+
+
+
+    local up = pcall(function()
+        local flow = _G.AnchorUtil.FlowDirection
+        local h = mirrored and flow.Left or flow.Right
+        assert(h ~= nil and flow.Up ~= nil, "no flow directions")
+        container:SetFlowLayoutAnchorPoint(mirrored and "BOTTOMRIGHT" or "BOTTOMLEFT")
+        container:SetFlowLayoutGrowthDirection(h, flow.Up)
+    end)
+    plate.auraUp = up
+    A.plateAuraCorner = up and (mirrored and "BOTTOMRIGHT" or "BOTTOMLEFT") or "TOPLEFT"
+    local side = (up and "BOTTOM" or "TOP") .. (mirrored and "RIGHT" or "LEFT")
     local seated = pcall(function()
         container:ClearAllPoints()
         container:SetPoint(side, holder, side, 0, 0)
@@ -134,17 +175,28 @@ function A:PlaceTargetAuras()
     local on = self.db and self.optionIndex and self.optionIndex.plusTargetAuras and self:GetOption("plusTargetAuras")
     if not on then if plate.auraHolder then plate.auraHolder:Hide() end; return end
     local anchor = plate
-    if self:GetOption("plusTotOn") and self:GetOption("plusTotPlacement") == "below" and plus.tot and plus.tot:IsShown() then
-        anchor = plus.tot
-    end
 
     local holder = plate.auraHolder
     local side = plate.auraSide or "LEFT"
     local seat = placed[holder]
-    if not seat or seat[1] ~= anchor or seat[2] ~= side then
-        placed[holder] = { anchor, side }
-        holder:ClearAllPoints()
-        holder:SetPoint("TOP" .. side, anchor, "BOTTOM" .. side, 0, -A.plateAuras.gap)
+    if plate.auraUp then
+
+
+        local lift = self:TargetAuraLift()
+        if not seat or seat[1] ~= anchor or seat[2] ~= side or seat[3] ~= lift then
+            placed[holder] = { anchor, side, lift }
+            holder:ClearAllPoints()
+            holder:SetPoint("BOTTOM" .. side, anchor, "TOP" .. side, 0, lift)
+        end
+    else
+        if self:GetOption("plusTotOn") and self:GetOption("plusTotPlacement") == "below" and plus.tot and plus.tot:IsShown() then
+            anchor = plus.tot
+        end
+        if not seat or seat[1] ~= anchor or seat[2] ~= side then
+            placed[holder] = { anchor, side }
+            holder:ClearAllPoints()
+            holder:SetPoint("TOP" .. side, anchor, "BOTTOM" .. side, 0, -A.plateAuras.gap)
+        end
     end
     if not holder:IsShown() then holder:Show() end
 
@@ -155,6 +207,19 @@ function A:PlaceTargetAuras()
         self.targetAurasStale = nil
         pcall(container.UpdateAllAuras, container)
     end
+end
+
+
+
+function A:TargetAuraLift()
+    local lift = (self.PlusAbove and self:PlusAbove(false) or 0) + A.plateAuras.gap
+    local strip = self.castActive and self.castActive.target
+    if strip and strip.castMode == "above" then
+        local h = self:Number(strip.GetHeight, 1, strip) or 0
+        local row = self.PlusNameRow and self:PlusNameRow() or 0
+        lift = lift + h + row + 2 * (self.PlusGaugeGap and self:PlusGaugeGap() or 0)
+    end
+    return lift
 end
 
 

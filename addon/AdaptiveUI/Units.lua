@@ -744,6 +744,7 @@ function A:PlusBelow()
     if self:GetOption("dpsStripOn") then below = self:PlusFooterHeight() + self:PlusFloatGap() end
     if self:GetOption("plusTotOn") and self:GetOption("plusTotPlacement") == "below" then
         local extra = self:PlusHeroHeight(false) + self:PlusTotGap() + self:PlusAbove(true)
+            + (self.TargetCastUnderRow and self:TargetCastUnderRow() or 0)
             + self:PlusCompactHeight() - self:PlusHeroHeight(true)
         below = math.max(below, extra)
     end
@@ -2541,8 +2542,11 @@ function A:PlusBase(id, m)
 
 
             local tw, th = self:PlusSmallWidth("tot"), self:PlusSmallHeight("tot")
+
+
+            local castRow = self.TargetCastUnderRow and self:TargetCastUnderRow() or 0
             local y = rowTop - (self:PlusHeroHeight(false) + self:PlusTotGap()
-                + self:PlusAbove(true) + th / 2) * s
+                + self:PlusAbove(true) + castRow + th / 2) * s
             return m.unitX + dx + (pw - tw) / 2 * s, y
         end
         return m.unitX + dx + (pw + self:PlusSmallWidth("tot")) / 2 * m.unitScale + self.tokens.space.sm, m.unitY

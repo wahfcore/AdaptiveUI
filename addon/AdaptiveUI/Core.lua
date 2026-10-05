@@ -415,6 +415,7 @@ function A:Slash(message)
 
     elseif command == "effecttest" then self:EffectTestCommand(argument, second)
     elseif command == "chiptest" then self:ChipTestCommand(argument)
+    elseif command == "castprobe" then self:CastProbeCommand()
 
 
     elseif command == "compasstest" then self:CompassTestCommand(argument)
