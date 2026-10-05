@@ -202,394 +202,6 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-local GROUND_PITCH, GROUND_W, GROUND_H = 47, 142, 128
-
-
-
-
-local GROUND_SEAM = 1 / 256
-
-
-
-
-
-
-
-
-
-local GROUND_RIM = 0.45
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-local function groundSlices(self, host, name, w, h, capRatio, plain, coords)
-    local file = self.artPath .. name .. ".tga"
-    local cap = math.min(capRatio * h, w / 2)
-    local mid = math.max(0, w - 2 * cap)
-    local pieces = host.auiGroundSlices
-    if not pieces then
-        pieces = {}
-        for _, key in ipairs({ "L", "M", "R" }) do
-            local art
-            if plain then
-                art = self:Own(host:CreateTexture(nil, "BACKGROUND", nil, -6))
-                art:SetTexture(file, "CLAMP", "CLAMP")
-            else
-                art = self:PaintedTexture(host, "BACKGROUND", -6, name)
-            end
-            pieces[key] = art
-        end
-        host.auiGroundSlices = pieces
-    end
-
-
-
-    local signature = coords and table.concat({ coords[1], coords[2], coords[3], coords[4] }, ",") or "diamond"
-    if pieces.coordSignature ~= signature then
-        pieces.coordSignature = signature
-        if coords then
-            pieces.L:SetTexCoord(coords[2], coords[1], 0, 1)
-            pieces.M:SetTexCoord(coords[3], coords[4], 0, 1)
-            pieces.R:SetTexCoord(coords[1], coords[2], 0, 1)
-        else
-            pieces.L:SetTexCoord(0, 0.5 - GROUND_SEAM, 0, 1)
-            pieces.M:SetTexCoord(0.5 - GROUND_SEAM, 0.5 + GROUND_SEAM, 0, 1)
-            pieces.R:SetTexCoord(0.5 - GROUND_SEAM, 0, 0, 1)
-        end
-    end
-    for _, key in ipairs({ "L", "M", "R" }) do
-        local art = pieces[key]
-        if plain then
-            if art:GetTexture() ~= file then art:SetTexture(file, "CLAMP", "CLAMP") end
-        elseif (self.painted[art] and self.painted[art].name) ~= name then
-            self:SetPainted(art, name)
-        end
-        art:ClearAllPoints()
-        art:SetHeight(h)
-        if key == "L" then
-            art:SetPoint("LEFT", host, "LEFT", 0, 0); art:SetWidth(math.max(0.01, cap))
-        elseif key == "R" then
-            art:SetPoint("RIGHT", host, "RIGHT", 0, 0); art:SetWidth(math.max(0.01, cap))
-        else
-            art:SetPoint("LEFT", host, "LEFT", cap, 0); art:SetWidth(math.max(0.01, mid))
-        end
-        art:SetShown(key ~= "M" or mid > 0.01)
-        if not plain then self:SyncPainted(art) end
-    end
-    return pieces
-end
-
-local function socketGround(self, state, bar, group)
-    local live = self:CompassLive()
-    local anchor = type(group) == "table" and group.ActionButton1 or nil
-    if not bar or type(bar.CreateTexture) ~= "function" then return end
-    if not live and not anchor then return end
-    if type(CreateFrame) ~= "function" then return end
-    local entries = state.decorations[bar]
-    if not entries then entries = {}; state.decorations[bar] = entries end
-
-
-
-    local key = live and "groundArm" or (group == bar.Right and "groundRight" or "groundLeft")
-    local host = entries[key]
-    if not host then
-        local ok, made = pcall(CreateFrame, "Frame", nil, bar)
-        if not ok or not made then return end
-        host = self:Own(made)
-        host:EnableMouse(false)
-        if not live then
-            local art = self:Own(host:CreateTexture(nil, "BACKGROUND", nil, -6))
-            art:SetTexture(self.artPath .. "socket-ground.tga", "CLAMP", "CLAMP")
-            art:SetAllPoints()
-            entries[key .. "Art"] = art
-        end
-        entries[key] = host
-    end
-    local level = self:Number(bar.GetFrameLevel, 1, bar)
-    if level then pcall(host.SetFrameLevel, host, math.max(0, level - 1)) end
-    local D = self.dock
-    local w, h = GROUND_W, GROUND_H
-    host:ClearAllPoints()
-    if live then
-
-
-
-
-        local rcx, rcy, rw, rh = self:CompassArmRect(bar)
-
-
-
-
-
-        local limit = D.spread - D.groundGap
-        w = self:DockSnap(math.min(rw + 2 * D.groundPad, limit))
-        if w > limit then w = w - self:DockPixel() end
-        h = self:DockSnap(rh + 2 * D.groundPad)
-
-
-        host:SetPoint("CENTER", bar, "CENTER", rcx, rcy)
-        groundSlices(self, host, "socket-ground", w, h, 0.5)
-    else
-        host:SetPoint("CENTER", anchor, "CENTER", GROUND_PITCH, 0)
-    end
-    host:SetSize(w, h)
-
-
-
-
-
-
-    local wash = self:GetOption("actionWash")
-    if type(wash) ~= "number" then wash = 0.42 end
-    local strength = math.max(0, math.min(1, wash))
-    if math.abs((self:Number(host.GetAlpha, 1, host) or -1) - strength) > 0.001 then
-        host:SetAlpha(strength)
-    end
-
-
-
-
-
-
-
-
-
-    local rimOn = live and self:GetOption("compassGroundEdge") ~= false
-    local rim = entries[key .. "Rim"]
-    if rimOn and not rim then
-
-
-
-        local ok, made = pcall(CreateFrame, "Frame", nil, bar)
-        if ok and made then
-            rim = self:Own(made)
-            rim:EnableMouse(false)
-            rim:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
-            rim:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, 0)
-            if level then pcall(rim.SetFrameLevel, rim, math.max(0, level - 1)) end
-            entries[key .. "Rim"] = rim
-        end
-    end
-    if rim then
-        if rimOn then
-            local pieces = groundSlices(self, rim, "socket-ground", w, h, 0.5, true)
-            for _, k in ipairs({ "L", "M", "R" }) do
-                pieces[k]:SetBlendMode("ADD")
-                self:Tint(pieces[k], "accent", "vertex", GROUND_RIM)
-            end
-
-
-            rim:SetAlpha(1)
-        end
-        if rim:IsShown() ~= (rimOn and true or false) then rim:SetShown(rimOn and true or false) end
-    end
-    if not host:IsShown() then host:Show() end
-    return host
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-local function compassSlab(self, state, bar)
-    if not bar or type(bar.CreateTexture) ~= "function" then return end
-    if type(CreateFrame) ~= "function" then return end
-    local entries = state.decorations[bar]
-    if not entries then entries = {}; state.decorations[bar] = entries end
-
-
-    local host = entries.groundSlab
-    if not host then
-        local ok, made = pcall(CreateFrame, "Frame", nil, bar)
-        if not ok or not made then return end
-        host = self:Own(made)
-        host:EnableMouse(false)
-        entries.groundSlab = host
-    end
-    local level = self:Number(bar.GetFrameLevel, 1, bar)
-    if level then pcall(host.SetFrameLevel, host, math.max(0, level - 1)) end
-
-
-
-    local cx, cy, w, h = self:CompassSlabRect(bar)
-    host:ClearAllPoints()
-    host:SetPoint("CENTER", bar, "CENTER", cx, cy)
-    host:SetSize(w, h)
-    groundSlices(self, host, "compass-slab", w, h, self.dock.slabCap)
-    if math.abs((self:Number(host.GetAlpha, 1, host) or -1) - 1) > 0.001 then host:SetAlpha(1) end
-    if not host:IsShown() then host:Show() end
-    return host
-end
-
-
-
-
-
-
-
-
-
-
-
-
-local function railCoords()
-    local a = A.railArt
-    return { 1 - a.capR, 1, a.capL, 1 - a.capR }
-end
-local function compassRail(self, state, bar)
-    if not bar or type(bar.CreateTexture) ~= "function" then return end
-    if type(CreateFrame) ~= "function" or not self.railArt then return end
-    local entries = state.decorations[bar]
-    if not entries then entries = {}; state.decorations[bar] = entries end
-
-
-    local host = entries.groundRail
-    if not host then
-        local ok, made = pcall(CreateFrame, "Frame", nil, bar)
-        if not ok or not made then return end
-        host = self:Own(made)
-        host:EnableMouse(false)
-        entries.groundRail = host
-    end
-    local level = self:Number(bar.GetFrameLevel, 1, bar)
-    if level then pcall(host.SetFrameLevel, host, math.max(0, level - 1)) end
-    local cx, cy, w, h, _, tail = self:CompassRailRect(bar)
-    host:ClearAllPoints()
-    host:SetPoint("CENTER", bar, "CENTER", cx, cy)
-    host:SetSize(w, h)
-
-
-
-    groundSlices(self, host, "bar-rail", w, h, h > 0 and tail / h or self.railArt.capRA, nil, railCoords())
-    if math.abs((self:Number(host.GetAlpha, 1, host) or -1) - 1) > 0.001 then host:SetAlpha(1) end
-    if not host:IsShown() then host:Show() end
-    return host
-end
-
-
-
-
-
-
-
-
-
-
-local function baseCoords()
-    local a = A.railArt
-    return { a.capL, 0, a.capL, 1 - a.capR }
-end
-local function compassBase(self, state, root, page, bar, on)
-    if not root or type(root.CreateTexture) ~= "function" then return false end
-    local entries = state.decorations[root]
-    if not entries then entries = {}; state.decorations[root] = entries end
-    local host = entries.groundBase
-    if not on then
-        if host and host:IsShown() then host:Hide() end
-        return false
-    end
-    if type(CreateFrame) ~= "function" or not self.railArt then return false end
-    local anchor = page and page.BottomCenteredAnchor
-    if not anchor then return false end
-    if not host then
-        local ok, made = pcall(CreateFrame, "Frame", nil, root)
-        if not ok or not made then return false end
-        host = self:Own(made)
-        host:EnableMouse(false)
-        entries.groundBase = host
-    end
-
-
-    local level = self:Number(page.GetFrameLevel, 1, page) or self:Number(root.GetFrameLevel, 1, root)
-    if level then pcall(host.SetFrameLevel, host, math.max(0, level - 1)) end
-    local cx, cy, w, h, head = self:CompassBaseRect()
-
-
-    local bias = self:CompassArmBias(bar)
-    host:ClearAllPoints()
-    host:SetPoint("CENTER", anchor, "CENTER", -bias, cy - self.dock.bottom)
-    host:SetSize(w, h)
-    groundSlices(self, host, "bar-ledge", w, h, h > 0 and head / h or self.railArt.capLA, nil, baseCoords())
-    if math.abs((self:Number(host.GetAlpha, 1, host) or -1) - 1) > 0.001 then host:SetAlpha(1) end
-    if not host:IsShown() then host:Show() end
-    host.baseRect = { cx = cx, cy = cy, w = w, h = h, head = head }
-    return true
-end
-
-
-
-
-
-
-
-
-
-
-
 local function compassDivider(self, state, root, page, bar, on)
     if not root or type(root.CreateTexture) ~= "function" then return false end
     local entries = state.decorations[root]
@@ -610,6 +222,9 @@ local function compassDivider(self, state, root, page, bar, on)
         host.art = self:PaintedTexture(host, "BACKGROUND", -6, "compass-divider")
         host.art:SetAllPoints(host)
         host.art:SetTexCoord(0, 1, 0, 1)
+
+        host.shadow = self:Own(host:CreateTexture(nil, "BACKGROUND", nil, -8))
+        host.shadow:SetAlpha(0)
         host.lights = {}
         for _, side in ipairs({ "left", "right" }) do
             local t = self:Own(host:CreateTexture(nil, "ARTWORK", nil, 2))
@@ -652,6 +267,7 @@ local function compassDivider(self, state, root, page, bar, on)
         host.glint:SetPoint("CENTER", host, "TOPLEFT", w * d.diamondU, -h * d.diamondV)
         host.glint:SetSize(g, g)
     end
+    self:CompassShadow(host.shadow, host, self:LookName("compass-divider"), w, h, false)
     if (self.painted[host.art] and self.painted[host.art].name) ~= "compass-divider" then
         self:SetPainted(host.art, "compass-divider")
     end
@@ -715,98 +331,6 @@ function A:TickCompassDivider(elapsed)
     local g = lit.left and peak * 0.65 or 0
     if math.abs((host.glint:GetAlpha() or 0) - g) > 0.001 then host.glint:SetAlpha(g) end
     host.held = lit
-end
-
-
-
-
-
-
-
-
-A.compassLegendRail = { w = 96, h = 26 }
-local function legendRail(self, state, frame, on)
-    if not frame or type(frame.CreateTexture) ~= "function" then return false end
-    local entries = state.decorations[frame]
-    if not entries then entries = {}; state.decorations[frame] = entries end
-    local host = entries.legendRail
-    if not host then
-        if not on or type(CreateFrame) ~= "function" or not self.railArt then return false end
-        local ok, made = pcall(CreateFrame, "Frame", nil, frame)
-        if not ok or not made then return false end
-        host = self:Own(made)
-        host:EnableMouse(false)
-        host:SetPoint("CENTER", frame, "CENTER", 0, 0)
-        entries.legendRail = host
-    end
-    if on then
-        local level = self:Number(frame.GetFrameLevel, 1, frame)
-        if level then pcall(host.SetFrameLevel, host, math.max(0, level - 1)) end
-        local w, h = self:DockSnap(self.compassLegendRail.w), self:DockSnap(self.compassLegendRail.h)
-        if host.railW ~= w or host.railH ~= h then
-            host.railW, host.railH = w, h
-            host:SetSize(w, h)
-            groundSlices(self, host, "bar-rail", w, h, self.railArt.capRA, nil, railCoords())
-        end
-    end
-    if host:IsShown() ~= on then host:SetShown(on) end
-    return on
-end
-
-
-
-
-
-
-
-local function triggerTab(self, state, frame, on)
-    if not frame or type(frame.CreateTexture) ~= "function" then return end
-    local entries = state.decorations[frame]
-    if not entries then entries = {}; state.decorations[frame] = entries end
-    local tab = entries.triggerTab
-    if not tab then
-        if not on then return end
-
-
-        local ok, made = pcall(self.PaintedTexture, self, frame, "BACKGROUND", -3, "socket-tab")
-        if not ok or not made then return end
-        tab = made
-        tab:SetPoint("CENTER", frame, "CENTER", 0, 0)
-        entries.triggerTab = tab
-        entries.triggerTabAcc = self:PaintedTwin(tab)
-    end
-    if on then
-        local w = self:Number(frame.GetWidth, 1, frame) or 0
-        local h = self:Number(frame.GetHeight, 1, frame) or 0
-        local tw, th = math.max(46, w + 20), math.max(24, h + 10)
-        if tab.tabW ~= tw or tab.tabH ~= th then
-            tab.tabW, tab.tabH = tw, th
-            tab:SetSize(tw, th)
-        end
-    end
-    if tab:IsShown() ~= on then
-        if on then tab:Show() else tab:Hide() end
-    end
-    self:SyncPainted(tab)
-    return on
-end
-
-
-
-
-
-
-
-local function hideGround(self, state, bar, except)
-    local entries = bar and state.decorations[bar]
-    if not entries then return end
-    for _, key in ipairs({ "groundLeft", "groundRight", "groundArm", "groundSlab", "groundRail" }) do
-        if key ~= except then
-            local host, rim = entries[key], entries[key .. "Rim"]
-            if host and host:IsShown() then host:Hide() end
-            if rim and rim:IsShown() then rim:Hide() end
-        end
-    end
 end
 
 
@@ -940,194 +464,6 @@ function A:TickAuraTrays(elapsed)
     for _, row in ipairs(rows) do pcall(fitAuraTray, self, row, keepEmpty) end
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-local function compassFigure(self, state, root)
-    local D = self.dock
-    if not D or not root or type(root.CreateTexture) ~= "function" then return end
-    local entries = state.decorations[root]
-    if not entries then entries = {}; state.decorations[root] = entries end
-    local host = entries.armature
-    if not host then
-        host = self:Own(CreateFrame("Frame", nil, root))
-        host:EnableMouse(false)
-        host:SetPoint("BOTTOMLEFT", root, "BOTTOMLEFT", 0, 0)
-        host:SetPoint("TOPRIGHT", root, "TOPRIGHT", 0, 0)
-
-
-        for _, key in ipairs({ "armTL", "armTR", "armBL", "armBR" }) do
-            local edge = self:Own(host:CreateTexture(nil, "BACKGROUND", nil, -5))
-            edge:SetTexture(self.artPath .. "compass-edge.tga", "CLAMP", "CLAMP")
-
-
-
-
-
-
-
-
-            self:Tint(edge, "accent", "vertex", 0.6)
-            entries[key] = edge
-        end
-        entries.armTL:SetTexCoord(0, 1, 0, 1)
-        entries.armTR:SetTexCoord(1, 0, 0, 1)
-        entries.armBL:SetTexCoord(0, 1, 1, 0)
-        entries.armBR:SetTexCoord(1, 0, 1, 0)
-        entries.armature = host
-        self.compassHost = host
-    end
-
-
-
-
-
-
-
-
-
-
-
-    local cw = math.max(8, D.spread)
-    local ch = math.max(8, D.top - D.hub)
-    local right = D.width - cw
-    local upY, downY = D.hub + D.armUp, D.bottom - D.armDown
-    local places = {
-        armTL = { 0, upY }, armTR = { right, upY },
-        armBL = { 0, downY }, armBR = { right, downY },
-    }
-    for key, at in pairs(places) do
-        local edge = entries[key]
-        edge:ClearAllPoints()
-        edge:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", at[1], at[2])
-        edge:SetSize(cw, ch)
-    end
-
-
-
-
-    local sweep = self:Fx(host, "sweep", "sweep-band", "OVERLAY", 7)
-    if sweep then
-        sweep:ClearAllPoints()
-        sweep:SetWidth(self.compassSweepBand)
-        sweep:SetPoint("TOPRIGHT", host, "BOTTOMLEFT", 0, D.top + D.armUp)
-        sweep:SetPoint("BOTTOMRIGHT", host, "BOTTOMLEFT", 0, downY)
-    end
-
-
-
-
-
-
-
-    local ignite = self:Fx(host, "ignite", "compass-edge", "OVERLAY", 5)
-    if ignite then
-        if not ignite.edges then
-            ignite.light:Hide()
-            ignite.edges = {}
-            for _, key in ipairs({ "TL", "TR", "BL", "BR" }) do
-                local t = self:Own(ignite:CreateTexture(nil, "OVERLAY", nil, 5))
-                t:SetTexture(self.artPath .. "compass-edge.tga", "CLAMP", "CLAMP")
-                t:SetBlendMode("ADD")
-                self:Tint(t, "accent", "vertex", 1)
-                ignite.edges[key] = t
-            end
-            ignite.edges.TL:SetTexCoord(0, 1, 0, 1)
-            ignite.edges.TR:SetTexCoord(1, 0, 0, 1)
-            ignite.edges.BL:SetTexCoord(0, 1, 1, 0)
-            ignite.edges.BR:SetTexCoord(1, 0, 1, 0)
-        end
-        ignite:ClearAllPoints()
-        ignite:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 0, 0)
-        ignite:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, 0)
-        for key, at in pairs(places) do
-            local t = ignite.edges[key:sub(4)]
-            t:ClearAllPoints()
-            t:SetPoint("BOTTOMLEFT", ignite, "BOTTOMLEFT", at[1], at[2])
-            t:SetSize(cw, ch)
-        end
-    end
-    self.compassRingWidth = D.width
-    local want = self:GetOption("clusterTray") and self:BordersOn() and self:GetOption("compassRhombus")
-    if host:IsShown() ~= want then if want then host:Show() else host:Hide() end end
-    for key in pairs(places) do entries[key]:SetShown(want) end
-end
-
-
-
-
-
-A.compassSweepBand = 260
-
-
-
-function A:CompassSweep()
-    local host = self.compassHost
-    local fx = host and self.motionFx[host] and self.motionFx[host].sweep
-    if not fx or not self:Read(host.IsShown, 1, host) then return false end
-    local r, g, b = self:Color("accent")
-    return self:PlaySweep(fx, (self.compassRingWidth or 0) + self.compassSweepBand, r, g, b)
-end
-
-
-
-
-function A:CompassCombat(inCombat)
-    local host = self.compassHost
-    local fx = host and self.motionFx[host] and self.motionFx[host].ignite
-    if not fx then return end
-    if inCombat and self:Read(host.IsShown, 1, host) then
-
-
-        self:PlayIgnite(fx, nil, nil, nil, 1)
-    else
-        self:Quench(fx)
-    end
-end
-
 local function fonts(self, state, root, size)
     self.NativeWalk(root, function(frame)
         if type(frame.GetRegions) ~= "function" then return end
@@ -1252,7 +588,8 @@ end
 
 function A:ChromeChat()
     if not (self.db and self.optionIndex) then return true end
-    return self:GetOption("chromeSkin") == "authored" and self:GetOption("chromeChat") and true or false
+
+    return self:GetOption("chromeChat") and true or false
 end
 
 
@@ -1617,23 +954,7 @@ function A:StyleNativeModule(key, state)
                 self.NativeTint(self, state, page.RightShoulderBackground)
             end
 
-
-            local tabs = self:AuthoredSockets()
-
-
-
-
-
-            local baseMode = self:CompassGroundMode()
-            local bareSeat = (self:CompassFootGround(baseMode) or baseMode == "none")
-                and (not (self.optionIndex and self.optionIndex.compassPromptSeat)
-                     or self:GetOption("compassPromptSeat") == "arm")
-            for _, prompt in ipairs({ "LeftIcon", "RightIcon", "CenteredIcons" }) do
-                triggerTab(self, state, page[prompt], tabs and not bareSeat)
-            end
-            local railMode = self.db and self.optionIndex and self.optionIndex.compassGround
-                and self:GetOption("compassGround") == "rail"
-            legendRail(self, state, page.CenteredIcons, tabs and self:CompassSkin() == "rail" and railMode == true)
+            if self.TriggerChips then self:TriggerChips(state, page, true) end
         end
         if page and type(page.actionBars) == "table" then
 
@@ -1705,62 +1026,14 @@ function A:StyleNativeModule(key, state)
 
 
 
-
-
-
-
-
-
-
-
             local mode = self:CompassGroundMode()
-
-
-
-            local ground = self:GetOption("clusterTray") and self:AuthoredSockets()
-                and mode ~= "none" and not self:CompassFootGround(mode)
             local armTrays = self:GetOption("clusterTray") and not (D and D.socket)
             for _, bar in ipairs(bars) do
 
 
-
-
-
-
-
-                local armMode = self:GetOption("clusterTray") and self:AuthoredSockets()
-                    and self:CompassGroundMode(bar) or mode
                 local watermark = bar.BackgroundWatermark
-                if watermark then
-                    if armMode == "rail" then self:HoldHidden(state, watermark)
-                    else self:ReleaseProperty(state, watermark, "alpha") end
-                end
-                if armMode == "rail" then
-                    hideTray(self, state, bar)
-                    compassRail(self, state, bar)
-                    hideGround(self, state, bar, "groundRail")
-                elseif ground then
-                    hideTray(self, state, bar)
-                    if mode == "slab" then
-
-
-                        compassSlab(self, state, bar)
-                        hideGround(self, state, bar, "groundSlab")
-                    elseif self:CompassLive() then
-
-                        socketGround(self, state, bar)
-                        hideGround(self, state, bar, "groundArm")
-                    else
-                        socketGround(self, state, bar, bar.Left)
-                        socketGround(self, state, bar, bar.Right)
-                        local entries = state.decorations[bar]
-                        for _, k in ipairs({ "groundArm", "groundArmRim", "groundSlab" }) do
-                            local host = entries and entries[k]
-                            if host and host:IsShown() then host:Hide() end
-                        end
-                    end
-                elseif armTrays then
-                    hideGround(self, state, bar)
+                if watermark then self:ReleaseProperty(state, watermark, "alpha") end
+                if armTrays then
 
 
 
@@ -1768,16 +1041,11 @@ function A:StyleNativeModule(key, state)
                     tray(self, state, bar, armPad, self:Surface("wash"), w, h)
                 else
                     hideTray(self, state, bar)
-                    hideGround(self, state, bar)
                 end
             end
 
-            compassBase(self, state, GamepadMainActionBarFrame, page, page.actionBars.bottomBar,
-                mode == "base" and self:GetOption("clusterTray") and self:AuthoredSockets() and true or false)
-
             compassDivider(self, state, GamepadMainActionBarFrame, page, page.actionBars.bottomBar,
-                mode == "divider" and self:GetOption("clusterTray") and self:AuthoredSockets() and true or false)
-            compassFigure(self, state, GamepadMainActionBarFrame)
+                mode == "divider" and self:AuthoredSockets() and true or false)
         end
         if GamepadPersistentInputLegend then
 
@@ -2133,7 +1401,7 @@ function A:StyleNativeModule(key, state)
 
 
 
-                local onBase = self.MapSkinMode and self:MapSkinMode() == "base"
+                local onBase = self.MapBaseLike and self:MapBaseLike()
                 local zoneSize = (onBase and plaqueText and self.mapZoneFit and math.min(plaqueText, self.mapZoneFit))
                     or plaqueText or self.tokens.type.body
                 font(self, state, MinimapZoneText, zoneSize, not onBase)
@@ -2183,15 +1451,8 @@ function A:StyleNativeModule(key, state)
 
 
 
-
-                    local boxed = self:TrackerStyle() == "boxed"
-                    if boxed then
-                        asset(self, state, header.Background, "plate", { 0, 1, 0, 1 }, "nativeInk")
-                        self.NativeBorder(self, state, header, 1)
-                    else
-                        asset(self, state, header.Background, "clear", { 0, 1, 0, 1 })
-                        self:ChromeHide(state, header, "border")
-                    end
+                    asset(self, state, header.Background, "clear", { 0, 1, 0, 1 })
+                    self:ChromeHide(state, header, "border")
                     font(self, state, header.Text, self.tokens.type.title, true)
 
 
@@ -2218,7 +1479,7 @@ function A:StyleNativeModule(key, state)
 
 
 
-                    local role = (boxed or frame == ObjectiveTrackerFrame) and "text" or "muted"
+                    local role = frame == ObjectiveTrackerFrame and "text" or "muted"
                     textColor(self, state, header.Text, role)
                     if type(header.GetRegions) == "function" then
                         for _, region in ipairs({ header:GetRegions() }) do
@@ -2244,43 +1505,15 @@ function A:StyleNativeModule(key, state)
                 local edit = frame.editBox or _G["ChatFrame" .. i .. "EditBox"]
                 if edit then
                     font(self, state, edit, self.tokens.type.body, false)
-                    local chatStyle = self:ChatStyle()
-                    if chatStyle ~= "boxed" then
-
-
-
-                        local name = edit:GetName() or ("ChatFrame" .. i .. "EditBox")
-                        for _, suffix in ipairs({ "Left", "Right", "Mid", "FocusLeft", "FocusRight", "FocusMid" }) do
-                            self.NativeStrip(self, state, _G[name .. suffix])
-                        end
-                        self:WatchChatFocus()
-                        self:ChatEditDress(state, edit, i)
-                    else
-                    self:ChatEditDress(state, edit, i, true)
-                    self.NativeFill(self, state, edit, self:Surface("raised"), false, "raised")
-
-
-
-
-
 
 
 
                     local name = edit:GetName() or ("ChatFrame" .. i .. "EditBox")
-                    local border = {}
                     for _, suffix in ipairs({ "Left", "Right", "Mid", "FocusLeft", "FocusRight", "FocusMid" }) do
-                        border[#border + 1] = _G[name .. suffix]
+                        self.NativeStrip(self, state, _G[name .. suffix])
                     end
-                    if self:ChromeChat() then
-                        self.NativeStrip(self, state, unpack(border))
-                        self.NativeBorder(self, state, edit, 1, 2)
-                        self:ChromeRim(state, edit, edit, "rim", { "BOTTOMLEFT" })
-                    else
-                        for _, region in ipairs(border) do self:ReleaseHidden(state, region) end
-                        self.NativeBorder(self, state, edit, 1)
-                        self:HideChromeRim(state, edit, "rim")
-                    end
-                    end
+                    self:WatchChatFocus()
+                    self:ChatEditDress(state, edit, i)
                 end
 
 
@@ -2313,13 +1546,8 @@ function A:StyleNativeModule(key, state)
 
 
 
-                if self:ChatStyle() == "boxed" then
-                    self.NativeFill(self, state, tab, self:Surface("base"), true)
-                    font(self, state, tab.Text, self.tokens.type.caption, false)
-                else
-                    self:ChromeHide(state, tab, "panel")
-                    font(self, state, tab.Text, self.tokens.type.caption, false, nil, "OUTLINE")
-                end
+                self:ChromeHide(state, tab, "panel")
+                font(self, state, tab.Text, self.tokens.type.caption, false, nil, "OUTLINE")
 
 
 
@@ -2332,7 +1560,7 @@ function A:StyleNativeModule(key, state)
         end
 
 
-        self:ChatGutter(state, self:ChatStyle() ~= "boxed")
+        self:ChatGutter(state, true)
     elseif key == "tooltips" then
         for _, name in ipairs({ "GameTooltip", "ShoppingTooltip1", "ShoppingTooltip2", "ItemRefTooltip",
             "ItemRefShoppingTooltip1", "ItemRefShoppingTooltip2" }) do

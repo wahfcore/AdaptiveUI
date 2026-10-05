@@ -196,8 +196,39 @@ local function lay(self, frame, rows)
 end
 
 local function fillDots(self, frame)
-    local r, g, b = unpack(A.classBar.comboColour)
-    for i = 1, MAX_DOTS do frame.dot[i].fill:SetStatusBarColor(r, g, b) end
+
+
+
+    local fillFile = self.artPath .. self:LookName("dot-fill") .. ".tga"
+    local oak = fillFile:find("oak%-stud") ~= nil
+    local r, g, b = 1, 1, 1
+    if not oak then r, g, b = unpack(A.classBar.comboColour) end
+
+
+    if oak and self.OakStudFill then fillFile, r, g, b = self:OakStudFill() end
+    if frame.dotFile ~= fillFile then
+        frame.dotFile = fillFile
+        local socketFile = self.artPath .. self:LookName("dot-socket") .. ".tga"
+        for i = 1, MAX_DOTS do
+            frame.dot[i].fill:SetStatusBarTexture(fillFile)
+            frame.dot[i].socket:SetTexture(socketFile, "CLAMP", "CLAMP")
+        end
+    end
+    for i = 1, MAX_DOTS do
+        frame.dot[i].fill:SetStatusBarColor(r, g, b)
+
+
+
+        local socket = frame.dot[i].socket
+        if oak then
+            self:DressPaintedRegion(socket, "dot-socket")
+        elseif socket.auiBodyTint then
+            socket.auiBodyTint = nil
+            self.themed[socket] = nil
+            socket:SetVertexColor(1, 1, 1, 1)
+            self:DropGlaze(socket)
+        end
+    end
     local value, status = self:Read(UnitPower, 1, "player", self.comboType)
     for i = 1, MAX_DOTS do
         local bar = frame.dot[i].fill

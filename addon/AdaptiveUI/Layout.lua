@@ -674,12 +674,8 @@ A.compassBarOf = COMPASS_BAR_OF
 
 
 
-
 function A:CompassSkin()
-    if not (self.db and self.optionIndex and self.optionIndex.compassSkin) then return "classic" end
-    if not self:CompassLive() then return "classic" end
-    if self:GetOption("compassSkin") ~= "rail" then return "classic" end
-    if not (self.artSlots and self.artSlots.barRail) then return "classic" end
+    if not (self.db and self.optionIndex) then return "classic" end
     if self.AuthoredSockets and not self:AuthoredSockets() then return "classic" end
     return "rail"
 end
@@ -759,16 +755,6 @@ end
 
 
 
-function A:CompassArmEnlarged(arm)
-    local l, r = self:CompassArmScales(arm)
-    return l > 1.0005 or r > 1.0005
-end
-
-
-
-
-
-
 
 
 A.compassPresets = {
@@ -777,7 +763,6 @@ A.compassPresets = {
     heroThumb = { all = 1.00, hero = "compassBottom" },
     heroLeft  = { all = 1.00, hero = "compassLeft" },
     heroRight = { all = 1.00, hero = "compassRight" },
-    rows      = { all = 1.25, hero = "none", railArms = "all", ground = "rail" },
 }
 function A:ApplyCompassPreset(key)
     local preset = self.compassPresets[key]
@@ -787,12 +772,6 @@ function A:ApplyCompassPreset(key)
     end
     if preset.hero and self.optionIndex and self.optionIndex.compassHeroArm then
         self:SetOption("compassHeroArm", preset.hero, true)
-    end
-    if preset.railArms and self.optionIndex and self.optionIndex.compassRailArms then
-        self:SetOption("compassRailArms", preset.railArms, true)
-    end
-    if preset.ground and self.optionIndex and self.optionIndex.compassGround then
-        self:SetOption("compassGround", preset.ground, true)
     end
     return true
 end
@@ -838,106 +817,24 @@ end
 
 
 
-function A:CompassLive()
-    if not (self.db and self.optionIndex and self.optionIndex.compassLayout) then return true end
-    return self:GetOption("compassLayout") ~= "classic"
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function A:CompassGroundMode(arm)
-    if not self:CompassLive() then return "frame" end
-    local mode = "base"
-    if self.db and self.optionIndex and self.optionIndex.compassGround then
-        mode = self:GetOption("compassGround")
+function A:CompassGroundMode()
+    if self.db and self.optionIndex and self.optionIndex.compassGround
+        and self:GetOption("compassGround") == "divider" and self:CompassDividerOn() then
+        return "divider"
     end
-    if mode == "rail" then
-        if arm ~= nil and self:CompassRailOn(arm) then return "rail" end
-        return "slab"
-    end
-
-
-    if mode == "divider" then
-        if self:CompassDividerOn() then return "divider" end
-        mode = "base"
-    end
-    if mode == "base" then
-        return self:CompassBaseOn() and "base" or "none"
-    end
-    if mode == "none" or mode == "frame" or mode == "slab" then return mode end
-    return self:CompassBaseOn() and "base" or "none"
+    return "none"
 end
 
 
 
 function A:CompassFootGround(mode)
-    mode = mode or self:CompassGroundMode()
-    return mode == "base" or mode == "divider"
+    return (mode or self:CompassGroundMode()) == "divider"
 end
 
 function A:CompassDividerOn()
     if self:CompassSkin() ~= "rail" then return false end
     return (self.artSlots and self.artSlots.compassDivider) ~= nil
 end
-
-
-
-
-function A:CompassBaseOn()
-    if self:CompassSkin() ~= "rail" then return false end
-    return (self.artSlots and self.artSlots.barLedge) ~= nil
-end
-
-function A:CompassRailOn(arm)
-    if self:CompassSkin() ~= "rail" then return false end
-
-    if self.db and self.optionIndex and self.optionIndex.compassGround
-        and self:GetOption("compassGround") ~= "rail" then
-        return false
-    end
-    local id = type(arm) == "string" and arm or self:CompassArmOfBar(arm)
-    if not id or not COMPASS_BAR_OF[id] then return false end
-    local which = self.optionIndex and self.optionIndex.compassRailArms and self:GetOption("compassRailArms") or "hero"
-    if which == "all" then return true end
-    if which == "none" then return false end
-    return self:CompassArmEnlarged(id)
-end
-
-
-
-
-
-
-
 
 
 
@@ -964,7 +861,6 @@ A.dividerArt = {
     light    = 0.70,
 }
 function A:CompassBaseRect()
-    local art = self.railArt
     local l, r = self:CompassArmScales("compassBottom")
     local _, rcy, _, rh = self:CompassStyleBox("collapsed", nil, { left = l, right = r })
     local plate = (self.PlusPlateWidth and self:PlusPlateWidth(false)) or 339
@@ -976,24 +872,14 @@ function A:CompassBaseRect()
     if not dock or dock <= 0.05 then dock = 0.9 end
     local w = self:DockSnap(plate * unit / dock)
     local top0 = DOCK.bottom + rcy - rh / 2 - self.compassBase.seat
-    if self:CompassGroundMode() == "divider" then
 
 
 
 
-        local d = A.dividerArt
-        local h = self:DockSnap(math.max(0, math.min(top0, w / d.ratio)))
-        if h > top0 then h = math.max(0, h - self:DockPixel()) end
-        return DOCK.cx, top0 - h / 2, self:DockSnap(h * d.ratio), h, 0, top0
-    end
-    local ratio = (self.barArt and self.barArt.ratio) or 6.7932
-    local h = math.min(w / ratio, art.headRoom * w / (2 * art.capLA))
-    local top = DOCK.bottom + rcy - rh / 2 - self.compassBase.seat
-    h = math.max(0, math.min(h, top))
-    h = self:DockSnap(h)
-    if h > top then h = math.max(0, h - self:DockPixel()) end
-    local head = self:DockSnap(h * art.capLA)
-    return DOCK.cx, top - h / 2, w, h, head, top
+    local d = A.dividerArt
+    local h = self:DockSnap(math.max(0, math.min(top0, w / d.ratio)))
+    if h > top0 then h = math.max(0, h - self:DockPixel()) end
+    return DOCK.cx, top0 - h / 2, self:DockSnap(h * d.ratio), h, 0, top0
 end
 
 
@@ -1045,7 +931,6 @@ end
 
 
 function A:CompassArmBias(bar)
-    if not self:CompassLive() then return 0 end
     local state = self:CompassArmState(bar)
     local arm = self:CompassArmOfBar(bar)
     if not arm then return DOCK.armBias[state] or DOCK.armBias.collapsed end
@@ -1105,16 +990,14 @@ end
 
 
 function A:CompassArmRect(bar)
-    if self:CompassLive() then
-        local lx, ly, lw, lh = self:CompassGroupRect(bar, bar and bar.Left)
-        local rx, ry, rw, rh = self:CompassGroupRect(bar, bar and bar.Right)
-        if lx and rx then
-            local x0 = math.min(lx - lw / 2, rx - rw / 2)
-            local x1 = math.max(lx + lw / 2, rx + rw / 2)
-            local y0 = math.min(ly - lh / 2, ry - rh / 2)
-            local y1 = math.max(ly + lh / 2, ry + rh / 2)
-            return (x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, "live"
-        end
+    local lx, ly, lw, lh = self:CompassGroupRect(bar, bar and bar.Left)
+    local rx, ry, rw, rh = self:CompassGroupRect(bar, bar and bar.Right)
+    if lx and rx then
+        local x0 = math.min(lx - lw / 2, rx - rw / 2)
+        local x1 = math.max(lx + lw / 2, rx + rw / 2)
+        local y0 = math.min(ly - lh / 2, ry - rh / 2)
+        local y1 = math.max(ly + lh / 2, ry + rh / 2)
+        return (x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0, "live"
     end
     local state = self:CompassArmState(bar)
 
@@ -1122,86 +1005,6 @@ function A:CompassArmRect(bar)
     local l, r = self:CompassArmScales(bar)
     local cx, cy, w, h = self:CompassStyleBox(state, nil, { left = l, right = r })
     return cx, cy, w, h, "style"
-end
-
-
-
-
-
-
-
-
-
-
-
-function A:CompassSlabRect(bar)
-    local rcx, rcy, rw, rh = self:CompassArmRect(bar)
-    local limit = DOCK.spread - DOCK.groundGap
-    local w = self:DockSnap(math.min(rw + 2 * DOCK.groundPad, limit))
-    if w > limit then w = w - self:DockPixel() end
-    local h = self:DockSnap(DOCK.slabH)
-
-
-    local cy = rcy - self:DockSnap(rh / 2 + DOCK.slabDrop + DOCK.slabH / 2)
-    return rcx, cy, w, h
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function A:CompassRailLimit(arm)
-    local id = type(arm) == "string" and arm or self:CompassArmOfBar(arm)
-    if not id then return DOCK.spread - DOCK.groundGap end
-    local centre = id == "compassTop" or id == "compassBottom"
-    local neighbours = centre and { "compassLeft", "compassRight" } or { "compassTop", "compassBottom" }
-    local reach = 0
-    for _, n in ipairs(neighbours) do
-        local l, r = self:CompassArmScales(n)
-        local nr = self:CompassArmReach(n, "expanded", { left = l, right = r }, self:CompassRailOn(n))
-        reach = math.max(reach, nr)
-    end
-    return math.max(2 * DOCK.groundGap, 2 * (DOCK.spread - reach - DOCK.groundGap))
-end
-
-function A:CompassRailRect(bar)
-    local art = self.railArt
-    local rcx, rcy, rw, rh = self:CompassArmRect(bar)
-    local h = self:DockSnap((rh + 2 * art.seat) / art.wellF)
-    local tail = self:DockSnap(h * art.capRA)
-    local well = self:DockSnap(rw + 2 * art.seat)
-    local limit = self:CompassRailLimit(bar)
-    local w = well + 2 * tail
-    if w > limit then
-        w = self:DockSnap(limit)
-        if w > limit then w = w - self:DockPixel() end
-        well = math.max(0, w - 2 * tail)
-    end
-    local cy = rcy - self:DockSnap((0.5 - art.wellTop - art.wellF / 2) * h)
-    return rcx, cy, w, h, well, tail
 end
 
 
@@ -1244,7 +1047,6 @@ end
 
 
 
-local ARM_BTN, ARM_GROUP_GAP = 45, 3
 A.compassArmClear = 12
 A.compassArmRange = 160
 
@@ -1275,7 +1077,7 @@ A.compassArmList = {
 
 
 function A:CompassArmBase(id, bias)
-    bias = tonumber(bias) or (self:CompassLive() and DOCK.armBias.collapsed or 0)
+    bias = tonumber(bias) or DOCK.armBias.collapsed
     local cx = DOCK.cx + bias
     if id == "compassTop" then return cx, DOCK.top end
     if id == "compassBottom" then return cx, DOCK.bottom end
@@ -1297,20 +1099,6 @@ end
 
 
 local function armButtons(ax, ay, out, state, scales)
-    if not A:CompassLive() then
-
-        local occW, occH = 94 + ARM_BTN, 78 + ARM_BTN
-        local armW = 2 * occW + ARM_GROUP_GAP
-        local x0 = ax - DOCK.armL + ((DOCK.armL + DOCK.armR) - armW) / 2
-        local y0 = ay - DOCK.armDown + ((DOCK.armUp + DOCK.armDown) - occH) / 2 + (occH - ARM_BTN) / 2
-        for group = 0, 1 do
-            local gx = x0 + group * (occW + ARM_GROUP_GAP)
-            for _, d in ipairs({ { 0, 0 }, { 47, 39 }, { 94, 0 }, { 47, -39 } }) do
-                out[#out + 1] = { gx + d[1], y0 + d[2], gx + d[1] + ARM_BTN, y0 + d[2] + ARM_BTN }
-            end
-        end
-        return
-    end
     local style = A.dockStyle[state or "collapsed"] or A.dockStyle.collapsed
     for _, key in ipairs({ "left", "right" }) do
         local g = style[key]
@@ -1369,17 +1157,9 @@ end
 
 
 
-
-function A:CompassArmReach(arm, state, scales, railed)
+function A:CompassArmReach(arm, state, scales)
     local _, _, w, h = self:CompassStyleBox(state, nil, scales)
-    local reach = w / 2
-    if railed and self.railArt then
-        local _, _, rw, rh = self:CompassStyleBox("collapsed", nil, scales)
-        local art = self.railArt
-        local railH = (rh + 2 * art.seat) / art.wellF
-        reach = math.max(reach, (rw + 2 * art.seat + 2 * railH * art.capRA) / 2)
-    end
-    return reach, h / 2
+    return w / 2, h / 2
 end
 
 
@@ -1405,8 +1185,7 @@ function A:CompassNeededSpread(override)
             end
         end
         local scales = { left = l, right = r }
-        local railed = self:CompassRailOn(id)
-        local rw, rh = self:CompassArmReach(id, "expanded", scales, railed)
+        local rw, rh = self:CompassArmReach(id, "expanded", scales)
         reach[id] = rw
         maxHalfW, maxHalfH = math.max(maxHalfW, rw), math.max(maxHalfH, rh)
     end
@@ -1514,68 +1293,59 @@ function A:SyncDock()
     local socket = self.db and self.optionIndex and self:GetOption("actionDiamond") == true
     DOCK.socket = socket == true
     DOCK.trayW = DOCK.spreadTray - 2 * TRAY_PAD - TRAY_GAP
-    if self:CompassLive() then
 
 
 
 
 
 
-        DOCK.spread = DOCK.spreadTray
+    DOCK.spread = DOCK.spreadTray
 
 
 
-        DOCK.cx = DOCK.spread + ARM_HALF
-        DOCK.width = 2 * DOCK.cx
-        DOCK.armUp, DOCK.armDown = 56, 56
-        DOCK.armL, DOCK.armR, DOCK.armHalf, DOCK.armClear = ARM_L, ARM_R, ARM_HALF, ARM_UP
-
-
-
-
-
-
-
-        self.compassScaleFit = nil
-        if self:CompassSkin() == "rail" then
-            local auto = not (self.optionIndex and self.optionIndex.compassAutoSpread)
-                or self:GetOption("compassAutoSpread") ~= false
-            local need, halfW, halfH, centreReach = self:CompassNeededSpread()
-            if not auto and need > DOCK.spreadTray then
+    DOCK.cx = DOCK.spread + ARM_HALF
+    DOCK.width = 2 * DOCK.cx
+    DOCK.armUp, DOCK.armDown = 56, 56
+    DOCK.armL, DOCK.armR, DOCK.armHalf, DOCK.armClear = ARM_L, ARM_R, ARM_HALF, ARM_UP
 
 
 
 
-                local fit = {}
-                for _, e in ipairs(self.compassGroups) do fit[e.id] = self:CompassGroupScaleRaw(e.id) end
-                for _ = 1, 8 * 16 do
-                    need, halfW, halfH, centreReach = self:CompassNeededSpread(fit)
-                    if need <= DOCK.spreadTray + 1e-6 then break end
-                    local largest, size = nil, 0
-                    for _, e in ipairs(self.compassGroups) do
-                        if fit[e.id] > size + 1e-9 then largest, size = e.id, fit[e.id] end
-                    end
-                    if not largest or size <= self.compassGroupScaleMin + 1e-9 then break end
-                    fit[largest] = math.max(self.compassGroupScaleMin, size - 0.05)
+
+
+
+    self.compassScaleFit = nil
+    if self:CompassSkin() == "rail" then
+        local auto = not (self.optionIndex and self.optionIndex.compassAutoSpread)
+            or self:GetOption("compassAutoSpread") ~= false
+        local need, halfW, halfH, centreReach = self:CompassNeededSpread()
+        if not auto and need > DOCK.spreadTray then
+
+
+
+
+            local fit = {}
+            for _, e in ipairs(self.compassGroups) do fit[e.id] = self:CompassGroupScaleRaw(e.id) end
+            for _ = 1, 8 * 16 do
+                need, halfW, halfH, centreReach = self:CompassNeededSpread(fit)
+                if need <= DOCK.spreadTray + 1e-6 then break end
+                local largest, size = nil, 0
+                for _, e in ipairs(self.compassGroups) do
+                    if fit[e.id] > size + 1e-9 then largest, size = e.id, fit[e.id] end
                 end
-                self.compassScaleFit = fit
-                need = DOCK.spreadTray
+                if not largest or size <= self.compassGroupScaleMin + 1e-9 then break end
+                fit[largest] = math.max(self.compassGroupScaleMin, size - 0.05)
             end
-            DOCK.spread = need
-            DOCK.armHalf = math.max(ARM_HALF, halfW)
-            DOCK.armL, DOCK.armR = math.max(ARM_L, centreReach), math.max(ARM_R, centreReach)
-            DOCK.armUp, DOCK.armDown = math.max(56, halfH), math.max(56, halfH)
-            DOCK.armClear = math.max(ARM_UP, halfH)
-            DOCK.cx = DOCK.spread + DOCK.armHalf
-            DOCK.width = 2 * DOCK.cx
+            self.compassScaleFit = fit
+            need = DOCK.spreadTray
         end
-    else
-        DOCK.spread = socket and DOCK.spreadSocket or DOCK.spreadTray
-        DOCK.cx = DOCK.spread + ARM_L
-        DOCK.width = 2 * DOCK.spread + ARM_L + ARM_R
-        DOCK.armUp, DOCK.armDown = ARM_UP, ARM_DOWN
-        DOCK.armL, DOCK.armR, DOCK.armHalf, DOCK.armClear = ARM_L, ARM_R, ARM_HALF, ARM_UP
-        self.compassScaleFit = nil
+        DOCK.spread = need
+        DOCK.armHalf = math.max(ARM_HALF, halfW)
+        DOCK.armL, DOCK.armR = math.max(ARM_L, centreReach), math.max(ARM_R, centreReach)
+        DOCK.armUp, DOCK.armDown = math.max(56, halfH), math.max(56, halfH)
+        DOCK.armClear = math.max(ARM_UP, halfH)
+        DOCK.cx = DOCK.spread + DOCK.armHalf
+        DOCK.width = 2 * DOCK.cx
     end
     DOCK.axis = DOCK.cx
     DOCK.inkUp, DOCK.inkDown = DOCK.armUp - INK_PAD, DOCK.armDown - INK_PAD
@@ -1879,7 +1649,7 @@ function A:KeyboardStackTop()
         if box and (not top or box.t > top) then top = box.t end
     end
     local skin = self.KeyboardSkin and self:KeyboardSkin()
-    if (skin == "inlay" or skin == "bar04") and self.KeyboardBoxes then
+    if skin == "bar04" and self.KeyboardBoxes then
         for _, box in ipairs(self:KeyboardBoxes()) do
             if box.id == "MainActionBar" and box.kind == "bar" and (not top or box.t > top) then top = box.t end
         end
@@ -1999,7 +1769,6 @@ function adapters.actions(self, state, m)
     self.keyboardRowOwner = self.keyboardRowOwner or {}
     for _, row in ipairs(A.actionBarRows) do self.keyboardRowOwner[row[2]] = "editmode" end
 
-    self:FooterLaneSeat(state)
     self:SettleHandsOff()
 
 
@@ -2019,28 +1788,6 @@ function adapters.actions(self, state, m)
                 .. "action bar a few pixels in Edit Mode (Esc > Edit Mode)")
         end
     end
-    return false
-end
-
-
-
-
-
-
-function A:FooterLaneWanted()
-    if not (self.db and self.optionIndex) then return false end
-    if not (self.KeyboardSkinOn and self:KeyboardSkinOn()) then return false end
-    if self:KeyboardSkin() ~= "footer" then return false end
-    if self:GetOption("keyboardStatusLane") ~= true then return false end
-    return type(MainStatusTrackingBarContainer) == "table" and type(MainActionBar) == "table"
-end
-
-function A:FooterLaneSeat(_state)
-    if not self:FooterLaneWanted() then
-        self.footerLane = nil
-        return false
-    end
-    self.footerLane = { seat = "0.50", reason = "Edit Mode places the experience bar; AdaptiveUI does not move it" }
     return false
 end
 
@@ -2162,15 +1909,6 @@ function A:XpProbe(emit)
     return out
 end
 
-function A:FooterLaneLine()
-    local f = self.footerLane
-    if not f then return "footer XP lane: not in use" end
-    if f.seat == "ledge" then
-        return string.format("footer XP lane: in the rail's ledge (%.1f x %.1f)", f.w or 0, f.h or 0)
-    end
-    return "footer XP lane: 0.50 seat (" .. tostring(f.reason) .. ")"
-end
-
 
 
 
@@ -2240,7 +1978,8 @@ function A:SeatMapButtons(state, map, g)
                 if tw and bw and tw > bw and tw - bw < 16 then dx = (tw - bw) / 2 end
                 if th and bh and th > bh and th - bh < 16 then dy = (th - bh) / 2 end
             end
-            self:PlaceNative(state, tracking, "TOPLEFT", map, "TOPLEFT", inset * s - dx, -(inset * s - dy))
+
+            self:PlaceNative(state, tracking, "TOPLEFT", map, "TOPLEFT", inset * s - dx, -((g.trackY or inset) * s - dy))
         end
         local cal = frames.GameTimeFrame
         local calH = 20
@@ -2270,8 +2009,9 @@ function A:SeatMapButtons(state, map, g)
                 local ts = k(ticker) / s
                 w = math.floor(sw / (ts > 0.01 and ts or 1) / s + 0.5) + 2
             end
-            self:PlaceNative(state, clock, "RIGHT", map, "BOTTOMLEFT", g.clockR * s, g.coordY * s, nil,
-                w * s, g.coordH * s)
+
+            self:PlaceNative(state, clock, "RIGHT", map, "BOTTOMLEFT", g.clockR * s, (g.clockY or g.coordY) * s, nil,
+                w * s, (g.clockH or g.coordH) * s)
         end
     end)
     self.mapButtonSeatError = (not ok) and tostring(err) or nil
@@ -2346,7 +2086,7 @@ function adapters.minimap(self, state, m)
     local plaque = self.MapOnPlaque and self:MapOnPlaque()
 
 
-    local base = plaque and self:MapSkinMode() == "base"
+    local base = plaque and self:MapBaseLike()
     if map then self:SeatMapButtons(state, map, base and self:MapPlaqueGeometry(2 * MAP_HALF, 2 * MAP_HALF) or nil) end
     if plaque and map then
 
@@ -2362,8 +2102,7 @@ function adapters.minimap(self, state, m)
         local g = self:MapPlaqueGeometry(2 * MAP_HALF, 2 * MAP_HALF)
         if MinimapCluster.BorderTop then
 
-            local zx = g.base and self.mapBase.zoneX or 4
-            self:PlaceNative(state, MinimapCluster.BorderTop, "LEFT", map, "BOTTOMLEFT", g.textX - zx, g.zoneY)
+            self:PlaceNative(state, MinimapCluster.BorderTop, "LEFT", map, "BOTTOMLEFT", g.textX - self.mapBase.zoneX, g.zoneY)
         end
 
 
@@ -2382,14 +2121,15 @@ function adapters.minimap(self, state, m)
             if MinimapZoneText then
                 sizeOnce(MinimapZoneText, g.textW - 4, g.zoneH)
 
-                self.mapZoneBoxW = g.base and (g.textW - 4) or nil
+
+                self.mapZoneBoxW = not g.shelf and (g.textW - 4) or nil
             end
             local coords = MinimapCluster.MinimapContainer.PlayerCoords
             if coords then
 
 
                 self:PlaceNative(state, coords, "LEFT", map, "BOTTOMLEFT", g.textX, g.coordY, nil,
-                    g.base and g.coordW or g.textW, g.coordH)
+                    g.coordW, g.coordH)
             end
         end)
         self.mapPlaqueSeatError = (not ok) and tostring(err) or nil

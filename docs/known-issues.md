@@ -8,13 +8,13 @@ offline test suite; the list below is what only the live client can confirm.
 This is a beta on a beta client. Things I have tested a lot, and things I have not:
 
 **Not yet confirmed in the live game**
-- The carved health fill (health revealed as a bar-shaped crop of the art) is off by default: it depends on how the
-  client treats a hidden value in a colour curve, which I have only modelled.
-- The painted minimap card and Settings window at real size, and how the map card clears the quest tracker at other
+- The painted minimap shelf and Settings window at real size, and how the map clears the quest tracker at other
   UI scales.
 - The painted tiles and slabs at their real pixel size on very small or very large screens.
 - Raid tiles on every raid layout; focus target plates when the focus has no target.
 - The crest tidy-up on a profile that had the old "both" setting.
+- A profile saved with one of the older looks (before the addon kept just Blizzard, AUI Dusk and AUI Oakborn) is moved
+  to the nearest of the three when it loads, with one line in chat. I have tested this offline on every old setting.
 - macOS: the manual zip should work, but I have not tried it on a Mac.
 
 **Known small things**

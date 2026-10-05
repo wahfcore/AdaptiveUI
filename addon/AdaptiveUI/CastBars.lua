@@ -377,7 +377,9 @@ end
 
 A.castGlow = { peak = 0.55, rise = 0.14, fall = 0.22 }
 
-A.castFaceAlpha = 0.5
+
+
+A.castPlankTone, A.castPlankAlpha = { 29 / 255, 37 / 255, 43 / 255 }, 0.22
 
 
 A.castSeamGlow = { peak = 0.50, rise = 0.14, fall = 0.22 }
@@ -601,38 +603,15 @@ function A:ApplyCastBars()
                     width = self:Number(host.GetWidth, 1, host) or self:PlusPlateWidth(false)
 
 
-
-
-
-
-                    local trim = (self.PlusUnified and self:PlusUnified()) and 0 or self:PlusCascade()
-
-
-
-                    if self.BarSkinOn and self:BarSkinOn() then trim = 0 end
-                    width = math.max(80, width - trim)
+                    width = math.max(80, width)
                 end
-                local barSkin = (host and self.BarSkinOn and self:BarSkinOn()) or false
 
 
 
-
-
-
+                local barSkin = host ~= nil
                 local castMode = nil
-                if barSkin and self.PlateStands and self:PlateStands() then
-
-
-
-
-                    local choice, skin = self:GetOption("plateMantleCast"), self:PlateSkin()
-                    if choice == "above" or skin == "tinted" then
-                        castMode = "above"
-                    elseif skin == "inlay" or choice == "seam" then
-                        castMode = "seam"
-                    else
-                        castMode = "face"
-                    end
+                if barSkin then
+                    castMode = self:GetOption("plateMantleCast") == "above" and "above" or "seam"
                 end
                 strip.castMode = castMode
 
@@ -675,12 +654,7 @@ function A:ApplyCastBars()
 
                 local castTop, castLeft, castRight = 0, 0, 0
                 local hostCompact = barSkin and host.hero ~= true or false
-                if castMode == "face" then
-                    local castH
-                    castTop, castH, castLeft, castRight = self:MantleFace(hostCompact)
-                    h = math.max(2, castH)
-                    width = math.max(16, width - castLeft - castRight)
-                elseif castMode == "seam" then
+                if castMode == "seam" then
                     local castH
                     castTop, castH, castLeft, castRight = self:CastSeam(hostCompact)
                     h = castH
@@ -689,14 +663,6 @@ function A:ApplyCastBars()
 
                     local g = self:MantleGeometry(hostCompact, false)
                     h = math.max(2, self:PlusSnap(g.art * (self:PlateArt().manaH or 0.25)))
-                elseif barSkin then
-                    local plateH = self:Number(host.GetHeight, 1, host) or h
-                    local castH
-                    castTop, castH = self:BarGauge(plateH, "cast")
-                    castLeft = self:PlusGaugeInset(hostCompact)
-                    castRight = self:BarTailInset(hostCompact)
-                    h = math.max(2, castH)
-                    width = math.max(16, width - castLeft - castRight)
                 end
                 strip:SetSize(width, h)
 
@@ -748,10 +714,7 @@ function A:ApplyCastBars()
 
 
 
-
-
-                local barH = math.max(1, bandH)
-                local cut = self:PlusCutSize(barH)
+                local cut = 0
                 strip.cut:SetSize(cut, cut)
 
 
@@ -764,21 +727,8 @@ function A:ApplyCastBars()
                 local timerInset = cut + sp.xs
                 strip.timeText:ClearAllPoints()
                 strip.nameText:ClearAllPoints()
-                if castMode == "face" then
+                if barSkin then
 
-
-
-                    local lead0 = mirrored and "RIGHT" or "LEFT"
-                    local tail0 = mirrored and "LEFT" or "RIGHT"
-                    local sgn = mirrored and -1 or 1
-                    strip.nameText:SetPoint(lead0, strip.value, lead0, sgn * sp.xs, 0)
-                    strip.nameText:SetHeight(h)
-                    strip.nameText:SetWidth(math.max(16, width - sp.xs * 3 - 44))
-                    strip.nameText:SetJustifyH(lead0)
-                    strip.timeText:SetPoint(tail0, strip.value, tail0, -sgn * sp.xs, 0)
-                    strip.timeText:SetHeight(h)
-                    strip.timeText:SetJustifyH(tail0)
-                elseif barSkin then
 
 
 
@@ -816,22 +766,17 @@ function A:ApplyCastBars()
                     (barSkin or h >= 20 * lift) and "body" or "caption", hostScale, false, floatFlags)
 
                 self:SetPixelNumberFont(strip.timeText,
-                    (castMode == "face" or castMode == "seam") and "body" or "caption", hostScale,
-                    castMode == "face" and "OUTLINE" or floatFlags)
+                    castMode == "seam" and "body" or "caption", hostScale, floatFlags)
                 strip.nameText:SetShown(self:GetOption("castShowName"))
                 strip.timeText:SetShown(self:GetOption("castShowTime"))
-
-
-                showIcon(strip, castMode ~= "face" and self:GetOption("castShowIcon") and strip.hasIcon == true)
-
+                showIcon(strip, self:GetOption("castShowIcon") and strip.hasIcon == true)
 
 
                 local fillTex = type(strip.value.GetStatusBarTexture) == "function"
                     and strip.value:GetStatusBarTexture() or nil
-                local fillAlpha = castMode == "face" and A.castFaceAlpha or 1
-                if fillTex and type(fillTex.SetAlpha) == "function" and strip.fillAlpha ~= fillAlpha then
-                    strip.fillAlpha = fillAlpha
-                    fillTex:SetAlpha(fillAlpha)
+                if fillTex and type(fillTex.SetAlpha) == "function" and strip.fillAlpha ~= 1 then
+                    strip.fillAlpha = 1
+                    fillTex:SetAlpha(1)
                 end
                 strip:ClearAllPoints()
                 if host then
@@ -976,9 +921,9 @@ function A:ApplyCastBars()
 
                     if strip.trough then
                         if castMode == "above" then
-                            local t = A.mantleTroughTone or { 0.11, 0.15, 0.17 }
+                            local t = A.castPlankTone
                             self.themed[strip.trough] = nil
-                            strip.trough:SetColorTexture(t[1], t[2], t[3], A.mantleTroughAlpha or 0.22)
+                            strip.trough:SetColorTexture(t[1], t[2], t[3], A.castPlankAlpha)
                             strip.trough:Show()
                             strip.troughWash = true
                         else
@@ -1123,7 +1068,7 @@ function A:DrawRestrictedCast(def, strip)
             strip.timeText:SetText("")
             strip.hasIcon = cast.texture ~= nil
             if cast.texture ~= nil then strip.icon:SetTexture(cast.texture) end
-            showIcon(strip, strip.castMode ~= "face" and self:GetOption("castShowIcon") and strip.hasIcon)
+            showIcon(strip, self:GetOption("castShowIcon") and strip.hasIcon)
         end
     end)
     if not ok then
@@ -1228,7 +1173,7 @@ function A:UpdateCastBars()
                     strip.timeText:SetText(string.format("%.1fs", remaining))
                     strip.hasIcon = cast.texture ~= nil
                     if cast.texture ~= nil then strip.icon:SetTexture(cast.texture) end
-                    showIcon(strip, strip.castMode ~= "face" and self:GetOption("castShowIcon") and strip.hasIcon)
+                    showIcon(strip, self:GetOption("castShowIcon") and strip.hasIcon)
                 end
                 strip.frame:Show()
             end)

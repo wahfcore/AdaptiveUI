@@ -4,7 +4,7 @@ A.name = addonName
 
 
 
-A.version = "0.61.0-beta"
+A.version = "0.71.3-beta"
 do
     local getMeta = (type(C_AddOns) == "table" and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
     if type(getMeta) == "function" then
@@ -552,9 +552,15 @@ function A:DiscoverBarMotion()
             or "unavailable: the heal ghost is a one-shot light instead"))
 end
 
-local function directSink(bar, valueAPI, maxAPI, unit, power)
+local function directSink(bar, valueAPI, maxAPI, unit, power, interpolation)
     bar:SetMinMaxValues(0, maxAPI(unit, power))
-    bar:SetValue(valueAPI(unit, power))
+    if interpolation then
+
+
+        bar:SetValue(valueAPI(unit, power), interpolation)
+    else
+        bar:SetValue(valueAPI(unit, power))
+    end
 end
 
 function A:EmptyBar(widget, label, reason)
@@ -582,7 +588,8 @@ function A:UpdateBar(widget, label, valueAPI, maxAPI, unit, power)
     if self.auditedSink then
 
 
-        ok = pcall(directSink, widget.value, valueAPI, maxAPI, unit, power)
+        ok = pcall(directSink, widget.value, valueAPI, maxAPI, unit, power,
+            widget.chipGlide and self.barInterpolation or nil)
     elseif publicNumbers and maximum > 0 then
         ok = pcall(function()
             widget.value:SetMinMaxValues(0, maximum)

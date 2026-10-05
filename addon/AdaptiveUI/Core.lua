@@ -179,12 +179,7 @@ function A:Diagnostics()
     if self.CarveReport then self:Print(self:CarveReport()) end
 
 
-    if self.BarsV4Line then pcall(function() self:Print(self:BarsV4Line()) end) end
-    if self.BarsV5Line then pcall(function() self:Print(self:BarsV5Line()) end) end
-    if self.BarsV6Line then pcall(function() self:Print(self:BarsV6Line()) end) end
     if self.ChromeV2Line then pcall(function() self:Print(self:ChromeV2Line()) end) end
-    if self.Pass7Line then pcall(function() self:Print(self:Pass7Line()) end) end
-    if self.FooterLaneLine then pcall(function() self:Print(self:FooterLaneLine()) end) end
 
 
 
@@ -419,6 +414,7 @@ function A:Slash(message)
 
 
     elseif command == "effecttest" then self:EffectTestCommand(argument, second)
+    elseif command == "chiptest" then self:ChipTestCommand(argument)
 
 
     elseif command == "compasstest" then self:CompassTestCommand(argument)
@@ -459,6 +455,8 @@ function A:Slash(message)
 
 
     elseif command == "taint" then self:TaintHelp()
+
+    elseif command == "auras" then self:AuraProbe(function(text) self:Print(text) end)
     else
 
         self:Print("/aui  opens the options (or bind a key: Key Bindings > AddOns > AdaptiveUI).")
@@ -648,6 +646,7 @@ events:SetScript("OnEvent", function(_, event, ...)
         end
     end
     if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" then
+        if event == "PLAYER_TARGET_CHANGED" then A.targetAurasStale = true end
         A.sweepPending = A.sweepPending or {}
         if event == "PLAYER_FOCUS_CHANGED" then
             A.sweepPending.focus = true
@@ -655,23 +654,16 @@ events:SetScript("OnEvent", function(_, event, ...)
             A.sweepPending.target, A.sweepPending.tot = true, true
         end
     end
-
-
-
-    if event == "ACTIONBAR_PAGE_CHANGED" or event == "UPDATE_BONUS_ACTIONBAR"
-        or event == "UPDATE_VEHICLE_ACTIONBAR" or event == "UPDATE_OVERRIDE_ACTIONBAR" then
-        pcall(A.CompassSweep, A)
-    end
     if event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
         A:Initialize()
         A:ObserveInput()
     elseif event == "PLAYER_REGEN_DISABLED" then
         A.inCombat = true
 
+        if A.chipTestRunning and A.chipTestAbort then pcall(A.chipTestAbort) end
 
 
         if A.plusActive then pcall(A.PlusCombatFlare, A) end
-        pcall(A.CompassCombat, A, true)
         if A.settings then A.settings:Hide() end
         if A.nativeSettings then A.nativeSettings:Hide() end
         if A.layoutSettings then A.layoutSettings:Hide() end
@@ -680,7 +672,6 @@ events:SetScript("OnEvent", function(_, event, ...)
         A:LockMovers()
     elseif event == "PLAYER_REGEN_ENABLED" then
         A.inCombat = false
-        pcall(A.CompassCombat, A, false)
         if A.pendingCreate and A.initialized then
             A.pendingCreate = nil
             local ok = pcall(A.CreateHUD, A)
@@ -725,6 +716,7 @@ events:SetScript("OnUpdate", function(_, elapsed)
     if A.TickXpLane then A:TickXpLane(elapsed) end
     if A.TickInputSwitch then A:TickInputSwitch(elapsed) end
     if A.TickClassBar then A:TickClassBar(elapsed) end
+    if A.TickMapShelf then A:TickMapShelf(elapsed) end
     elapsedTime = elapsedTime + elapsed
     if elapsedTime < 0.10 then return end
     elapsedTime = 0

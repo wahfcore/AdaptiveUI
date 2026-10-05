@@ -57,7 +57,8 @@ local function compassArt(self)
     local out = {}
     for _, entries in pairs(decorations(self, "actions")) do
         if type(entries) == "table" then
-            for _, key in ipairs({ "groundDivider", "bumperLeft", "bumperRight" }) do
+            for _, key in ipairs({ "groundDivider", "bumperLeft", "bumperRight",
+                "triggerLeftIcon", "triggerRightIcon", "triggerCenteredIcons" }) do
                 if entries[key] then out[#out + 1] = entries[key] end
             end
         end
@@ -71,7 +72,7 @@ local function mapArt(self)
     local out = {}
     local entries = decorations(self, "minimap")[_G["MinimapCluster"] or false]
     if type(entries) ~= "table" then return out end
-    for _, key in ipairs({ "paint", "paintAcc", "mapHalo", "mapBack", "mapRise", "mapFade", "mapEdgeHost" }) do
+    for _, key in ipairs({ "paint", "paintAcc", "mapHalo", "mapBack", "mapRise", "mapEdgeHost" }) do
         if entries[key] then out[#out + 1] = entries[key] end
     end
     return out

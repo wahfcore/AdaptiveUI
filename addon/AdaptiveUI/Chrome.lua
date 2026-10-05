@@ -25,9 +25,6 @@ local _, A = ...
 
 
 A.chromeArt = {
-    map = { file = "map-bg", slot = "mapBg", ratio = 0.78866,
-            face = { 0.06336, 0.05064, 0.93664, 0.97367 },
-            diamond = { 0.46661, 0.87576, 0.53339, 0.92978 } },
     options = { file = "options-bg", slot = "optionsBg", ratio = 1.55152,
                 face = { 0.04028, 0.08193, 0.96026, 0.91807 },
                 ledge = { 0.92399, 0.95693 } },
@@ -55,19 +52,15 @@ local function opt(self, key, fallback)
     return self:GetOption(key)
 end
 
-local function authored(self)
-    return opt(self, "chromeSkin", "authored") == "authored"
-end
+
 
 
 
 
 function A:MapSkinMode()
-    if not authored(self) then return "card" end
-    local skin = opt(self, "mapSkin", "painted")
-    if (skin == "base" or skin == "plaque" or skin == "foot") and self:HasArt("mapMin") then return skin end
-    if skin == "base" or skin == "plaque" or skin == "foot" then skin = "painted" end
-    if skin == "painted" and self:HasArt("mapBg") then return "painted" end
+    local skin = opt(self, "mapSkin", "base")
+    if skin == "shelf" and self:HasArt("oakMapMantle") then return "shelf" end
+    if (skin == "shelf" or skin == "base") and self:HasArt("mapMin") then return "base" end
     return "card"
 end
 
@@ -77,33 +70,36 @@ function A:MapPainted()
 end
 
 
-
 function A:MapOnPlaque()
     local mode = self:MapSkinMode()
-    return mode == "base" or mode == "plaque" or mode == "foot"
+    return mode == "base" or mode == "shelf"
 end
+
+
+
+function A:MapBaseLike(mode)
+    mode = mode or self:MapSkinMode()
+    return mode == "base" or mode == "shelf"
+end
+
 
 
 
 function A:WindowSkinMode()
     local skin = opt(self, "windowSkin", "painted")
-    if skin == "ledge" and self:HasArt("bar04") then return "ledge" end
+    if skin == "branch" and self:HasArt("oakWindowBranch") then return "branch" end
+    if skin == "branch" then skin = "painted" end
     if skin == "painted" and self:HasArt("optionsBg") then return "painted" end
     return "flat"
 end
 
-function A:WindowPainted()
-    return self:WindowSkinMode() == "painted"
-end
 
 
 function A:TrackerStyle()
-    if not authored(self) then return "boxed" end
     return opt(self, "trackerStyle", "tidy")
 end
 
 function A:ChatStyle()
-    if not authored(self) then return "boxed" end
     return opt(self, "chatStyle", "tidy")
 end
 
@@ -113,12 +109,10 @@ end
 
 
 
-
 function A:SmallTile(id)
     local variant = id and self.tileFor[id]
     if not variant then return nil end
     if opt(self, "plateSmallSkin", "inlay") ~= "tile" then return nil end
-    if not (self.BarSkinOn and self:BarSkinOn()) then return nil end
     if not (self:HasArt("tile-" .. variant .. "-cap") and self:HasArt("tile-" .. variant .. "-lum")) then return nil end
     return variant, self.tileArts[variant]
 end
@@ -175,27 +169,8 @@ end
 
 
 
-
-A.mapCardPad, A.mapCardZone = 4, 26
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 A.mapPlaqueArt = { ratio = 2071 / 553, upperV1 = 0.495, lowerV0 = 0.573, lowerV1 = 0.953, rakeU = 0.76,
                    diamondU = 0.863 }
-A.mapPlaque = { lip = 24, overlap = 8, fadePad = 18, fadeAlpha = 0.85, textX = 22, floorPx = 14 }
 
 
 
@@ -236,39 +211,89 @@ A.mapBase = { lip = 10, rimV = 1 / 256, railU = 0.075, clockU = 0.80, clockW = 5
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A.mapMantle = { file = "oak-map-mantle", ratio = 1679 / 252, topU0 = 73 / 1679, topU1 = 1605 / 1679,
+                rimV = 2 / 252, back = "square", backPad = 3, backAlpha = 1, feather = false,
+
+
+
+                pad = 5, gap = 8, zonePx = 12, clockPx = 11, coordPx = 10, zoneMinPx = 10, calRoom = 30,
+
+
+                black = { 0, 0, 0 }, scrimAlpha = 0.80, scrimSolid = 0.62, light = { 0.94, 0.91, 0.85 }, lightMuted = { 0.74, 0.72, 0.68 } }
+
+function A:MapShelfGeometry(mapW, mapH)
+    local m = self.mapMantle
+    local d = m.backPad
+
+    local w = (mapW + 2 * d) / (m.topU1 - m.topU0)
+    local h = w / m.ratio
+    local overlap = h * m.rimV
+    local left = m.topU0 * w + d
+    local zs = self:MapPlaqueTextSize() or m.zonePx
+    local cs = self:MapPlaqueSubSize() or m.coordPx
+    local ks = self:MapClockSize() or m.clockPx
+    local coordsOn = opt(self, "minimapCoords", true) ~= false
+    local zoneH, clockH = zs * 1.25, ks * 1.25
+    local coordH = cs * 1.25
+
+    local zoneY = mapH - m.pad - zoneH / 2
+
+    local rowH = math.max(coordsOn and coordH or 0, clockH)
+    local rowY = m.pad + rowH / 2
+    local textTop = m.pad + rowH
+    local zoneFoot = m.pad + zoneH
+    return { plaque = true, base = true, shelf = true, mode = "shelf", w = w, h = h, overlap = overlap,
+             left = left, right = w - left - mapW, top = d, bottom = h - overlap, mapW = mapW, mapH = mapH,
+             backPad = d, lip = 0,
+             zoneY = zoneY, zoneH = zoneH, coordY = rowY, coordH = coordH,
+             clockY = rowY, clockH = clockH, clockR = mapW - m.pad,
+             textX = m.pad, textW = mapW - 2 * m.pad - m.calRoom, coordW = mapW - 2 * m.pad,
+             trackY = zoneFoot + 2,
+             textTop = textTop, scrimH = math.min(mapH, textTop / m.scrimSolid),
+             topScrimH = math.min(mapH, zoneFoot / m.scrimSolid) }
+end
+
 function A:MapPlaqueGeometry(mapW, mapH)
-    local mode = self:MapSkinMode()
-    local p, art = self.mapPlaque, self.mapPlaqueArt
-    if mode == "base" then
-        local b = self.mapBase
-        local w = mapW + 2 * b.lip
-        local h = w / art.ratio
-        local overlap = h * b.rimV
-        local function y(v) return overlap - v * h end
-        local textX = b.railU * w - b.lip
-        local clockR = b.clockU * w - b.lip
-        return { plaque = true, base = true, mode = mode, w = w, h = h, lip = b.lip, overlap = overlap,
-                 left = b.lip, right = b.lip, top = 0, bottom = h - overlap, mapW = mapW, mapH = mapH,
-                 zoneY = y((0.05 + art.upperV1) / 2), coordY = y((art.lowerV0 + art.lowerV1) / 2),
-                 zoneH = (art.upperV1 - 0.05) * h, coordH = (art.lowerV1 - art.lowerV0) * h,
-                 textX = textX, textW = (art.rakeU - b.railU) * w,
-                 coordW = clockR - b.clockW - textX, clockR = clockR,
-                 diamondX = art.diamondU * w - b.lip, diamondY = y(0.50), diamondR = 0.025 * w }
-    end
-    local lip = mode == "plaque" and p.lip or 0
-    local overlap = mode == "plaque" and p.overlap or 0
-    local w = mapW + 2 * lip
+    if self:MapSkinMode() == "shelf" then return self:MapShelfGeometry(mapW, mapH) end
+    local b, art = self.mapBase, self.mapPlaqueArt
+    local w = mapW + 2 * b.lip
     local h = w / art.ratio
-
-
-    local upperTop, upperBot = 0, -(h * art.upperV1 - overlap)
-    local lowerTop, lowerBot = -(h * art.lowerV0 - overlap), -(h * art.lowerV1 - overlap)
-    return { plaque = true, mode = mode, w = w, h = h, lip = lip, overlap = overlap,
-             left = lip, right = lip, top = 0, bottom = h - overlap, mapW = mapW, mapH = mapH,
-             zoneY = (upperTop + upperBot) / 2, coordY = (lowerTop + lowerBot) / 2,
-             zoneH = upperTop - upperBot, coordH = lowerTop - lowerBot,
-
-             textX = p.textX - lip, textW = w * art.rakeU - p.textX }
+    local overlap = h * b.rimV
+    local function y(v) return overlap - v * h end
+    local textX = b.railU * w - b.lip
+    local clockR = b.clockU * w - b.lip
+    return { plaque = true, base = true, mode = "base", w = w, h = h, lip = b.lip, overlap = overlap,
+             left = b.lip, right = b.lip, top = 0, bottom = h - overlap, mapW = mapW, mapH = mapH,
+             zoneY = y((0.05 + art.upperV1) / 2), coordY = y((art.lowerV0 + art.lowerV1) / 2),
+             zoneH = (art.upperV1 - 0.05) * h, coordH = (art.lowerV1 - art.lowerV0) * h,
+             textX = textX, textW = (art.rakeU - b.railU) * w,
+             coordW = clockR - b.clockW - textX, clockR = clockR,
+             diamondX = art.diamondU * w - b.lip, diamondY = y(0.50), diamondR = 0.025 * w }
 end
 
 
@@ -307,29 +332,37 @@ end
 
 function A:MapPlaqueTextSize()
     local mode = self:MapSkinMode()
+    if mode == "shelf" then return clusterTextSize(self, self.mapMantle.zonePx) end
     if mode == "base" then return clusterTextSize(self, self.mapBase.zonePx) end
-    if mode ~= "plaque" and mode ~= "foot" then return nil end
-    return clusterTextSize(self, self.mapPlaque.floorPx)
+    return nil
 end
 
 
 
 function A:MapPlaqueSubSize()
-    if self:MapSkinMode() ~= "base" then return nil end
+    if not self:MapBaseLike() then return nil end
+    if self:MapSkinMode() == "shelf" then return clusterTextSize(self, self.mapMantle.coordPx) end
     return clusterTextSize(self, self.mapBase.subPx)
 end
 
+
+
+function A:MapClockSize()
+    if self:MapSkinMode() == "shelf" then return clusterTextSize(self, self.mapMantle.clockPx) end
+    return self:MapPlaqueSubSize()
+end
+
+
+
+
+function A:MapOwnTextSize(px)
+    local ts = (self.db and tonumber(self.db.textScale)) or 1
+    if ts <= 0.05 then ts = 1 end
+    return clusterTextSize(self, px) * ts
+end
+
 function A:MapCardGeometry(mapW, mapH)
-    if self.MapOnPlaque and self:MapOnPlaque() then
-        return self:MapPlaqueGeometry(mapW, mapH)
-    end
-    local art = self.chromeArt.map
-    local f = art.face
-    local w = (mapW + 2 * self.mapCardPad) / (f[3] - f[1])
-    local h = w / art.ratio
-    local left = self.mapCardPad + w * f[1]
-    local top = self.mapCardZone + h * f[2]
-    return { w = w, h = h, left = left, top = top, right = w - left - mapW, bottom = h - top - mapH }
+    return self:MapPlaqueGeometry(mapW, mapH)
 end
 
 
@@ -355,8 +388,11 @@ function A:MapBaseFade(state, cluster, map, g)
     local slots = self.artSlots or {}
     local b = self.mapBase
     local want = g and g.base
+
+
+    local square = want and g.shelf and self.mapMantle.back == "square"
     local halo, edge = entries.mapHalo, entries.mapEdge
-    if want and slots.mapHalo then
+    if want and not square and slots.mapHalo then
         if not halo then
             halo = self:Own(cluster:CreateTexture(nil, "BACKGROUND", nil, -8))
             halo:SetTexture(self.artPath .. "map-halo.tga", "CLAMP", "CLAMP")
@@ -371,12 +407,13 @@ function A:MapBaseFade(state, cluster, map, g)
 
 
         local padTop = padY * b.haloTopF
-        local sig = string.format("%.3f|%.3f|%.3f|%.3f|%.3f", padX, padY, padTop, lip, g.bottom)
+        local padBot = padY
+        local sig = string.format("%.3f|%.3f|%.3f|%.3f|%.3f|%.3f", padX, padY, padTop, lip, g.bottom, padBot)
         if halo.auiSig ~= sig then
             halo.auiSig = sig
             halo:ClearAllPoints()
             halo:SetPoint("TOPLEFT", map, "TOPLEFT", -(lip + padX), padTop)
-            halo:SetPoint("BOTTOMRIGHT", map, "BOTTOMRIGHT", lip + padX, -(g.bottom + padY))
+            halo:SetPoint("BOTTOMRIGHT", map, "BOTTOMRIGHT", lip + padX, -(g.bottom + padBot))
         end
         tintOnce(self, halo, "shadow", b.haloAlpha)
         if not halo:IsShown() then halo:Show() end
@@ -392,15 +429,30 @@ function A:MapBaseFade(state, cluster, map, g)
             back = self:Own(cluster:CreateTexture(nil, "BACKGROUND", nil, -7))
             entries.mapBack = back
         end
-        local d = b.backPx * self:PhysicalPixel(cluster)
-        local sig = string.format("%.4f", d)
+
+
+        local d = square and g.backPad or b.backPx * self:PhysicalPixel(cluster)
+        local foot = square and g.overlap or 0
+        local sig = string.format("%.4f|%.4f", d, foot)
         if back.auiSig ~= sig then
             back.auiSig = sig
             back:ClearAllPoints()
             back:SetPoint("TOPLEFT", map, "TOPLEFT", -d, d)
-            back:SetPoint("BOTTOMRIGHT", map, "BOTTOMRIGHT", d, 0)
+            back:SetPoint("BOTTOMRIGHT", map, "BOTTOMRIGHT", d, -foot)
         end
-        self:Tint(back, "shadow", "color", b.backAlpha)
+        if square then
+
+
+            local a, k = self.mapMantle.backAlpha, self.mapMantle.black
+            if back.auiBlack ~= a then
+                back.auiBlack = a
+                back:SetColorTexture(k[1], k[2], k[3], a)
+            end
+            if self.themed then self.themed[back] = nil end
+        else
+            back.auiBlack = nil
+            self:Tint(back, "shadow", "color", b.backAlpha)
+        end
         if not back:IsShown() then back:Show() end
 
 
@@ -409,7 +461,9 @@ function A:MapBaseFade(state, cluster, map, g)
         local rise = entries.mapRise
 
 
-        if slots.riseWide then
+        if square then
+            if rise and rise:IsShown() then rise:Hide() end
+        elseif slots.riseWide then
             if not rise then
                 rise = self:Own(cluster:CreateTexture(nil, "BACKGROUND", nil, -7))
                 rise:SetTexture(self.artPath .. "rise-wide.tga", "CLAMP", "CLAMP")
@@ -438,7 +492,7 @@ function A:MapBaseFade(state, cluster, map, g)
         if back and back:IsShown() then back:Hide() end
         if entries.mapRise and entries.mapRise:IsShown() then entries.mapRise:Hide() end
     end
-    if want and slots.mapEdge then
+    if want and slots.mapEdge and (not square or self.mapMantle.feather) then
         local host = entries.mapEdgeHost
         if not host then
             host = self:Own(CreateFrame("Frame", nil, cluster))
@@ -467,13 +521,13 @@ function A:ChromeMapCard(state, cluster, map, on)
     local entries = entriesFor(state, cluster)
     if not on then
         if entries.paint then self:HidePainted(entries.paint) end
-        if entries.mapFade and entries.mapFade:IsShown() then entries.mapFade:Hide() end
         self:MapBaseFade(state, cluster, map, nil)
+        self:MapShelf(state, entries, cluster, map, nil)
         return
     end
 
 
-    local file = self:MapSkinMode() == "painted" and self.chromeArt.map.file or "map-min"
+    local file = "map-min"
     if not entries.paint then
         local paint = self:PaintedTexture(cluster, "BACKGROUND", -7, file)
         entries.paint = paint
@@ -499,39 +553,271 @@ function A:ChromeMapCard(state, cluster, map, on)
         end
     end
     self:PaintedAlpha(entries.paint, 1)
-    if not entries.paint:IsShown() then entries.paint:Show() end
+    if g.shelf then
+        self:HidePainted(entries.paint)
+    elseif not entries.paint:IsShown() then entries.paint:Show() end
     self:SyncPainted(entries.paint)
+    self:MapShelf(state, entries, cluster, map, g)
 
 
     self:MapBaseFade(state, cluster, map, g)
-    if g.plaque and not g.base and (self.artSlots or {}).mapFade then
-        if not entries.mapFade then
-            entries.mapFade = self:Own(cluster:CreateTexture(nil, "BACKGROUND", nil, -8))
-            entries.mapFade:SetTexture(self.artPath .. "map-fade.tga", "CLAMP", "CLAMP")
-        end
-        local pad = self.mapPlaque.fadePad
-        if entries.mapFade.auiPad ~= pad then
-            entries.mapFade.auiPad = pad
-            entries.mapFade:ClearAllPoints()
-            entries.mapFade:SetPoint("TOPLEFT", map, "TOPLEFT", -pad, pad)
-            entries.mapFade:SetPoint("BOTTOMRIGHT", map, "BOTTOMRIGHT", pad, -pad)
-        end
-        local fr, fg, fb = self:Color("shadow")
-        local cr, cg, cb, ca = entries.mapFade:GetVertexColor()
-        local fa = self.mapPlaque.fadeAlpha
-        if math.abs(cr - fr) > 1e-4 or math.abs(cg - fg) > 1e-4 or math.abs(cb - fb) > 1e-4 or math.abs(ca - fa) > 1e-4 then
-            self:Tint(entries.mapFade, "shadow", "vertex", fa)
-        end
-        if not entries.mapFade:IsShown() then entries.mapFade:Show() end
-    elseif entries.mapFade and entries.mapFade:IsShown() then
-        entries.mapFade:Hide()
-    end
 
     self:ChromeHide(state, cluster, "card", "rim")
     if self.SuppressDepth then self:SuppressDepth(entries, "card~", true) end
     self:HideChromeRim(state, cluster, "rim")
     self:ChromeHide(state, MinimapBackdrop or map, "border")
     state.count = state.count + 1
+end
+
+
+
+
+
+
+
+
+
+
+A.oakBranches = { window = { file = "oak-window-branch", ratio = 12.129, wide = 1.04, drop = 0.06, legendLift = 8 } }
+
+
+
+
+
+
+
+function A:MapShelfSources()
+    local container = MinimapCluster and MinimapCluster.MinimapContainer
+    local coords = container and container.PlayerCoords
+    return { zone = _G.MinimapZoneText, coords = coords and coords.CoordText, clock = _G.TimeManagerClockTicker }
+end
+
+function A:MapShelf(state, entries, cluster, map, g)
+    local on = g and g.shelf
+    local src = self:MapShelfSources()
+    if not on then
+        if entries.mapShelf then self:HidePainted(entries.mapShelf) end
+        if entries.mapShelfHost and entries.mapShelfHost:IsShown() then entries.mapShelfHost:Hide() end
+        if state.shelfHeld then
+            state.shelfHeld = nil
+            for _, key in ipairs({ "zone", "coords", "clock" }) do
+                if src[key] then self:ReleaseHidden(state, src[key]) end
+            end
+        end
+        if self.mapShelfEntries == entries then self.mapShelfEntries = nil end
+        return
+    end
+    local m = self.mapMantle
+    if not entries.mapShelf then
+        entries.mapShelf = self:PaintedTexture(cluster, "BORDER", 1, m.file)
+        entries.mapShelfAcc = self:PaintedTwin(entries.mapShelf)
+    end
+    local shelf = entries.mapShelf
+    local sig = string.format("%.3f|%.3f|%.3f|%.3f", g.w, g.h, g.left, g.overlap)
+    if shelf.auiSig ~= sig then
+        shelf.auiSig = sig
+        shelf:ClearAllPoints()
+
+        shelf:SetPoint("TOPLEFT", map, "BOTTOMLEFT", -g.left, g.overlap)
+        shelf:SetSize(g.w, g.h)
+    end
+    if not shelf:IsShown() then shelf:Show() end
+    self:SyncPainted(shelf)
+
+    local host = entries.mapShelfHost
+    if not host then
+        host = self:Own(CreateFrame("Frame", nil, cluster))
+        host:EnableMouse(false)
+        host:SetAllPoints(map)
+        entries.mapShelfHost = host
+        entries.mapScrim = self:Own(host:CreateTexture(nil, "BACKGROUND", nil, 0))
+        entries.mapScrimTop = self:Own(host:CreateTexture(nil, "BACKGROUND", nil, 0))
+        entries.mapShelfZone = self:Own(host:CreateFontString(nil, "OVERLAY"))
+        entries.mapShelfCoords = self:Own(host:CreateFontString(nil, "OVERLAY"))
+        entries.mapShelfClock = self:Own(host:CreateFontString(nil, "OVERLAY"))
+        entries.mapShelfZone:SetJustifyH("LEFT")
+        entries.mapShelfCoords:SetJustifyH("LEFT")
+        entries.mapShelfClock:SetJustifyH("RIGHT")
+        for _, fs in ipairs({ entries.mapShelfZone, entries.mapShelfCoords, entries.mapShelfClock }) do
+            if type(fs.SetWordWrap) == "function" then fs:SetWordWrap(false) end
+
+
+
+
+            self:SetThemedFont(fs, self.mapMantle.zonePx or 14, false, "", false)
+        end
+    end
+    local level = (self:Number(map.GetFrameLevel, 1, map) or 1) + 3
+    if host:GetFrameLevel() ~= level then host:SetFrameLevel(level) end
+    if not host:IsShown() then host:Show() end
+
+
+    for _, s in ipairs({ { entries.mapScrim, "BOTTOMLEFT", g.scrimH, false },
+                         { entries.mapScrimTop, "TOPLEFT", g.topScrimH, true } }) do
+        local scrim, corner, sh, flip = s[1], s[2], s[3], s[4]
+        if scrim and sh and (self.artSlots or {}).mapScrim then
+            local file = self.artPath .. "map-scrim.tga"
+            if scrim:GetTexture() ~= file then scrim:SetTexture(file, "CLAMP", "CLAMP") end
+            local ssig = string.format("%.3f|%.3f", g.mapW, sh)
+            if scrim.auiSig ~= ssig then
+                scrim.auiSig = ssig
+                scrim:ClearAllPoints()
+                scrim:SetPoint(corner, host, corner, 0, 0)
+                scrim:SetSize(g.mapW, sh)
+                if flip then scrim:SetTexCoord(0, 1, 1, 0) else scrim:SetTexCoord(0, 1, 0, 1) end
+            end
+            local _, _, _, a = scrim:GetVertexColor()
+            if scrim.auiAlpha ~= m.scrimAlpha or math.abs((a or 1) - m.scrimAlpha) > 1e-4 then
+                scrim.auiAlpha = m.scrimAlpha
+                scrim:SetVertexColor(m.black[1], m.black[2], m.black[3], m.scrimAlpha)
+            end
+            if not scrim:IsShown() then scrim:Show() end
+        elseif scrim and scrim:IsShown() then
+            scrim:Hide()
+        end
+    end
+
+    for _, key in ipairs({ "zone", "coords", "clock" }) do
+        if src[key] then self:HoldHidden(state, src[key]) end
+    end
+    state.shelfHeld = true
+
+    host.auiGeometry = g
+    self.mapShelfEntries = entries
+    self.mapShelfTextSig = nil
+    self:SyncMapShelfText()
+end
+
+
+
+function A:MapShelfColours()
+    local scheme = self:Scheme()
+    local m = self.mapMantle
+    if scheme and scheme.light then
+        return m.light, m.lightMuted
+    end
+    local tr, tg, tb = self:Color("text")
+    local mr, mg, mb = self:Color("muted")
+    return { tr, tg, tb }, { mr, mg, mb }
+end
+
+
+
+local function mirror(self, fs, src)
+    if type(src) ~= "table" or type(src.GetText) ~= "function" then
+        if fs.auiText ~= "" then fs.auiText = ""; fs:SetText("") end
+        return
+    end
+    local text = src:GetText()
+    if self:IsPublic(text) then
+        text = text or ""
+        if fs.auiText ~= text then fs.auiText = text; fs:SetText(text); return true end
+        return false
+    end
+
+    fs.auiText = nil
+    fs:SetFormattedText("%s", text)
+    return true
+end
+
+local function setFontOnce(self, fs, size, sig)
+    if fs.auiFontSig ~= sig then
+        fs.auiFontSig = sig
+        self:SetThemedFont(fs, size, false, "", false)
+    end
+end
+
+local function stringWidth(self, fs)
+    local getter = fs.GetUnboundedStringWidth or fs.GetStringWidth
+    local w = type(getter) == "function" and self:Number(getter, 1, fs) or nil
+    if type(w) ~= "number" or w ~= w or w < 0 then return nil end
+    return w
+end
+
+
+
+function A:SyncMapShelfText()
+    local e = self.mapShelfEntries
+    local host = e and e.mapShelfHost
+    local g = host and host.auiGeometry
+    if not g or not host or not host:IsShown() then return end
+    local m = self.mapMantle
+    local src = self:MapShelfSources()
+    local zone, coords, clock = e.mapShelfZone, e.mapShelfCoords, e.mapShelfClock
+    local face = self:FontPath(false)
+    local zs, cs, ks = self:MapOwnTextSize(m.zonePx), self:MapOwnTextSize(m.coordPx), self:MapOwnTextSize(m.clockPx)
+    setFontOnce(self, clock, ks, face .. ks)
+    setFontOnce(self, coords, cs, face .. cs)
+    local zoneChanged = mirror(self, zone, src.zone)
+    mirror(self, coords, src.coords)
+    mirror(self, clock, src.clock)
+
+    local zoneOn = opt(self, "minimapZone", true) ~= false
+    local coordsOn = opt(self, "minimapCoords", true) ~= false
+    local button = _G.TimeManagerClockButton
+    local clockOn = type(src.clock) == "table" and type(button) == "table" and type(button.IsShown) == "function"
+    if clockOn then
+        local shown = button:IsShown()
+        clockOn = self:IsPublic(shown) and shown == true
+    end
+    for fs, want in pairs({ [zone] = zoneOn, [coords] = coordsOn, [clock] = clockOn }) do
+        if want and not fs:IsShown() then fs:Show() elseif not want and fs:IsShown() then fs:Hide() end
+    end
+
+    local clockW = clockOn and stringWidth(self, clock) or nil
+    if clockOn and not clockW then clockW = ks * 2.9 end
+
+
+    local boxW = g.textW
+    local coordW = clockOn and (g.clockR - clockW - m.gap - g.textX) or g.coordW
+    local zoneText = zone.auiText
+    local sig = string.format("%s|%.2f|%.2f|%.2f|%.3f|%.3f|%.3f|%s|%s", face, zs, boxW, coordW, g.zoneY, g.coordY, g.clockY,
+        tostring(zoneText), tostring(zoneChanged and zoneText == nil))
+    if self.mapShelfTextSig ~= sig then
+        self.mapShelfTextSig = sig
+
+        setFontOnce(self, zone, zs, face .. zs)
+        local size = zs
+        local w = zoneText and stringWidth(self, zone) or nil
+        if w and w > boxW and w > 0 then
+            local floor = self:MapOwnTextSize(m.zoneMinPx)
+            size = math.max(floor, math.floor(zs * boxW / w * 2) / 2)
+            setFontOnce(self, zone, size, face .. size)
+        end
+        self.mapShelfZoneSize = size
+        zone:ClearAllPoints()
+        zone:SetPoint("LEFT", host, "BOTTOMLEFT", g.textX, g.zoneY)
+        zone:SetSize(math.max(1, boxW), g.zoneH)
+        coords:ClearAllPoints()
+        coords:SetPoint("LEFT", host, "BOTTOMLEFT", g.textX, g.coordY)
+        coords:SetSize(math.max(1, coordW), g.coordH)
+    end
+    local csig = string.format("%.2f|%.3f", clockW or 0, g.clockR)
+    if clock.auiSig ~= csig then
+        clock.auiSig = csig
+        clock:ClearAllPoints()
+        clock:SetPoint("RIGHT", host, "BOTTOMLEFT", g.clockR, g.clockY)
+        clock:SetSize(math.max(1, (clockW or 0) + 2), g.clockH)
+    end
+    local text, muted = self:MapShelfColours()
+    local colourSig = table.concat({ text[1], text[2], text[3], muted[1], muted[2], muted[3] }, ",")
+    if host.auiColour ~= colourSig then
+        host.auiColour = colourSig
+        zone:SetTextColor(text[1], text[2], text[3], 1)
+        clock:SetTextColor(text[1], text[2], text[3], 1)
+        coords:SetTextColor(muted[1], muted[2], muted[3], 1)
+    end
+end
+
+
+
+
+function A:TickMapShelf(elapsed)
+    if not self.mapShelfEntries then return end
+    self.mapShelfElapsed = (self.mapShelfElapsed or 0) + (elapsed or 0)
+    if self.mapShelfElapsed < 0.25 then return end
+    self.mapShelfElapsed = 0
+    self:SyncMapShelfText()
 end
 
 
@@ -561,70 +847,77 @@ end
 
 
 
-
-
-
-
-
-
-A.windowLedge = { faceMid = (0.056 + 0.811) / 2, top = 590, legendX = 64, legendW = 400,
-                  resetX = 540, closeX = 808 }
-function A:WindowLedgeGeometry(w)
-    local a = A.bar04Art or { ratio = 1950 / 143 }
-    local h = w / a.ratio
-    local l = self.windowLedge
-    return { w = w, h = h, top = l.top, mid = l.top + h * l.faceMid }
-end
-
-local function placeFooter(self, frame, ledge, g)
+local function placeFooter(self, frame)
     local f = frame.auiFooter
     if not f then return end
-    local l = self.windowLedge
     for key, b in pairs({ close = f.close, reset = f.reset }) do
         if b then
-            local x = ledge and (key == "close" and l.closeX or l.resetX) or f.home[key][1]
-            local h = self:Number(b.GetHeight, 1, b) or 28
-            local y = ledge and -(g.mid - h / 2) or f.home[key][2]
             b:ClearAllPoints()
-            b:SetPoint("TOPLEFT", frame, "TOPLEFT", x, y)
-
-            if b.bg then b.bg:SetShown(not ledge) end
+            b:SetPoint("TOPLEFT", frame, "TOPLEFT", f.home[key][1], f.home[key][2])
+            if b.bg then b.bg:SetShown(true) end
         end
     end
     if f.legend then
         f.legend:ClearAllPoints()
-
         self:SetThemedFont(f.legend, self.tokens.type.body, false)
-        if ledge then
-            f.legend:SetPoint("LEFT", frame, "TOPLEFT", l.legendX, -g.mid)
-            f.legend:SetWidth(l.legendW)
-        else
-            f.legend:SetPoint("TOPLEFT", frame, "TOPLEFT", f.home.legend[1], f.home.legend[2])
-            f.legend:SetWidth(f.home.legend[3])
-        end
+        local lift = self:WindowSkinMode() == "branch" and self.oakBranches.window.legendLift or 0
+        f.legend:SetPoint("TOPLEFT", frame, "TOPLEFT", f.home.legend[1], f.home.legend[2] + lift)
+        f.legend:SetWidth(f.home.legend[3])
+    end
+end
+
+
+
+function A:WindowBranchFoot(frame)
+    if not frame or type(frame.CreateTexture) ~= "function" then return end
+    local on = self:WindowSkinMode() == "branch"
+    if not frame.auiBranch then
+        if not on then return end
+        frame.auiBranch = self:PaintedTexture(frame, "BORDER", 2, self.oakBranches.window.file)
+        frame.auiBranchAcc = self:PaintedTwin(frame.auiBranch)
+    end
+    local w = self:Number(frame.GetWidth, 1, frame) or 520
+    local ba = self.oakBranches.window
+    local bw = w * ba.wide
+    local bh = bw / ba.ratio
+    frame.auiBranch:ClearAllPoints()
+    frame.auiBranch:SetPoint("CENTER", frame, "BOTTOM", 0, -bh * ba.drop)
+    frame.auiBranch:SetSize(bw, bh)
+    if on then frame.auiBranch:Show() else self:HidePainted(frame.auiBranch) end
+    self:SyncPainted(frame.auiBranch)
+    if frame.depth and self.SuppressDepth then self:SuppressDepth(frame.depth, "panel~", on) end
+    if type(frame.SetClampRectInsets) == "function" then
+        if on then frame:SetClampRectInsets(-(bw - w) / 2, (bw - w) / 2, 0, -(bh * (0.5 + ba.drop)))
+        else frame:SetClampRectInsets(0, 0, 0, 0) end
     end
 end
 
 function A:DressOptionsWindow(frame)
     if not frame or type(frame.CreateTexture) ~= "function" then return end
     local mode = self:WindowSkinMode()
-    local painted, ledge = mode == "painted", mode == "ledge"
+    local painted = mode == "painted"
 
     if not frame.auiPaint then
         frame.auiPaint = self:PaintedTexture(frame, "BACKGROUND", -8, self.chromeArt.options.file)
         frame.auiPaintAcc = self:PaintedTwin(frame.auiPaint)
     end
-    if not frame.auiLedge then
-        frame.auiLedge = self:PaintedTexture(frame, "BORDER", -4, "bar04")
-        frame.auiLedgeAcc = self:PaintedTwin(frame.auiLedge)
+
+
+
+
+
+
+    if not frame.auiBranch then
+        frame.auiBranch = self:PaintedTexture(frame, "BORDER", 2, self.oakBranches.window.file)
+        frame.auiBranchAcc = self:PaintedTwin(frame.auiBranch)
     end
     if frame.auiPainted == mode then
         self:SyncPainted(frame.auiPaint)
-        self:SyncPainted(frame.auiLedge)
+        self:SyncPainted(frame.auiBranch)
 
         if frame.auiFooter and frame.auiFooterMode ~= mode then
             frame.auiFooterMode = mode
-            placeFooter(self, frame, mode == "ledge", self:WindowLedgeGeometry(self:Number(frame.GetWidth, 1, frame) or 1000))
+            placeFooter(self, frame)
         end
         return
     end
@@ -637,26 +930,29 @@ function A:DressOptionsWindow(frame)
     frame.auiPaint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", g.side, -g.bottom)
     if painted then frame.auiPaint:Show() else self:HidePainted(frame.auiPaint) end
     self:SyncPainted(frame.auiPaint)
-    local lg = self:WindowLedgeGeometry(w)
-    frame.auiLedge:ClearAllPoints()
-    frame.auiLedge:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -lg.top)
-    frame.auiLedge:SetSize(lg.w, lg.h)
-    if ledge then frame.auiLedge:Show() else self:HidePainted(frame.auiLedge) end
-    self:SyncPainted(frame.auiLedge)
-    placeFooter(self, frame, ledge, lg)
+    local branch = mode == "branch"
+    local ba = self.oakBranches.window
+    local bw = w * ba.wide
+    local bh = bw / ba.ratio
+    frame.auiBranch:ClearAllPoints()
+    frame.auiBranch:SetPoint("CENTER", frame, "BOTTOM", 0, -bh * ba.drop)
+    frame.auiBranch:SetSize(bw, bh)
+    if branch then frame.auiBranch:Show() else self:HidePainted(frame.auiBranch) end
+    self:SyncPainted(frame.auiBranch)
+    placeFooter(self, frame)
     if frame.auiFooter then frame.auiFooterMode = mode end
     if frame.bg then
         frame.bg:SetShown(not painted)
-
         frame.bg:ClearAllPoints()
         frame.bg:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-        frame.bg:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, ledge and -(lg.top + lg.h * 0.3) or -h)
+        frame.bg:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, -h)
     end
-    if frame.rule then frame.rule:SetShown(not painted) end
-    if frame.depth and self.SuppressDepth then self:SuppressDepth(frame.depth, "d", painted or ledge) end
+
+    if frame.rule then frame.rule:SetShown(not painted and not branch) end
+    if frame.depth and self.SuppressDepth then self:SuppressDepth(frame.depth, "d", painted or branch) end
     if type(frame.SetClampRectInsets) == "function" then
         if painted then frame:SetClampRectInsets(-g.side, g.side, g.top, -g.bottom)
-        elseif ledge then frame:SetClampRectInsets(0, 0, 0, -math.max(0, lg.top + lg.h - h))
+        elseif branch then frame:SetClampRectInsets(-(bw - w) / 2, (bw - w) / 2, 0, -(bh * (0.5 + ba.drop)))
         else frame:SetClampRectInsets(0, 0, 0, 0) end
     end
 end
@@ -686,14 +982,8 @@ end
 
 
 
-
-
-function A:ChatEditDress(state, edit, index, boxed)
+function A:ChatEditDress(state, edit, index)
     local entries = state.decorations[edit]
-    if boxed then
-        if entries then self:SuppressDepth(entries, "panel~", false) end
-        return
-    end
     if self:ChatEditTyping(edit) then
         local e = entriesFor(state, edit)
         self:SuppressDepth(e, "panel~", false)
@@ -711,7 +1001,7 @@ end
 
 function A:RefreshChatEdit()
     local state = self.nativeSkins and self.nativeSkins.chat
-    if not state or self:IsCombat() or self:ChatStyle() == "boxed" then return end
+    if not state or self:IsCombat() then return end
     for i = 1, 10 do
         local frame = _G["ChatFrame" .. i]
         local edit = frame and (frame.editBox or _G["ChatFrame" .. i .. "EditBox"])
@@ -805,11 +1095,14 @@ function A:RaidTile(state, frame, on)
     if not entries.tileL then
         for _, key in ipairs({ "tileL", "tileM", "tileR" }) do
             local t = self:Own(frame:CreateTexture(nil, "BACKGROUND", nil, -8))
-            t:SetTexture(self.artPath .. "tile-plain.tga", "CLAMP", "CLAMP")
             entries[key] = t
         end
-        local art = self.tileArts.plain
-        local capU = self.raidTileCap / art.ratio
+    end
+
+    local look = self:LookName("tile-plain")
+    if entries.tileLook ~= look then
+        entries.tileLook = look
+        local capU = self.raidTileCap / self.tileArts.plain.ratio
         entries.tileL:SetTexCoord(0, capU, 0, 1)
         entries.tileR:SetTexCoord(1 - capU, 1, 0, 1)
         entries.tileM:SetTexCoord(capU, 1 - capU, 0, 1)
@@ -857,13 +1150,16 @@ function A:RaidTileFace(entries, frame, cap)
     if not entries.tileFaceLum then
         entries.tileFaceLum = self:Own(bar:CreateTexture(nil, "OVERLAY", nil, -8))
         entries.tileFaceLum:SetBlendMode("MOD")
-        entries.tileFaceLum:SetTexture(self.artPath .. "tile-plain-lum.tga", "CLAMP", "CLAMP")
         entries.tileFaceLum:SetAllPoints(bar)
-        local art = self.tileArts.plain
-        local capU = self.raidTileCap / art.ratio
         for _, key in ipairs({ "tileFaceL", "tileFaceM", "tileFaceR" }) do
             entries[key] = self:Own(bar:CreateTexture(nil, "OVERLAY", nil, 6))
         end
+    end
+    local look = self:LookName("tile-plain-lum")
+    if entries.tileFaceLook ~= look then
+        entries.tileFaceLook = look
+        entries.tileFaceLum:SetTexture(self.artPath .. look .. ".tga", "CLAMP", "CLAMP")
+        local capU = self.raidTileCap / self.tileArts.plain.ratio
         entries.tileFaceL:SetTexCoord(0, capU, 0, 1)
         entries.tileFaceR:SetTexCoord(1 - capU, 1, 0, 1)
         entries.tileFaceM:SetTexCoord(capU, 1 - capU, 0, 1)

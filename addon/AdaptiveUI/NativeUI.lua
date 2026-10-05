@@ -294,31 +294,6 @@ end
 
 
 
-
-
-local function fadePanel(self, state, host, key, tl, tlx, tly, br, brx, bry, opacity, flip)
-    if not host or not tl or not br or type(host.CreateTexture) ~= "function" then return end
-    local entries = state.decorations[host]
-    if not entries then entries = {}; state.decorations[host] = entries end
-    local fill = entries[key]
-    if not fill then
-        fill = self:Own(host:CreateTexture(nil, "BACKGROUND", nil, -8))
-        fill:SetTexture(self.artPath .. "fade.tga", "CLAMP", "CLAMP")
-        self:Tint(fill, "nativeInk", "vertex", 1)
-        if flip then fill:SetTexCoord(1, 0, 0, 1) end
-        fill:SetPoint("TOPLEFT", tl, "TOPLEFT", tlx, tly)
-        fill:SetPoint("BOTTOMRIGHT", br, "BOTTOMRIGHT", brx, bry)
-        entries[key] = fill
-    end
-    local want = track(self, fill, opacity or 1, true)
-    if fill:GetAlpha() ~= want then fill:SetAlpha(want) end
-    if not fill:IsShown() then fill:Show() end
-    state.count = state.count + 1
-end
-
-
-
-
 local function edgeRule(self, state, host, key, anchor, side, inset)
     if not host or not anchor or type(host.CreateTexture) ~= "function" then return end
     local entries = state.decorations[host]
@@ -455,7 +430,7 @@ local DIAMOND_MASKED = { "icon", "Flash", "SpecialActionIcon" }
 
 
 
-local DIAMOND_INSET, GLOW_SPILL = 4, 12
+local DIAMOND_INSET = 4
 
 
 
@@ -536,10 +511,6 @@ local GEM_CHIP, GEM_GLYPH = 18, 12
 
 
 
-local SOCKET_WELL = 21 / 32
-local SOCKET_INSET = 6
-local SOCKET_CHIP = 18
-local SOCKET_PLINTH = 26
 local SOCKET_INSET_R = 0.1333
 local SOCKET_CHIP_R = 0.40
 local SOCKET_PLINTH_R = 0.58
@@ -548,27 +519,20 @@ local SOCKET_PLINTH_R = 0.58
 
 function A:SocketInset(w)
     w = tonumber(w) or 45
-    if not self:CompassLive() then return SOCKET_INSET end
     return math.max(3, self:PlusSnap(w * SOCKET_INSET_R))
 end
 function A:SocketChip(w)
-    if not self:CompassLive() then return SOCKET_CHIP end
     return math.max(6, (tonumber(w) or 45) * SOCKET_CHIP_R)
 end
 function A:SocketPlinth(w)
-    if not self:CompassLive() then return SOCKET_PLINTH end
     return math.max(8, (tonumber(w) or 45) * SOCKET_PLINTH_R)
 end
 
-local SOCKET_STATES = {
-    bound = { 0, 0.5, 0, 0.5 }, empty = { 0.5, 1, 0, 0.5 },
-    focus = { 0, 0.5, 0.5, 1 }, focusEmpty = { 0.5, 1, 0.5, 1 },
-}
+
 
 function A:AuthoredSockets()
     if not (self.db and self.optionIndex) then return false end
-    return self:GetOption("actionSocketSkin") == "authored"
-        and self:GetOption("actionDiamond") == true
+    return self:GetOption("actionDiamond") == true
 end
 
 
@@ -665,7 +629,6 @@ function A:CompassTilesOn()
     if not (self.db and self.optionIndex and self.optionIndex.compassButtonSkin) then return false end
     if self:GetOption("compassButtonSkin") ~= "tiles" then return false end
     if not self:AuthoredSockets() then return false end
-    if not self.CompassSkin or self:CompassSkin() ~= "rail" then return false end
     local s = self.artSlots
     return s ~= nil and s.compassTileNotch ~= nil and s.compassTileCut ~= nil
         and s.compassTilePipTL ~= nil and s.compassTilePipBL ~= nil
@@ -707,33 +670,6 @@ function A:CompassTileCoords(transform, diamond)
         out[2 * i] = t[2] + u * (t[6] - t[2]) + v * (t[4] - t[2])
     end
     return unpack(out)
-end
-
-
-
-
-
-
-
-
-
-
-function A:CompassSlotSheet()
-    if not self.CompassSkin or self:CompassSkin() ~= "rail" then return "socket-facet" end
-    local name = self:GetOption("compassSlotBrass") == true and "compass-slot-brass" or "compass-slot"
-    if self:GetOption("compassEmptyStyle") == "socket" then name = name .. "-socket" end
-    return name
-end
-
-
-
-
-
-function A:SocketMetrics(button)
-    local w = self:Number(button.GetWidth, 1, button) or 45
-    local inset = self:SocketInset(w)
-    if w <= 2 * inset then return nil end
-    return (w - 2 * inset) / SOCKET_WELL, w, inset
 end
 
 local function artTexture(self, host, file, layer, sublevel)
@@ -1000,9 +936,7 @@ local function tileArt(self, entries, button, shape, bound, index)
     end
 
 
-
-    local alpha = 1
-    if kind == "empty" and self:GetOption("compassEmptyStyle") ~= "socket" then alpha = TILE_FAINT end
+    local alpha = kind == "empty" and TILE_FAINT or 1
     if (self.painted[t] and self.painted[t].alpha) ~= alpha then self:PaintedAlpha(t, alpha) end
     if not t:IsShown() then t:Show() end
     self:SyncPainted(t)
@@ -1016,42 +950,12 @@ local function diamondShape(self, state, button, on, bound, focused, index)
 
     if not on and not state.diamondOn[button] then return false end
     if not entries then entries = {}; state.decorations[button] = entries end
-    local authored = on and self:AuthoredSockets()
     if on and not entries.diamondMask then
         local ok = pcall(function()
             local mask = self:Own(button:CreateMaskTexture(nil, "BACKGROUND", nil, -1))
             mask:SetTexture(self.artPath .. "diamond-mask.tga", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
             inset(mask, button, DIAMOND_INSET)
-
-
-
-
-
-
-
-
-
-
-
-
-
-            local glow = artTexture(self, button, "diamond-glow", "BACKGROUND", -3)
-            inset(glow, button, -GLOW_SPILL)
-            if type(glow.SetBlendMode) == "function" then glow:SetBlendMode("ADD") end
-            self:Tint(glow, "hi", "vertex", 0.6)
-
-
-
-
-
-            local shadow = artTexture(self, button, "diamond-shadow", "BACKGROUND", -2)
-            inset(shadow, button, DIAMOND_INSET - 3)
-            self:Tint(shadow, "shadow", "vertex", 0.55)
-            local vignette = artTexture(self, button, "diamond-frame", "OVERLAY", 2)
-            inset(vignette, button, DIAMOND_INSET)
-            self:Tint(vignette, "lo", "vertex")
-            entries.diamondMask, entries.diamondShadow, entries.diamondFrame = mask, shadow, vignette
-            entries.diamondGlow = glow
+            entries.diamondMask = mask
         end)
         if not ok then return false end
     end
@@ -1088,83 +992,22 @@ local function diamondShape(self, state, button, on, bound, focused, index)
 
 
 
-
-
-
-
-
-
-
-    local want = authored and "authored" or "classic"
-
-
     local maskW = self:Number(button.GetWidth, 1, button) or 45
-    if on and (mask.socketMode ~= want or mask.socketSlotW ~= maskW) then
-        mask.socketMode, mask.socketSlotW = want, maskW
+    if on and mask.socketSlotW ~= maskW then
+        mask.socketSlotW = maskW
         mask:ClearAllPoints()
-        inset(mask, button, authored and self:SocketInset(maskW) or DIAMOND_INSET)
+        inset(mask, button, self:SocketInset(maskW))
     end
 
 
 
-    local tiles = authored and self:CompassTilesOn()
+    local tiles = on and self:CompassTilesOn()
     local shape = tiles and self:CompassIconShape() or "diamond"
     if on then
         local maskFile = self.artPath .. (shape == "square" and "minimap-mask" or "diamond-mask") .. ".tga"
         if mask:GetTexture() ~= maskFile then
             mask:SetTexture(maskFile, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         end
-    end
-    local socketOn = authored and not tiles
-    if socketOn and not entries.socketArt then
-        local ok = pcall(function()
-
-
-
-
-
-
-            local art = self:PaintedTexture(button, "BACKGROUND", -3, self:CompassSlotSheet())
-            art:SetPoint("CENTER", button, "CENTER", 0, 0)
-            entries.socketArt = art
-            entries.socketArtAcc = self:PaintedTwin(art)
-        end)
-        if not ok then socketOn = false end
-    end
-    local art = socketOn and entries.socketArt or nil
-    if art then
-
-
-        local sheet = self:CompassSlotSheet()
-        if (self.painted[art] and self.painted[art].name) ~= sheet then self:SetPainted(art, sheet) end
-        local size = self:SocketMetrics(button)
-        if size and art.socketSize ~= size then
-            art.socketSize = size
-            art:SetSize(size, size)
-        end
-
-
-
-
-
-
-
-
-
-
-
-
-        local key = (focused and (bound == false and "focusEmpty" or "focus"))
-            or (bound == false and "empty" or "bound")
-        if art.socketState ~= key then
-            art.socketState = key
-            local c = SOCKET_STATES[key]
-            art:SetTexCoord(c[1], c[2], c[3], c[4])
-        end
-        if not art:IsShown() then art:Show() end
-        self:SyncPainted(art)
-    elseif entries.socketArt and entries.socketArt:IsShown() then
-        self:HidePainted(entries.socketArt)
     end
 
 
@@ -1173,49 +1016,6 @@ local function diamondShape(self, state, button, on, bound, focused, index)
     else
         for _, key in ipairs({ "tileBound", "tileEmpty" }) do
             if entries[key] and entries[key]:IsShown() then self:HidePainted(entries[key]) end
-        end
-    end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    local decorate = on and bound ~= false and not authored
-    for _, key in ipairs({ "diamondShadow", "diamondGlow" }) do
-        local texture = entries[key]
-        if texture and texture:IsShown() ~= decorate then
-            if decorate then texture:Show() else texture:Hide() end
-        end
-    end
-    local rim = entries.diamondFrame
-    if rim then
-        local rimOn = on and not authored
-        if rim:IsShown() ~= rimOn then
-            if rimOn then rim:Show() else rim:Hide() end
-        end
-
-
-
-
-        state.rimLit = state.rimLit or setmetatable({}, { __mode = "k" })
-        if state.rimLit[button] ~= decorate then
-            state.rimLit[button] = decorate
-            local _, _, _, a = self:Color("lo")
-            self:Tint(rim, "lo", "vertex", decorate and a or a * 0.34)
         end
     end
     return on
@@ -1461,7 +1261,7 @@ A.NativeWalk, A.NativeBorder, A.NativeFill, A.NativeTint, A.NativeTintChrome = w
 A.NativeGlassPanel, A.NativeTextChip, A.NativeStrip, A.NativeStripOwn =
     glassPanel, textChip, stripRegions, stripOwnTextures
 A.NativeVeilPanel = veilPanel
-A.NativeFadePanel, A.NativeRule = fadePanel, edgeRule
+A.NativeRule = edgeRule
 
 
 
@@ -1693,27 +1493,16 @@ function handlers.objectives(self, state)
     if body then
         local sp = self.tokens.space
         local alpha = self:SurfaceValue(self:GetOption("trackerAlpha"))
-        if style == "boxed" then
-            fadePanel(self, state, ObjectiveTrackerFrame, "body", ObjectiveTrackerFrame, -60, sp.sm,
-                body, -5, -sp.sm, alpha, true)
-        else
-            self:ChromeHide(state, ObjectiveTrackerFrame, "body")
-        end
         if style == "tidy" then
             self:ChromeSoftPanel(state, ObjectiveTrackerFrame, "soft", ObjectiveTrackerFrame, -60, sp.sm * 3,
                 body, -5, -sp.sm * 3, alpha, true)
         else
             self:ChromeHide(state, ObjectiveTrackerFrame, "soft")
         end
-        local fill = state.decorations[ObjectiveTrackerFrame]
-            and (state.decorations[ObjectiveTrackerFrame].body or state.decorations[ObjectiveTrackerFrame].soft)
+        local fill = state.decorations[ObjectiveTrackerFrame] and state.decorations[ObjectiveTrackerFrame].soft
         edgeRule(self, state, ObjectiveTrackerFrame, "bodyRule", fill, "RIGHT", 0)
     end
-    if style == "boxed" then
-        flatFill(self, state, path(ObjectiveTrackerFrame, "Header"), self:Surface("base"), true)
-    else
-        self:ChromeHide(state, path(ObjectiveTrackerFrame, "Header"), "panel")
-    end
+    self:ChromeHide(state, path(ObjectiveTrackerFrame, "Header"), "panel")
 
 
 
@@ -1730,25 +1519,20 @@ function handlers.objectives(self, state)
     if entries then
         if not entries.headFoot then
             entries.headFoot = self:Own(header:CreateTexture(nil, "BORDER", nil, 2))
-            entries.headCut = self:Own(header:CreateTexture(nil, "BORDER", nil, 3))
-            entries.headCut:SetTexture(self.artPath .. "bar-chamfer.tga", "CLAMP", "CLAMP")
-            entries.headCut:SetTexCoord(1, 0, 1, 0)
         end
-        local on = self:GetOption("chromeSkin") == "authored" and self:GetOption("chromeTrackerHead")
-        local foot, cut = entries.headFoot, entries.headCut
+        local on = self:GetOption("chromeTrackerHead")
 
 
 
-
-        local tidy = style ~= "boxed"
+        local foot = entries.headFoot
         local title = header.Text
-        local titleW = tidy and title and self:Number(title.GetStringWidth, 1, title) or nil
+        local titleW = title and self:Number(title.GetStringWidth, 1, title) or nil
 
 
         state.headSignature = state.headSignature or setmetatable({}, { __mode = "k" })
         local signature = on and string.format("%.4f|%.1f|%s|%s|%.1f", self:PhysicalPixel(header),
-            self:Number(header.GetHeight, 1, header) or 26, self:Scheme().id, tostring(tidy), titleW or 0) or "off"
-        if state.headSignature[header] ~= signature and on and tidy and title and titleW and titleW > 0 then
+            self:Number(header.GetHeight, 1, header) or 26, self:Scheme().id, "true", titleW or 0) or "off"
+        if state.headSignature[header] ~= signature and on and title and titleW and titleW > 0 then
             foot:ClearAllPoints()
             foot:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
             foot:SetWidth(titleW)
@@ -1760,26 +1544,15 @@ function handlers.objectives(self, state)
             foot:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
             foot:SetHeight(self:PhysicalPixel(header))
             self:Tint(foot, "accent", "color", 0.45)
-            local size = math.max(6, math.floor((self:Number(header.GetHeight, 1, header) or 26) * 0.3))
-            cut:ClearAllPoints()
-            cut:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
-            cut:SetSize(size, size)
-            self:Tint(cut, "ink", "vertex", 0.92)
         end
         state.headSignature[header] = signature
         if foot:IsShown() ~= (on and true or false) then foot:SetShown(on and true or false) end
-        local cutOn = on and not tidy and true or false
-        if cut:IsShown() ~= cutOn then cut:SetShown(cutOn) end
         state.count = state.count + 1
     end
     for _, name in ipairs({ "QuestObjectiveTracker", "CampaignQuestObjectiveTracker",
         "ScenarioObjectiveTracker", "AchievementObjectiveTracker", "BonusObjectiveTracker",
         "WorldQuestObjectiveTracker" }) do
-        if style == "boxed" then
-            flatFill(self, state, path(_G[name], "Header"), self:Surface("base"), true)
-        else
-            self:ChromeHide(state, path(_G[name], "Header"), "panel")
-        end
+        self:ChromeHide(state, path(_G[name], "Header"), "panel")
     end
 end
 
@@ -1804,11 +1577,6 @@ function handlers.chat(self, state)
             local style = self:ChatStyle()
             local alpha = self:SurfaceValue(self:GetOption("chatAlpha"))
             local sm = self.tokens.space.sm
-            if style == "boxed" then
-                fadePanel(self, state, frame, "fade", frame, -sm, sm, frame, 0, -sm, alpha, false)
-            else
-                self:ChromeHide(state, frame, "fade")
-            end
             if style == "tidy" then
                 self:ChromeSoftPanel(state, frame, "soft", frame, -sm, sm * 3, frame, sm * 4, -sm * 3, alpha, false)
             else
@@ -2316,6 +2084,8 @@ function A:InspectNativeFrames()
             elseif budget == 0 then budget = -1; line("  ... (bounded: compass output truncated)") end
         end)
     end
+    line("-- inspect: target auras (`/aui auras` prints the same thing) --")
+    if self.AuraProbe then pcall(self.AuraProbe, self, line) end
     line("-- inspect: write safety (blocked-action log, quarantine, protection of every frame we write) --")
     self:ReportBlocked(line, true)
     self:InfoReport(line)

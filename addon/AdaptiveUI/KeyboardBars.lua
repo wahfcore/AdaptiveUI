@@ -73,118 +73,6 @@ local _, A = ...
 
 
 
-A.railArt = {
-    wellF   = 166 / 224,
-    wellTop = 20 / 224,
-    capL    = 144 / 512,
-    capR    = 48 / 512,
-    capLA   = 386 / 224,
-    capRA   = 96 / 224,
-
-
-    seat    = 3,
-
-
-
-
-
-
-
-
-
-    headRoom = 0.36,
-
-
-    laneFloor = 16,
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-A.slab02Art = {
-    wellF   = 0.72,
-    wellTop = 0.14,
-    capL    = 65 / 1024,
-    capR    = 65 / 1024,
-    capLA   = 120 / 233,
-    capRA   = 120 / 233,
-    bossU0  = 485 / 1024,
-    bossU1  = 539 / 1024,
-    bossA   = 100 / 233,
-    seat    = 3,
-    headRoom = 0.36,
-    laneFloor = 16,
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-A.rail03Art = {
-    capL    = 100 / 2114,
-    capR    = 100 / 2114,
-    capLA   = 100 / 88,
-    capRA   = 100 / 88,
-    bossU0  = 1011 / 2114,
-    bossU1  = 1104 / 2114,
-    bossA   = 93 / 88,
-    tipA    = 9 / 88,
-    faceA   = 1914 / 88,
-    ledge   = { 65 / 88, 87 / 88 },
-    air     = 4,
-    footAir = 8,
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 A.bar04Art = {
     ratio   = 1950 / 143,
     seatV0  = 0.035,
@@ -201,32 +89,6 @@ A.bar04Art = {
     flatU1  = 0.91,
     margin  = 6,
 }
-A.bar06Art = {
-    ratio   = 2054 / 179,
-    faceF   = 1630 / 2054,
-    faceU0  = 210 / 2054,
-    faceU1  = 1840 / 2054,
-    seatV0  = 8 / 179,
-    seatV1  = 149 / 179,
-    rimV0   = 160 / 179,
-    rimV1   = 175 / 179,
-    rimU0   = 154 / 2054,
-    rimU1   = 1900 / 2054,
-    bossU0  = 983 / 2054,
-    bossU1  = 1071 / 2054,
-    coverU0 = 891 / 2054,
-    coverU1 = 979 / 2054,
-    pageU   = 70 / 2054,
-    capL    = 210 / 2054,
-    capR    = 214 / 2054,
-    capA    = 210 / 179,
-    bossA   = 88 / 179,
-    margin  = 6,
-    seatAir = 2,
-    edgeBody = 0.58,
-    edgeAir  = 3,
-}
-
 
 A.kbEmptyHotkeyAlpha = 0.45
 
@@ -307,38 +169,15 @@ end
 
 
 
-
-
 function A:KeyboardSkin()
     if not (self.db and self.optionIndex and self.optionIndex.keyboardSkin) then return "classic" end
-    local skin = self:GetOption("keyboardSkin")
-    local slots = self.artSlots or {}
-
-
-
-
-
-
-
-
-
-
-    if (skin == "bar04" or skin == "base") and slots.bar04 then return "bar04" end
-    if skin == "bar04" or skin == "base" or skin == "bright" then skin = "inlay" end
-    if (skin == "inlay" or skin == "edge") and slots.bar06 then return skin end
-    if skin == "inlay" or skin == "edge" then skin = "footer" end
-    if skin == "footer" then return slots.rail03 and "footer" or "bare" end
-    if skin == "bare" then return "bare" end
-    if not slots.barRail then return "classic" end
-    if skin == "slab02" and slots.slab02 then return "slab02" end
-    if skin == "slab02" or skin == "authored" then return "authored" end
+    if self:GetOption("keyboardSkin") == "base" and (self.artSlots or {}).bar04 then return "bar04" end
     return "classic"
 end
 
 
 function A:KeyboardBase()
-    if not (self.db and self.optionIndex and self.optionIndex.keyboardSkin) then return false end
-    return self:GetOption("keyboardSkin") == "base" and self:KeyboardSkin() == "bar04"
+    return self:KeyboardSkin() == "bar04"
 end
 
 function A:KeyboardSkinOn()
@@ -348,41 +187,11 @@ end
 
 
 
-function A:RailArt()
-    local skin = self:KeyboardSkin()
-    if skin == "footer" then return A.rail03Art end
-    if skin == "bar04" then return A.bar04Art end
-    if skin == "inlay" or skin == "edge" then return A.bar06Art end
-    return skin == "slab02" and A.slab02Art or A.railArt
-end
-
-function A:RailFile()
-    local skin = self:KeyboardSkin()
-    if skin == "footer" then return "rail03" end
-    if skin == "bar04" then return "bar04" end
-    if skin == "inlay" or skin == "edge" then return "bar06" end
-    return skin == "slab02" and "slab02" or "bar-rail"
-end
 
 
-
-
-function A:KeyboardFloats()
-    local skin = self:KeyboardSkin()
-    return skin == "footer" or skin == "bare" or skin == "inlay" or skin == "edge" or skin == "bar04"
-end
-
-
-
-
-
-
-
-A.kbEmptyAlpha = { bright = 0.90, bar04 = 0.60 }
+A.kbEmptyAlpha = { bar04 = 0.60 }
 function A:KeyboardEmptyAlpha()
-    if not (self.db and self.optionIndex and self.optionIndex.keyboardSkin) then return nil end
     if self:KeyboardSlotStyle() ~= "tile" then return nil end
-    if self:GetOption("keyboardSkin") == "bright" and self:KeyboardSkin() == "inlay" then return A.kbEmptyAlpha.bright end
     if self:KeyboardSkin() == "bar04" then return A.kbEmptyAlpha.bar04 end
     return nil
 end
@@ -393,8 +202,7 @@ function A:KeyboardSlotStyle()
     if not (self.db and self.optionIndex and self.optionIndex.keyboardSlotSkin) then return "classic" end
     local style = self:GetOption("keyboardSlotSkin")
     local slots = self.artSlots or {}
-    if style == "tile" and slots.kbTile and slots.kbTileSocket and slots.kbTileFace then return "tile" end
-    if style == "tile" or style == "facet" then return "facet" end
+    if style == "tile" and slots.kbTileSocket and slots.kbTileFace then return "tile" end
     return "classic"
 end
 
@@ -494,7 +302,7 @@ A.kbRectOf = rectOf
 
 
 
-function A:KeyboardRowRect(def, alone)
+function A:KeyboardRowRect(def)
     local bar = _G[def.frame]
     if type(bar) ~= "table" then return nil end
     local style = A.kbStyle
@@ -521,17 +329,9 @@ function A:KeyboardRowRect(def, alone)
                 local rows = math.max(1, math.floor(((y1 - y0) / scale) / math.max(1, slotH / scale) + 0.5))
 
 
-
-
-                local mates = (rows == 1 and not def.vertical and not alone)
-                    and self:KeyboardRowMates(def, x0, x1, y0, y1) or nil
-                if mates then
-                    x0, x1 = math.min(x0, mates.x0), math.max(x1, mates.x1)
-                end
                 local w, h = (x1 - x0) / scale, (y1 - y0) / scale
                 return ((x0 + x1) / 2 - (bx + bw / 2)) / scale,
-                       ((y0 + y1) / 2 - (by + bh / 2)) / scale, w, h, rows, "live", mates,
-                       { x0 = x0, x1 = x1, y0 = y0, y1 = y1, scale = scale }
+                       ((y0 + y1) / 2 - (by + bh / 2)) / scale, w, h, rows, "live"
             end
         end
     end
@@ -542,34 +342,6 @@ function A:KeyboardRowRect(def, alone)
     if def.vertical then return 0, 0, slot, w, 1, "style" end
     return 0, 0, w, slot, 1, "style"
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -617,156 +389,6 @@ local function microArt(name)
 end
 A.KeyboardMicroArt = microArt
 
-function A:KeyboardRowMates(def, x0, x1, y0, y1)
-    if not def.head then return nil end
-    local rowH = y1 - y0
-    local names, mx0, mx1 = {}, x0, x1
-    for _, name in ipairs(self:KeyboardMicroNames()) do
-        local frame = _G[name]
-        if frame and self:Read(frame.IsShown, 1, frame) == true then
-            local x, y, w, h = rectOf(self, frame)
-            if x then
-                local overlap = math.min(y1, y + h) - math.max(y0, y)
-
-
-                local gap = math.max(x - mx1, mx0 - (x + w))
-                if overlap > 0.4 * math.min(rowH, h) and gap < rowH * 0.5 and gap > -w * 0.5 then
-                    names[#names + 1] = name
-                    mx0, mx1 = math.min(mx0, x), math.max(mx1, x + w)
-                end
-            end
-        end
-    end
-    if #names == 0 then return nil end
-    return { names = names, x0 = mx0, x1 = mx1 }
-end
-
-
-
-
-
-
-
-
-function A:KeyboardCapRoom(def, box, mates)
-    local y0, y1 = box.y0, box.y1
-    local band = (y1 - y0) * 0.5
-    local roomL, roomR = math.huge, math.huge
-    local skip = { [def.frame] = true }
-    for _, name in ipairs(mates and mates.names or {}) do skip[name] = true end
-    local candidates = {}
-    for _, other in ipairs(BARS) do candidates[#candidates + 1] = other.frame end
-    local obstacles = self:KeyboardMicroNames()
-    obstacles[#obstacles + 1] = "MinimapCluster"; obstacles[#obstacles + 1] = "ObjectiveTrackerFrame"
-    for _, name in ipairs(obstacles) do
-        candidates[#candidates + 1] = name
-    end
-    for _, name in ipairs(candidates) do
-        local frame = not skip[name] and _G[name] or nil
-        if frame and self:Read(frame.IsShown, 1, frame) == true then
-            local x, y, w, h = rectOf(self, frame)
-            if x and w > 0 and h > 0 then
-                local overlap = math.min(y1 + band, y + h) - math.max(y0 - band, y)
-                if overlap > 0 then
-                    if x + w <= box.x0 then roomL = math.min(roomL, box.x0 - (x + w))
-                    elseif x >= box.x1 then roomR = math.min(roomR, x - box.x1) end
-                end
-            end
-        end
-    end
-    return roomL, roomR
-end
-
-
-
-
-
-function A:FooterRailRect(def, cx, cy, rowW, rowH, rows, source, mates)
-    if not def.head or def.vertical or rows ~= 1 then return nil end
-    local a, px = A.rail03Art, self:KeyboardPixel(_G[def.frame])
-    local body = self:KeyboardSnap(rowW / a.faceA, px)
-    local cap = self:KeyboardSnap(body * a.capLA, px)
-    local host = self:KeyboardSnap(body * (1 + a.tipA), px)
-    local tip = host - body
-
-    local float = self:KeyboardSnap(tip + a.air * px, px)
-    local bodyTop = cy - rowH / 2 - float
-    local hostCy = bodyTop + tip - host / 2
-    return { rail = true, left = cap, right = cap, leftCap = "rail", rightCap = "rail",
-             well = rowW, rows = rows, source = source, mates = mates and mates.names or nil,
-             boss = self:KeyboardSnap(body * a.bossA, px),
-             cx = cx, cy = hostCy, w = rowW + 2 * cap, h = host,
-             body = body, tip = tip, float = float, rowW = rowW, rowH = rowH,
-             pageY = cy - hostCy }
-end
-
-
-
-
-
-
-
-function A:InlayBarRect(def, cx, cy, rowW, rowH, rows, source, mates)
-    if not def.head or def.vertical or rows ~= 1 then return nil end
-    local a, px = A.bar06Art, self:KeyboardPixel(_G[def.frame])
-
-
-
-
-
-
-
-
-
-    local byWidth = (rowW / 2 + a.margin) / math.min(0.5 - a.faceU0, a.faceU1 - 0.5)
-    local byHeight = (rowH + 2 * a.seatAir) / (a.seatV1 - a.seatV0) * a.ratio
-    local w = self:KeyboardSnap(math.max(byWidth, byHeight), px)
-    local h = self:KeyboardSnap(w / a.ratio, px)
-    local seat = (a.seatV0 + a.seatV1) / 2
-    local hostCy = cy - (0.5 - seat) * h
-
-
-
-
-
-
-
-    local drop = 0
-    local lane = _G["MainStatusTrackingBarContainer"]
-    local bar = _G[def.frame]
-    if lane and bar and self:Read(lane.IsShown, 1, lane) == true then
-        local bx, by, bw, bh = rectOf(self, bar)
-        local lx, ly, lw = rectOf(self, lane)
-        local bs = self:Number(bar.GetEffectiveScale, 1, bar)
-        if bx and lx and bs and bs > 0.05 then
-            local laneFoot = (ly - (by + bh / 2)) / bs
-            local rowL = bx + bw / 2 + (cx - rowW / 2) * bs
-            local over = lx < rowL + rowW * bs and lx + lw > rowL
-            local top = hostCy + h / 2
-            if over and laneFoot > cy and laneFoot < top then
-                local room = math.max(0, (h * (a.seatV1 - a.seatV0) - rowH) / 2)
-                drop = self:KeyboardSnap(math.min(top - laneFoot, room), px)
-                if drop > room + 1e-9 then drop = math.max(0, drop - px) end
-                hostCy = hostCy - drop
-            end
-        end
-    end
-    return { inlay = true, left = 0, right = 0, leftCap = "inlay", rightCap = "inlay", laneRail = drop > 0,
-             well = rowW, rows = rows, source = source, mates = mates and mates.names or nil,
-             cx = cx, cy = hostCy, w = w, h = h, rowW = rowW, rowH = rowH,
-             seatTop = h * a.seatV0, seatBottom = h * a.seatV1,
-             boss = 0, pageY = cy - hostCy }
-end
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -810,7 +432,7 @@ function A:Bar04Rise(def, hostCy, h)
     return math.ceil(want / px - 1e-6) * px
 end
 
-function A:Bar04BaseRect(def, cx, cy, rowW, rowH, rows, source, mates)
+function A:Bar04BaseRect(def, cx, cy, rowW, rowH, rows, source)
     local a, px = A.bar04Art, self:KeyboardPixel(_G[def.frame])
 
 
@@ -825,24 +447,7 @@ function A:Bar04BaseRect(def, cx, cy, rowW, rowH, rows, source, mates)
 
 
     return { bar04 = true, base = true, air = air - rise, rise = rise, left = 0, right = 0, leftCap = "base", rightCap = "base",
-             well = rowW, rows = rows, source = source, mates = mates and mates.names or nil,
-             cx = cx, cy = hostCy, w = w, h = h, rowW = rowW, rowH = rowH,
-             boss = 0, pageY = cy - hostCy }
-end
-
-function A:Bar04Rect(def, cx, cy, rowW, rowH, rows, source, mates)
-    if not def.head or def.vertical or rows ~= 1 then return nil end
-    if self:KeyboardBase() then return self:Bar04BaseRect(def, cx, cy, rowW, rowH, rows, source, mates) end
-    local a, px = A.bar04Art, self:KeyboardPixel(_G[def.frame])
-    local byWidth = (rowW / 2 + a.margin) / (0.5 - a.flatU0)
-    local byHeight = rowH / (a.footV0 - a.seatV0) * a.ratio
-    local w = self:KeyboardSnap(math.max(byWidth, byHeight), px)
-    local h = self:KeyboardSnap(w / a.ratio, px)
-    local hostCy = cy - rowH / 2 + (a.footV0 - 0.5) * h
-    local rise = self:Bar04Rise(def, hostCy, h)
-    hostCy = hostCy + rise
-    return { bar04 = true, rise = rise, left = 0, right = 0, leftCap = "bar04", rightCap = "bar04",
-             well = rowW, rows = rows, source = source, mates = mates and mates.names or nil,
+             well = rowW, rows = rows, source = source,
              cx = cx, cy = hostCy, w = w, h = h, rowW = rowW, rowH = rowH,
              boss = 0, pageY = cy - hostCy }
 end
@@ -850,102 +455,12 @@ end
 
 
 
-
-
-function A:EdgeBarRect(def, cx, cy, rowW, rowH, rows, source, mates)
-    if not def.head or def.vertical or rows ~= 1 then return nil end
-    local a, px = A.bar06Art, self:KeyboardPixel(_G[def.frame])
-    local h = self:KeyboardSnap(rowH * a.edgeBody, px)
-    local cap = self:KeyboardSnap(h * a.capA, px)
-    local air = self:KeyboardSnap(a.edgeAir * px, px)
-    local hostCy = cy - rowH / 2 - air - h / 2
-    return { rail = true, edge = true, left = cap, right = cap, leftCap = "rail", rightCap = "rail",
-             well = rowW, rows = rows, source = source, mates = mates and mates.names or nil,
-             boss = self:KeyboardSnap(h * a.bossA, px),
-             cx = cx, cy = hostCy, w = rowW + 2 * cap, h = h,
-             body = h, tip = 0, float = air, rowW = rowW, rowH = rowH,
-             pageY = cy - hostCy }
-end
 
 function A:KeyboardSlabRect(def)
-
-
-
-
-
-    local alone = self:KeyboardFloats() and self:KeyboardBase()
-    local cx, cy, rowW, rowH, rows, source, mates, box = self:KeyboardRowRect(def, alone)
-    if not cx then return nil end
-    if self:KeyboardFloats() then
-        local skin = self:KeyboardSkin()
-        if skin == "bar04" then return self:Bar04Rect(def, cx, cy, rowW, rowH, rows, source, mates) end
-        if skin == "inlay" then return self:InlayBarRect(def, cx, cy, rowW, rowH, rows, source, mates) end
-        if skin == "edge" then return self:EdgeBarRect(def, cx, cy, rowW, rowH, rows, source, mates) end
-        if skin ~= "footer" then return nil end
-        return self:FooterRailRect(def, cx, cy, rowW, rowH, rows, source, mates)
-    end
-
-    local slab02 = not def.vertical and self:KeyboardSkin() == "slab02"
-    local art, px = slab02 and A.slab02Art or A.railArt, self:KeyboardPixel(_G[def.frame])
-    local across = def.vertical and rowW or rowH
-    local along = def.vertical and rowH or rowW
-    local slab = self:KeyboardSnap((across + 2 * art.seat) / art.wellF, px)
-    local well = self:KeyboardSnap(along + 2 * art.seat, px)
-    local tail = self:KeyboardSnap(slab * art.capRA, px)
-    local head = self:KeyboardSnap(slab * art.capLA, px)
-    local mast = self:GetOption("keyboardMastHead")
-    local left, right = "tail", "tail"
-    if slab02 then
-
-
-        left, right, head = "cap", "cap", tail
-    elseif def.head and rows == 1 and not def.vertical and mast ~= "none" then
-
-
-
-        if 2 * head <= art.headRoom * (well + 2 * head) then
-            left = "head"
-            right = (mast == "left") and "tail" or "head"
-        end
-    end
-
-
-
-
-    local roomL, roomR = math.huge, math.huge
-    if box and not def.vertical then
-        local absL, absR = self:KeyboardCapRoom(def, box, mates)
-        roomL = absL / box.scale - art.seat
-        roomR = absR / box.scale - art.seat
-    end
-    local function fit(kind, room)
-        local size = (kind == "head") and head or tail
-        if size <= room then return kind, size end
-        if kind == "head" and tail <= room then return "tail", tail end
-        return "none", 0
-    end
-    local lw, rw
-    left, lw = fit(left, roomL)
-    right, rw = fit(right, roomR)
-
-
-
-
-
-    local rect = { left = lw, right = rw, leftCap = left, rightCap = right,
-                   well = well, rows = rows, source = source,
-                   mates = mates and mates.names or nil,
-                   boss = slab02 and self:KeyboardSnap(slab * art.bossA, px) or 0,
-                   roomL = roomL < math.huge and roomL or nil, roomR = roomR < math.huge and roomR or nil }
-    if def.vertical then
-
-        rect.cx, rect.cy = cx, cy + (lw - rw) / 2
-        rect.w, rect.h = slab, well + lw + rw
-    else
-        rect.cx, rect.cy = cx + (rw - lw) / 2, cy
-        rect.w, rect.h = well + lw + rw, slab
-    end
-    return rect
+    if not def.head or def.vertical then return nil end
+    local cx, cy, rowW, rowH, rows, source = self:KeyboardRowRect(def)
+    if not cx or rows ~= 1 then return nil end
+    return self:Bar04BaseRect(def, cx, cy, rowW, rowH, rows, source)
 end
 
 
@@ -985,7 +500,7 @@ local function railHost(self, state, owner, prefix, file)
         local art = {}
 
 
-        for _, key in ipairs({ "head", "mid", "boss", "mid2", "tail" }) do
+        for _, key in ipairs({ "mid" }) do
 
             local t = self:PaintedTexture(host, "BACKGROUND", -6, file)
             t:Hide()
@@ -1007,187 +522,14 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-
-local function sliceU(a, which, atRight)
-    local u0, u1
-    if which == "head" then u0, u1 = 0, a.capL else u0, u1 = 1 - a.capR, 1 end
-
-
-    if (which == "head") == (atRight == true) then return u1, u0 end
-    return u0, u1
-end
-
-local function placeSlices(self, art, host, w, h, rect, vertical, file)
-    local a = A.railArt
-    local left, right = rect.left, rect.right
-
-
-    if file then
-        for _, key in ipairs({ "head", "mid", "boss", "mid2", "tail" }) do
-            local entry = self.painted[art[key]]
-            if entry and entry.name ~= file then self:SetPainted(art[key], file) end
-        end
-    end
-
-
-    local function bossLayer(sub)
-        art.boss:SetDrawLayer("BACKGROUND", sub)
-        local entry = self.painted[art.boss]
-        if entry and entry.twin then entry.twin:SetDrawLayer("BACKGROUND", sub + 1) end
-    end
-    if file == "bar04" and rect.bar04 then
-
-
-
-        local b = A.bar04Art
-        art.mid:ClearAllPoints()
-        art.mid:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
-        art.mid:SetSize(w, h)
-        art.mid:SetTexCoord(0, 1, 0, 1)
-
-
-        local covered = not rect.base
-        bossLayer(-4)
-        art.boss:ClearAllPoints()
-        art.boss:SetPoint("TOPLEFT", host, "TOPLEFT", w * b.bossU0, 0)
-        art.boss:SetSize(math.max(1, w * (b.bossU1 - b.bossU0)), h * b.footV0)
-        art.boss:SetTexCoord(b.coverU0, b.coverU0 + (b.bossU1 - b.bossU0), 0, b.footV0)
-        for _, key in ipairs({ "head", "mid2", "tail" }) do
-            if art[key] then self:HidePainted(art[key]) end
-        end
-        if not covered then self:HidePainted(art.boss) end
-        for _, key in ipairs(covered and { "mid", "boss" } or { "mid" }) do
-            self:PaintedAlpha(art[key], 1)
-            art[key]:Show()
-            self:SyncPainted(art[key])
-        end
-        return
-    end
-    if file == "bar06" and rect.inlay then
-
-
-
-
-
-
-        local b = A.bar06Art
-        art.mid:ClearAllPoints()
-        art.mid:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
-        art.mid:SetSize(w, h)
-        art.mid:SetTexCoord(0, 1, 0, 1)
-        bossLayer(-4)
-        art.boss:ClearAllPoints()
-        art.boss:SetPoint("TOPLEFT", host, "TOPLEFT", w * b.bossU0, 0)
-        art.boss:SetSize(math.max(1, w * (b.bossU1 - b.bossU0)), h)
-        art.boss:SetTexCoord(b.coverU0, b.coverU1, 0, 1)
-        for _, key in ipairs({ "head", "mid2", "tail" }) do
-            if art[key] then self:HidePainted(art[key]) end
-        end
-        for _, key in ipairs({ "mid", "boss" }) do
-            self:PaintedAlpha(art[key], 1)
-            art[key]:Show()
-            self:SyncPainted(art[key])
-        end
-        return
-    end
-    bossLayer(-6)
-    local slab02 = file == "slab02" or file == "rail03" or file == "bar06"
-    if slab02 then
-
-
-
-
-        a = (file == "rail03" and A.rail03Art) or (file == "bar06" and A.bar06Art) or A.slab02Art
-        local boss = rect.boss or self:KeyboardSnap(h * a.bossA, self:KeyboardPixel(host))
-        local inner = math.max(2, w - left - right)
-        local bossW = math.min(boss, inner)
-        local midL = (inner - bossW) / 2
-        art.head:ClearAllPoints()
-        art.head:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
-        art.head:SetSize(math.max(1, left), h)
-        art.head:SetTexCoord(0, a.capL, 0, 1)
-        art.tail:ClearAllPoints()
-        art.tail:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, 0)
-        art.tail:SetSize(math.max(1, right), h)
-        art.tail:SetTexCoord(1 - a.capR, 1, 0, 1)
-        art.mid:ClearAllPoints()
-        art.mid:SetPoint("TOPLEFT", host, "TOPLEFT", left, 0)
-        art.mid:SetSize(math.max(1, midL), h)
-        art.mid:SetTexCoord(a.capL, a.bossU0, 0, 1)
-        art.boss:ClearAllPoints()
-        art.boss:SetPoint("TOPLEFT", host, "TOPLEFT", left + midL, 0)
-        art.boss:SetSize(math.max(1, bossW), h)
-        art.boss:SetTexCoord(a.bossU0, a.bossU1, 0, 1)
-        art.mid2:ClearAllPoints()
-        art.mid2:SetPoint("TOPLEFT", host, "TOPLEFT", left + midL + bossW, 0)
-        art.mid2:SetSize(math.max(1, inner - midL - bossW), h)
-        art.mid2:SetTexCoord(a.bossU1, 1 - a.capR, 0, 1)
-        for _, key in ipairs({ "head", "mid", "boss", "mid2", "tail" }) do
-            self:PaintedAlpha(art[key], 1)
-            art[key]:Show()
-        end
-        if left < 1 then art.head:Hide() end
-        if right < 1 then art.tail:Hide() end
-        for _, key in ipairs({ "head", "mid", "boss", "mid2", "tail" }) do self:SyncPainted(art[key]) end
-        return
-    end
-    for _, key in ipairs({ "boss", "mid2" }) do
-        if art[key] then self:HidePainted(art[key]) end
-    end
-    if vertical then
-
-
-
-        art.head:ClearAllPoints()
-        art.head:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
-        art.head:SetSize(w, left)
-        art.head:SetTexCoord(0, 1, 0, a.capR)
-        art.tail:ClearAllPoints()
-        art.tail:SetPoint("BOTTOMLEFT", host, "BOTTOMLEFT", 0, 0)
-        art.tail:SetSize(w, right)
-        art.tail:SetTexCoord(0, 1, 1 - a.capR, 1)
-        art.mid:ClearAllPoints()
-        art.mid:SetPoint("TOPLEFT", host, "TOPLEFT", 0, -left)
-        art.mid:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, right)
-        art.mid:SetTexCoord(0, 1, a.capR, 1 - a.capR)
-    else
-
-
-
-
-        local lu0, lu1 = sliceU(a, rect.leftCap == "none" and "tail" or rect.leftCap, false)
-        local ru0, ru1 = sliceU(a, rect.rightCap == "none" and "tail" or rect.rightCap, true)
-        art.head:ClearAllPoints()
-        art.head:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
-        art.head:SetSize(math.max(1, left), h)
-        art.head:SetTexCoord(lu0, lu1, 0, 1)
-        art.tail:ClearAllPoints()
-        art.tail:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, 0)
-        art.tail:SetSize(math.max(1, right), h)
-        art.tail:SetTexCoord(ru0, ru1, 0, 1)
-        art.mid:ClearAllPoints()
-        art.mid:SetPoint("TOPLEFT", host, "TOPLEFT", left, 0)
-        art.mid:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -right, 0)
-        art.mid:SetTexCoord(a.capL, 1 - a.capR, 0, 1)
-    end
-    for _, key in ipairs({ "head", "mid", "tail" }) do
-        self:PaintedAlpha(art[key], 1)
-        art[key]:Show()
-    end
-    if not vertical then
-        if left < 1 then art.head:Hide() end
-        if right < 1 then art.tail:Hide() end
-    end
-    for _, key in ipairs({ "head", "mid", "tail" }) do self:SyncPainted(art[key]) end
+local function placeSlices(self, art, host, w, h)
+    art.mid:ClearAllPoints()
+    art.mid:SetPoint("TOPLEFT", host, "TOPLEFT", 0, 0)
+    art.mid:SetSize(w, h)
+    art.mid:SetTexCoord(0, 1, 0, 1)
+    self:PaintedAlpha(art.mid, 1)
+    art.mid:Show()
+    self:SyncPainted(art.mid)
 end
 
 
@@ -1235,33 +577,20 @@ end
 
 
 
-
 function A:KeyboardSlotFile()
-
-
-    if self:KeyboardSlotStyle() == "tile" then
-
-        if self:KeyboardEmptyAlpha() then return "kb-tile-socket" end
-        return self:GetOption("keyboardEmptyStyle") == "socket" and "kb-tile-socket" or "kb-tile"
-    end
-    local name = self:GetOption("keyboardSlotBrass") == true and "kb-slot-brass" or "kb-slot"
-    if self:GetOption("keyboardEmptyStyle") == "socket" then name = name .. "-socket" end
-    return name
+    return "kb-tile-socket"
 end
-
-
 
 function A:KeyboardFloorFile()
-    return self:KeyboardSlotStyle() == "tile" and "kb-tile-face" or "kb-floor"
+    return "kb-tile-face"
 end
-
 
 
 
 function A:KeyboardFloorAlpha(bound)
     local raised = bound == false and self:KeyboardEmptyAlpha()
     if raised then return raised end
-    if bound == false and self:GetOption("keyboardEmptyStyle") ~= "socket" then return 0.35 end
+    if bound == false then return 0.35 end
     return 1
 end
 
@@ -1516,14 +845,75 @@ local ABBREV = {
 
 
 
+
+
+
+
+
+A.kbRangeIndicator = "\226\151\143"
+function A:KeyboardUnbound(text)
+    if type(text) ~= "string" or text == "" then return true end
+    local dot = type(RANGE_INDICATOR) == "string" and RANGE_INDICATOR or A.kbRangeIndicator
+    return text == dot or text == A.kbRangeIndicator
+end
+
+
+
+
+
+function A:KeyboardDrawable(text)
+    if type(text) ~= "string" then return false end
+    local i, n = 1, #text
+    while i <= n do
+        local b = text:byte(i)
+        if b >= 0x20 and b <= 0x7E then
+            i = i + 1
+        elseif (b == 0xC2 or b == 0xC3) and i < n then
+            local c = text:byte(i + 1)
+            if b == 0xC2 and (c < 0xA0 or c > 0xBF) then return false end
+            if b == 0xC3 and (c < 0x80 or c > 0xBF) then return false end
+            i = i + 2
+        else
+            return false
+        end
+    end
+    return true
+end
+
+
+
+local function utf8Head(text, limit)
+    local i, n, count = 1, #text, 0
+    while i <= n do
+        if count == limit then return text:sub(1, i - 1) end
+        local b = text:byte(i)
+        local len = (b >= 0xF0 and 4) or (b >= 0xE0 and 3) or (b >= 0xC0 and 2) or 1
+        i = i + len
+        count = count + 1
+    end
+    return text
+end
+
 function A:KeyboardHotkeyText(text)
     if type(text) ~= "string" or text == "" then return text end
-    local out = text:upper()
+    if self:KeyboardUnbound(text) then return "" end
+
+
+    local out = text:gsub("[a-z]", string.upper)
     for _, rule in ipairs(ABBREV) do out = out:gsub(rule[1], rule[2]) end
 
     for _, rule in ipairs(ABBREV) do out = out:gsub(rule[1], rule[2]) end
-    if #out > 6 then out = out:sub(1, 6) end
-    return out
+    return utf8Head(out, 6)
+end
+
+
+function A:KeyboardClientFace()
+    local object = _G.NumberFontNormal
+    if type(object) == "table" and type(object.GetFont) == "function" then
+        local ok, file = pcall(object.GetFont, object)
+        if ok and self:IsPublic(file) and type(file) == "string" and file ~= "" then return file end
+    end
+    return STANDARD_TEXT_FONT or self.fallbackFont
 end
 
 
@@ -1622,17 +1012,27 @@ local function slotType(self, state, button, on, empty)
 
             state.explicitFonts = state.explicitFonts or {}
             state.explicitFonts[label] = true
-            if label.kbSize ~= size then
-                label.kbSize = size
-                self:SetThemedFont(label, size, "numeric", "OUTLINE")
-            end
             local text = self:Text(hot.GetText, 1, hot)
             local short = self:KeyboardHotkeyText(text)
+
+            local face = (type(short) ~= "string" or self:KeyboardDrawable(short)) and "ours" or "client"
+            if label.kbSize ~= size or label.kbFace ~= face then
+                label.kbSize, label.kbFace = size, face
+                if face == "ours" then
+                    self:SetThemedFont(label, size, "numeric", "OUTLINE")
+                else
+                    pcall(label.SetFont, label, self:KeyboardClientFace(), size, "OUTLINE")
+                end
+            end
             if type(short) == "string" and label.kbText ~= short then
                 label.kbText = short
                 label:SetText(short)
             end
-            if not label:IsShown() then label:Show() end
+
+            local bound = label.kbText ~= nil and label.kbText ~= ""
+            if bound ~= (label:IsShown() == true) then
+                if bound then label:Show() else label:Hide() end
+            end
 
 
             local alpha = self:KeyboardHotkeyAlpha(empty)
@@ -1642,7 +1042,14 @@ local function slotType(self, state, button, on, empty)
             end
         else
             if label and label:IsShown() then label:Hide() end
-            self:ReleaseHidden(state, hot)
+
+
+            local text = on and self:Text(hot.GetText, 1, hot) or nil
+            if on and type(text) == "string" and self:KeyboardUnbound(text) then
+                self:HoldHidden(state, hot)
+            else
+                self:ReleaseHidden(state, hot)
+            end
             if on then kbFont(self, state, hot, size, "OUTLINE") end
         end
     end
@@ -1704,8 +1111,7 @@ end
 local function hideRail(state, owner, prefix)
     local entries = state.decorations[owner]
     if not entries then return end
-    for _, key in ipairs({ prefix, prefix .. "head", prefix .. "mid", prefix .. "boss", prefix .. "mid2", prefix .. "tail",
-                           prefix .. "headAcc", prefix .. "midAcc", prefix .. "bossAcc", prefix .. "mid2Acc", prefix .. "tailAcc" }) do
+    for _, key in ipairs({ prefix, prefix .. "mid", prefix .. "midAcc" }) do
         local region = entries[key]
         if region and type(region.IsShown) == "function" and region:IsShown() then region:Hide() end
     end
@@ -1720,25 +1126,19 @@ local function keyboardBar(self, state, def, on)
         self:ReleaseHidden(state, bar.BorderArt)
         return false
     end
-    local file = def.vertical and "bar-rail-v" or self:RailFile()
 
 
-    if self:KeyboardFloats() then
-        local rect = self:KeyboardSlabRect(def)
-        if not rect then
-            hideRail(state, bar, "kbSlab")
-            book(state, bar).rect = nil
-            book(state, bar).signature = nil
-            self:HoldHidden(state, bar.BorderArt)
-            return true
-        end
-
-        file = self:RailFile()
+    local file = "bar04"
+    local rect = self:KeyboardSlabRect(def)
+    if not rect then
+        hideRail(state, bar, "kbSlab")
+        book(state, bar).rect = nil
+        book(state, bar).signature = nil
+        self:HoldHidden(state, bar.BorderArt)
+        return true
     end
     local host, _, data = railHost(self, state, bar, "kbSlab", file)
     if not host then return false end
-    local rect = self:KeyboardSlabRect(def)
-    if not rect then return false end
 
 
 
@@ -1750,7 +1150,7 @@ local function keyboardBar(self, state, def, on)
         host:ClearAllPoints()
         host:SetPoint("CENTER", bar, "CENTER", rect.cx, rect.cy)
         host:SetSize(rect.w, rect.h)
-        placeSlices(self, data.art, host, rect.w, rect.h, rect, def.vertical, file)
+        placeSlices(self, data.art, host, rect.w, rect.h)
     end
     if not host:IsShown() then host:Show() end
     data.rect = rect
@@ -1814,17 +1214,6 @@ end
 
 
 
-A.kbPageAir = 6
-function A:KeyboardPageX(rect, page)
-    local pw = (page and self:Number(page.GetWidth, 1, page)) or 17
-    if pw <= 0 or pw > 200 then pw = 17 end
-    if rect.leftCap == "cap" then return -(rect.w / 2) + rect.left / 2 end
-    if rect.leftCap == "inlay" then return -(rect.w / 2) + rect.w * A.bar06Art.pageU end
-    if rect.leftCap == "bar04" then return -(rect.w / 2) + rect.w * A.bar04Art.pageU end
-    if rect.leftCap == "base" then return -(rect.rowW / 2) - A.kbPageAir - pw / 2 end
-    return -(rect.w / 2) + rect.left - A.kbPageAir - pw / 2
-end
-
 local function pageBlock(self, state, on)
     local bar = _G["MainActionBar"]
     local page = bar and bar.ActionBarPageNumber
@@ -1857,79 +1246,16 @@ local function statusLane(self, state, on)
     local barFrame = container.BarFrameTexture
     local background = container.StatusBar and container.StatusBar.Background
     if not on then
-        hideRail(state, container, "kbLane")
         self:ReleaseHidden(state, barFrame)
         self:ReleaseHidden(state, background)
         return false
     end
 
 
-
-
-
-    if self:KeyboardFloats() then
-        hideRail(state, container, "kbLane")
-        self:HoldHidden(state, barFrame)
-        self:HoldHidden(state, background)
-        return true
-    end
-
-
     self:HoldHidden(state, barFrame)
     self:HoldHidden(state, background)
-    local host, _, data = railHost(self, state, container, "kbLane", "bar-rail")
-    if not host then return false end
-    local px = self:KeyboardPixel(container)
-    local lane = self:Number(container.GetHeight, 1, container) or A.kbStyle.laneH
-    local width = self:Number(container.GetWidth, 1, container) or A.kbStyle.laneW
-
-
-
-    local h = math.max(A.railArt.laneFloor, self:KeyboardSnap(lane / A.railArt.wellF, px))
-    local cap = self:KeyboardSnap(h * A.railArt.capRA, px)
-    local signature = string.format("%.2f|%.2f|%.2f", width, h, cap)
-    if data.signature ~= signature then
-        data.signature = signature
-        host:ClearAllPoints()
-        host:SetPoint("CENTER", container, "CENTER", 0, 0)
-        host:SetSize(width + 2 * cap, h)
-        placeSlices(self, data.art, host, width + 2 * cap, h,
-            { left = cap, right = cap, leftCap = "tail", rightCap = "tail" }, false)
-    end
-    if not host:IsShown() then host:Show() end
     return true
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1951,12 +1277,11 @@ A.xpBarIndex = 4
 A.xpLaneTick = 0.25
 function A:XpLaneHost()
     if not (self.KeyboardSkinOn and self:KeyboardSkinOn()) then return nil end
-    local skin = self:KeyboardSkin()
-    if skin ~= "bar04" and skin ~= "inlay" then return nil end
+    if self:KeyboardSkin() ~= "bar04" then return nil end
     local state = self.nativeSkins and self.nativeSkins.actions
     local bar = _G["MainActionBar"]
     local rect = state and bar and book(state, bar).rect
-    if not rect or not (rect.bar04 or rect.inlay) then return nil end
+    if not rect or not rect.bar04 then return nil end
     local entries = state.decorations[bar]
     return entries and entries.kbSlab, rect
 end
@@ -1975,22 +1300,33 @@ end
 
 
 
+
+
+
+
+
+
+
+
+A.kbXpTop = { gap = 1, height = 4, trough = 0.35, fill = 0.85, rested = 0.55 }
 function A:XpLaneRect(rect)
-    if rect.bar04 then
-        local a = A.bar04Art
+    if rect.bar04 and A.bar04Art.laneTop then
         local px = self:KeyboardPixel(_G["MainActionBar"])
-        local top = self:KeyboardSnap(rect.h * a.footV0, px) + px
-        local bot = self:KeyboardSnap(rect.h * a.footV1, px)
+        local t = A.kbXpTop
+        local h = t.height * px
 
 
-        local w = rect.rowW
-        if rect.base then
-            w = self:KeyboardSnap(rect.w * (a.flatU1 - a.flatU0) - 2 * A.bar04Base.laneInset, px)
-        end
-        return 0, top, w, math.max(px, bot - top)
+        local rowTop = rect.h / 2 - (rect.pageY or 0) - (rect.rowH or 0) / 2
+        return 0, rowTop - t.gap * px - h, rect.rowW, h
     end
-    local a = A.bar06Art
-    return 0, rect.h * a.rimV0, rect.rowW, rect.h * (a.rimV1 - a.rimV0)
+
+
+    local a = A.bar04Art
+    local px = self:KeyboardPixel(_G["MainActionBar"])
+    local top = self:KeyboardSnap(rect.h * a.footV0, px) + px
+    local bot = self:KeyboardSnap(rect.h * a.footV1, px)
+    local w = self:KeyboardSnap(rect.w * (a.flatU1 - a.flatU0) - 2 * A.bar04Base.laneInset, px)
+    return 0, top, w, math.max(px, bot - top)
 end
 
 
@@ -2053,8 +1389,25 @@ local function xpInlay(self, state, on)
         lane:SetPoint("TOP", host, "TOP", x, -y)
         lane:SetSize(w, h)
     end
-    self:Tint(lane:GetStatusBarTexture(), "xp", "vertex", 0.95)
-    self:Tint(lane.rested:GetStatusBarTexture(), "xpRested", "vertex", 0.6)
+
+
+    local top = rect.bar04 and A.bar04Art.laneTop
+    self:Tint(lane:GetStatusBarTexture(), "xp", "vertex", top and A.kbXpTop.fill or 0.95)
+    self:Tint(lane.rested:GetStatusBarTexture(), "xpRested", "vertex", top and A.kbXpTop.rested or 0.6)
+    if top and not lane.trough then
+        pcall(function()
+            lane.trough = self:Own(lane.rested:CreateTexture(nil, "BACKGROUND"))
+            lane.trough:SetAllPoints(lane)
+        end)
+    end
+    if lane.trough then
+        if top then
+            self:Tint(lane.trough, "shadow", "color", A.kbXpTop.trough)
+            if not lane.trough:IsShown() then lane.trough:Show() end
+        elseif lane.trough:IsShown() then
+            lane.trough:Hide()
+        end
+    end
     if not lane:IsShown() then lane:Show() end
 
     if type(container) == "table" then
@@ -2074,13 +1427,59 @@ end
 
 
 A.kbFade = { alpha = 0.72, reach = 64, wide = 1.10 }
+
+
+
+
+
+
+A.kbStackBars = { { "MultiBarBottomLeft", "MultiBarBottomLeftButton" }, { "MultiBarBottomRight", "MultiBarBottomRightButton" } }
+function A:KeyboardStackOver()
+    if self:IsCombat() then return self.kbStackOverLast or 0 end
+    local bar = _G["MainActionBar"]
+    local scale = type(bar) == "table" and self:Number(bar.GetEffectiveScale, 1, bar) or nil
+    local bx1, by1, _, bh1 = rectOf(self, _G["ActionButton1"])
+    local bxn, _, bwn = rectOf(self, _G["ActionButton12"])
+    if not (scale and scale > 0.05 and by1 and bxn) then return self.kbStackOverLast or 0 end
+    local row0, row1, top = bx1, bxn + bwn, by1 + bh1
+    local rowTop, slotH = top, bh1
+    local used = {}
+    for _ = 1, #A.kbStackBars do
+        local found
+        for i, pair in ipairs(A.kbStackBars) do
+            local frame = _G[pair[1]]
+            if not used[i] and type(frame) == "table" and type(frame.IsShown) == "function"
+                and self:Read(frame.IsShown, 1, frame) == true then
+                local x0, x1, y0, y1
+                for n = 1, 12 do
+                    local x, y, w, h = rectOf(self, _G[pair[2] .. n])
+                    if x then
+                        x0, x1 = math.min(x0 or x, x), math.max(x1 or x + w, x + w)
+                        y0, y1 = math.min(y0 or y, y), math.max(y1 or y + h, y + h)
+                    end
+                end
+                local span = x0 and (math.min(x1, row1) - math.max(x0, row0)) or 0
+                if x0 and span >= (row1 - row0) / 2 and y0 >= top - slotH / 2 and y0 - top <= slotH then
+                    found = i
+                    used[i] = true
+                    top = math.max(top, y1)
+                    break
+                end
+            end
+        end
+        if not found then break end
+    end
+    self.kbStackOverLast = math.max(0, (top - rowTop) / scale)
+    return self.kbStackOverLast
+end
+
 local function fadeBackdrop(self, state, on)
     local bar = _G["MainActionBar"]
     if type(bar) ~= "table" then return false end
     local entries = state.decorations[bar]
     local rect = book(state, bar).rect
     local host = entries and entries.kbSlab
-    local want = on and host and rect and (rect.bar04 or rect.inlay)
+    local want = on and host and rect and rect.bar04
         and self:GetOption("keyboardBackdrop") == "fade" and (self.artSlots or {}).kbFade
     local fade = entries and entries.kbFade
     if not want then
@@ -2096,27 +1495,46 @@ local function fadeBackdrop(self, state, on)
         fade:SetTexture(self.artPath .. "kb-fade.tga", "CLAMP", "CLAMP")
         entries.kbFade = fade
     end
-    local f = A.kbFade
-    local sig = string.format("%.3f|%.3f|%s|%.3f|%.3f", rect.w, rect.h, tostring(rect.base), rect.rowH or 0, rect.air or 0)
+    local f, b = A.kbFade, A.bar04Base
+
+    local plank = rect.base and b.back == false
+    local over = plank and self:KeyboardStackOver() or 0
+    local sig = string.format("%.3f|%.3f|%s|%.3f|%.3f|%s|%.3f|%.3f", rect.w, rect.h, tostring(rect.base), rect.rowH or 0,
+        rect.air or 0, tostring(b.back), over, b.fadeOver or 0)
     if fade.sig ~= sig then
         fade.sig = sig
         fade:ClearAllPoints()
-        fade:SetPoint("BOTTOM", host, "BOTTOM", 0, 0)
+        if plank then
 
 
-        local reach = rect.base and ((rect.air or 0) + rect.rowH + A.bar04Base.fadeOver) or f.reach
-        fade:SetSize(rect.w * f.wide, rect.h + reach)
+
+
+
+
+
+            local a, px = A.bar04Art, self:KeyboardPixel(bar)
+            fade:SetPoint("BOTTOM", host, "TOP", rect.w * ((a.topU0 + a.topU1) / 2 - 0.5), -rect.h * a.seatV0)
+            fade:SetSize(rect.w * (a.topU1 - a.topU0) + 2 * b.backPx * px,
+                math.max(px, (rect.air or 0) + rect.rowH + over + b.fadeOver))
+        else
+            fade:SetPoint("BOTTOM", host, "BOTTOM", 0, 0)
+
+
+            local reach = rect.base and ((rect.air or 0) + rect.rowH + b.fadeOver) or f.reach
+            fade:SetSize(rect.w * f.wide, rect.h + reach)
+        end
     end
-    self:Tint(fade, "shadow", "vertex", f.alpha)
+    self:Tint(fade, "shadow", "vertex", plank and b.fadeAlpha or f.alpha)
     if not fade:IsShown() then fade:Show() end
 
+
     local back = entries.kbBack
-    if rect.base then
+    if rect.base and A.bar04Base.back ~= false then
         if not back then
             back = self:Own(host:CreateTexture(nil, "BACKGROUND", nil, -7))
             entries.kbBack = back
         end
-        local b, px = A.bar04Base, self:KeyboardPixel(bar)
+        local px = self:KeyboardPixel(bar)
         local d = b.backPx * px
         local rim = rect.h * A.bar04Art.seatV0
         local bsig = string.format("%.3f|%.3f|%.3f|%.3f|%.4f|%.3f", rect.w, rect.h, rect.rowW or 0, rect.rowH or 0, d,
@@ -2152,268 +1570,17 @@ local function fadeBackdrop(self, state, on)
     return true
 end
 
-A.kbShelf = { air = 7, laneReach = 48, tuck = 2, hearthAir = 6, innerK = 0.2, rim = 0.32, lip = 0.80,
-              band = 0.92, foot = 0.45 }
-local function shelfCard(self, state, on)
-    local bar = _G["MainActionBar"]
-    if type(bar) ~= "table" then return false end
-    local entries = state.decorations[bar]
-    local data = book(state, bar)
-    local rect = data.rect
-    local host = entries and entries.kbSlab
-    local mode = self:GetOption("keyboardBackdrop")
-    local want = on and self:KeyboardSkin() == "footer" and rect and rect.rail and host
-        and (mode == "shelf" or mode == "hearth")
-    local card = entries and entries.kbShelf
-    if not want then
-        if card and card:IsShown() then card:Hide() end
-
-        if host and card then
-            local level = self:Number(bar.GetFrameLevel, 1, bar) or 1
-            if self:Number(host.GetFrameLevel, 1, host) ~= math.max(0, level - 1) then
-                pcall(host.SetFrameLevel, host, math.max(0, level - 1))
-            end
-        end
-        data.shelf = nil
-        return false
-    end
-    if not card then
-        local ok = pcall(function()
-            card = self:Own(CreateFrame("Frame", nil, bar))
-            local level = self:Number(bar.GetFrameLevel, 1, bar) or 2
-            pcall(card.SetFrameLevel, card, math.max(0, level - 2))
-            local parts = {}
-            for _, key in ipairs({ "main", "top", "band" }) do
-                parts[key] = self:Own(card:CreateTexture(nil, "BACKGROUND", nil, -5))
-            end
-            for _, key in ipairs({ "cutL", "cutR", "bandL", "bandR" }) do
-                local t = self:Own(card:CreateTexture(nil, "BACKGROUND", nil, -5))
-                t:SetTexture(self.artPath .. "bar-chamfer.tga", "CLAMP", "CLAMP")
-                parts[key] = t
-            end
-
-
-
-            parts.cutL:SetTexCoord(1, 0, 1, 0); parts.bandL:SetTexCoord(1, 0, 1, 0)
-            parts.cutR:SetTexCoord(0, 1, 1, 0); parts.bandR:SetTexCoord(0, 1, 1, 0)
-            parts.inner = self:Own(card:CreateTexture(nil, "BACKGROUND", nil, -4))
-            parts.inner:SetTexture(self.artPath .. "inner-shadow.tga", "CLAMP", "CLAMP")
-            parts.inner:SetTexCoord(0, 1, 1, 0)
-            for _, key in ipairs({ "rimL", "rimR", "lip", "foot" }) do
-                parts[key] = self:Own(card:CreateTexture(nil, "BACKGROUND", nil, -3))
-            end
-            card.parts = parts
-            card.depth = {}
-            self:Elevate(card.depth, card, "d", card, 0, 0, card, 0, 0, "base")
-            entries.kbShelf = card
-        end)
-        if not ok or not card then return false end
-    end
-    local parts = card.parts
 
 
 
 
-
-
-    do
-        local level = self:Number(bar.GetFrameLevel, 1, bar) or 1
-        local hostLevel = math.max(1, level)
-        if self:Number(host.GetFrameLevel, 1, host) ~= hostLevel then pcall(host.SetFrameLevel, host, hostLevel) end
-        if self:Number(card.GetFrameLevel, 1, card) ~= hostLevel - 1 then
-            pcall(card.SetFrameLevel, card, hostLevel - 1)
-        end
-    end
-    local px = self:KeyboardPixel(bar)
-    local cfg = A.kbShelf
-
-
-    local faceTop = -rect.tip
-    local rowTop = rect.float - rect.tip + rect.rowH
-    local top = rowTop + self:KeyboardSnap(cfg.air * px, px)
-    local lip = "own"
-
-    local lane = _G["MainStatusTrackingBarContainer"]
-    local bx, by, bw, bh = rectOf(self, bar)
-    local lx, ly, lw = rectOf(self, lane)
-    local bs = self:Number(bar.GetEffectiveScale, 1, bar)
-    if bx and lx and bs and bs > 0.05 and self:Read(lane.IsShown, 1, lane) == true then
-        local hostTop = by + bh / 2 + (rect.cy + rect.h / 2) * bs
-        local laneBottom = (ly - hostTop) / bs
-        local rowL = bx + bw / 2 + (rect.cx - rect.rowW / 2) * bs
-        local rowR = rowL + rect.rowW * bs
-        local overlaps = lx < rowR and lx + lw > rowL
-        if overlaps and laneBottom >= rowTop - 1e-6 and laneBottom <= rowTop + cfg.laneReach then
-            top, lip = laneBottom, "lane"
-        end
-    end
-    local bottom = faceTop - self:KeyboardSnap(cfg.tuck * px, px)
-
-    local hearthTop
-    if mode == "hearth" then
-        local micro = _G["MicroMenu"]
-        local mx, my, _, mh = rectOf(self, micro)
-        if bx and mx and bs and bs > 0.05 then
-            local hostTop = by + bh / 2 + (rect.cy + rect.h / 2) * bs
-            local microTop = (my + mh - hostTop) / bs
-            local _, gy, _, gh = rectOf(self, _G["BagsBar"])
-            if gy then microTop = math.max(microTop, (gy + gh - hostTop) / bs) end
-            if microTop > top then hearthTop = microTop + self:KeyboardSnap(cfg.hearthAir * px, px) end
-        end
-        if not hearthTop and micro then
-
-
-            local mh2 = self:Number(micro.GetHeight, 1, micro) or 0
-            local ms = self:Number(micro.GetEffectiveScale, 1, micro) or 0
-            if mh2 > 0 and ms > 0.05 and bs and bs > 0.05 then
-                hearthTop = top + (A.microRowGap or 6) * px + mh2 * ms / bs
-                    + self:KeyboardSnap(cfg.hearthAir * px, px)
-            end
-        end
-    end
-    local cardTop = hearthTop or top
-    local height = cardTop - bottom
-    local width = rect.w
-    local cut = self:KeyboardSnap(math.max(6 * px, math.min(width, height) / 12), px)
-    cut = math.min(cut, height / 2)
-    local signature = string.format("%.2f|%.2f|%.2f|%.2f|%.2f|%s|%s", rect.w, height, cardTop, bottom, cut, lip,
-        tostring(hearthTop))
-    if data.shelf ~= signature then
-        data.shelf = signature
-        card:ClearAllPoints()
-        card:SetPoint("BOTTOMLEFT", host, "TOPLEFT", 0, bottom)
-        card:SetSize(width, height)
-        local function box(t, x0, y0, x1, y1)
-            t:ClearAllPoints()
-            t:SetPoint("TOPLEFT", card, "TOPLEFT", x0, -y0)
-            t:SetSize(math.max(0.01, x1 - x0), math.max(0.01, y1 - y0))
-        end
-        box(parts.main, 0, cut, width, height)
-        box(parts.top, cut, 0, width - cut, cut)
-        box(parts.cutL, 0, 0, cut, cut)
-        box(parts.cutR, width - cut, 0, width, cut)
-
-
-        local bandH = hearthTop and (hearthTop - top) or 0
-        box(parts.band, cut, 0, width - cut, math.max(cut, bandH))
-        box(parts.bandL, 0, 0, cut, cut)
-        box(parts.bandR, width - cut, 0, width, cut)
-        local innerTop = hearthTop and bandH or 0
-        box(parts.inner, 0, innerTop, width, innerTop + math.max(4 * px, (height - innerTop) * cfg.innerK))
-        box(parts.rimL, 0, cut, px, height)
-        box(parts.rimR, width - px, cut, width, height)
-        box(parts.lip, cut, 0, width - cut, px)
-        box(parts.foot, cut, bandH - px, width - cut, bandH)
-    end
-    local alpha = self:Surface("base")
-    self:Tint(parts.main, "nativeInk", "color", alpha)
-    self:Tint(parts.top, "nativeInk", "color", alpha)
-    self:Tint(parts.cutL, "nativeInk", "vertex", alpha)
-    self:Tint(parts.cutR, "nativeInk", "vertex", alpha)
-    self:Tint(parts.band, "inkStep", "color", alpha * cfg.band)
-    self:Tint(parts.bandL, "inkStep", "vertex", alpha * cfg.band)
-    self:Tint(parts.bandR, "inkStep", "vertex", alpha * cfg.band)
-    self:Tint(parts.inner, "shadow", "vertex", 0.55)
-    self:Tint(parts.rimL, "accent", "color", cfg.rim)
-    self:Tint(parts.rimR, "accent", "color", cfg.rim)
-    self:Tint(parts.lip, "accent", "color", cfg.lip)
-    self:Tint(parts.foot, "accent", "color", cfg.foot)
-    local hearth = hearthTop ~= nil
-    for _, key in ipairs({ "band", "bandL", "bandR", "foot" }) do parts[key]:SetShown(hearth) end
-    parts.lip:SetShown(lip == "own" and not hearth)
-    for _, key in ipairs({ "main", "top", "cutL", "cutR", "inner", "rimL", "rimR" }) do parts[key]:Show() end
-    if not card:IsShown() then card:Show() end
-    data.shelfRect = { w = width, h = height, top = cardTop, bottom = bottom, lip = lip, cut = cut,
-                       rowTop = rowTop, faceTop = faceTop, hearth = hearth }
-    return true
-end
-A.kbShelfCard = shelfCard
-
-
-
-
-
-
-
-local function microSlab(self, state, name, on, spanTo, holdArt)
+local function microSlab(self, state, name, holdArt)
     local frame = _G[name]
     if type(frame) ~= "table" then return false end
-
-
-
-
-
-    local skinNow = on and self:KeyboardSkin()
-    if skinNow == "bare" or skinNow == "inlay" or skinNow == "edge" or skinNow == "bar04" then on = false end
-    if not on then
-        hideRail(state, frame, "kbMicro")
-        for _, art in ipairs(microArt(name)) do
-            if holdArt then self:HoldHidden(state, art) else self:ReleaseHidden(state, art) end
-        end
-        return false
+    for _, art in ipairs(microArt(name)) do
+        if holdArt then self:HoldHidden(state, art) else self:ReleaseHidden(state, art) end
     end
-    for _, art in ipairs(microArt(name)) do self:HoldHidden(state, art) end
-    local file = self:RailFile()
-    local host, _, data = railHost(self, state, frame, "kbMicro", file)
-    if not host then return false end
-    local px = self:KeyboardPixel(frame)
-    local rail = self:RailArt()
-    local w = self:Number(frame.GetWidth, 1, frame) or 232
-    local row = self:Number(frame.GetHeight, 1, frame) or 28
-
-
-
-    local shift = 0
-    if spanTo and type(_G[spanTo]) == "table" then
-        local fx, _, fw = rectOf(self, frame)
-        local sx, _, sw = rectOf(self, _G[spanTo])
-        local s = self:Number(frame.GetEffectiveScale, 1, frame) or 1
-        local us = (UIParent and self:Number(UIParent.GetEffectiveScale, 1, UIParent)) or 1
-        if fx and sx and s > 0.05 and us > 0.05 then
-            local right = math.max(fx + fw, sx + sw)
-            local wide = (right - fx) * us / s
-            if wide > w then shift = (wide - w) / 2; w = wide end
-        end
-    end
-    if file == "rail03" then
-
-
-        local a = A.rail03Art
-        local body = self:KeyboardSnap(w / a.faceA, px)
-        local capW = self:KeyboardSnap(body * a.capLA, px)
-        local hostH = self:KeyboardSnap(body * (1 + a.tipA), px)
-        local tip = hostH - body
-        local float = self:KeyboardSnap(tip + a.air * px, px)
-        local signature = string.format("r|%.2f|%.2f|%.2f|%.2f", w, body, capW, shift)
-        if data.signature ~= signature then
-            data.signature = signature
-            host:ClearAllPoints()
-            host:SetPoint("TOP", frame, "BOTTOM", shift, -float + tip)
-            host:SetSize(w + 2 * capW, hostH)
-            placeSlices(self, data.art, host, w + 2 * capW, hostH,
-                { left = capW, right = capW, leftCap = "rail", rightCap = "rail",
-                  boss = self:KeyboardSnap(body * a.bossA, px) }, false, file)
-        end
-        data.rect = { w = w + 2 * capW, h = hostH, body = body, face = w }
-        if not host:IsShown() then host:Show() end
-        return true
-    end
-    local h = self:KeyboardSnap((row + 2 * rail.seat) / rail.wellF, px)
-    local cap = self:KeyboardSnap(h * rail.capRA, px)
-    local capKind = file == "slab02" and "cap" or "tail"
-    local signature = string.format("%.2f|%.2f|%.2f|%.2f|%s", w, h, cap, shift, file)
-    if data.signature ~= signature then
-        data.signature = signature
-        host:ClearAllPoints()
-        host:SetPoint("CENTER", frame, "CENTER", shift, 0)
-        host:SetSize(w + 2 * rail.seat + 2 * cap, h)
-        placeSlices(self, data.art, host,
-            w + 2 * rail.seat + 2 * cap, h,
-            { left = cap, right = cap, leftCap = capKind, rightCap = capKind,
-              boss = file == "slab02" and self:KeyboardSnap(h * rail.bossA, px) or 0 }, false, file)
-    end
-    if not host:IsShown() then host:Show() end
-    return true
+    return false
 end
 
 
@@ -2464,26 +1631,17 @@ function A:ApplyKeyboardBars(state)
             end
         end
     end
-
-    shelfCard(self, state, on)
     endCaps(self, state, on)
     self:KeyboardDividers(on)
-    pageBlock(self, state, on and self:GetOption("keyboardMastHead") ~= "none")
+
+    pageBlock(self, state, on)
     statusLane(self, state, on and self:GetOption("keyboardStatusLane") == true)
 
     xpInlay(self, state, on)
     fadeBackdrop(self, state, on)
 
 
-
-    local micro = on and self:GetOption("keyboardMicroSlab") == true
-
-
-    local holdMicroArt = on and self:KeyboardFloats()
-    local mainRect = book(state, _G["MainActionBar"] or {}).rect
-    local mated = {}
-    for _, name in ipairs(mainRect and mainRect.mates or {}) do mated[name] = true end
-    local lifted = self.microRowLifted and MicroMenu and true or false
+    local holdMicroArt = on
 
 
 
@@ -2526,27 +1684,8 @@ function A:ApplyKeyboardBars(state)
             end
         end
     end
-
-    if lifted and MicroMenuContainer then hideRail(state, MicroMenuContainer, "kbMicro") end
     for _, name in ipairs(self:KeyboardMicroNames()) do
-        if mated[name] and on then
-            local frame = _G[name]
-            if frame then
-                hideRail(state, frame, "kbMicro")
-                for _, art in ipairs(microArt(name)) do self:HoldHidden(state, art) end
-            end
-        elseif lifted and name == "BagsBar" then
-
-            local frame = _G[name]
-            if frame then
-                hideRail(state, frame, "kbMicro")
-                for _, art in ipairs(microArt(name)) do
-                    if micro or holdMicroArt then self:HoldHidden(state, art) else self:ReleaseHidden(state, art) end
-                end
-            end
-        else
-            microSlab(self, state, name, micro, (lifted and name == "MicroMenu") and "BagsBar" or nil, holdMicroArt)
-        end
+        microSlab(self, state, name, holdMicroArt)
     end
     state.count = (state.count or 0) + touched
     self.keyboardBarsActive = on
@@ -2568,7 +1707,6 @@ function A:KeyboardBoxes()
     local function push(id, kind, x, y, w, h)
         boxes[#boxes + 1] = { id = id, kind = kind, l = x / us, b = y / us, r = (x + w) / us, t = (y + h) / us }
     end
-    local mated = {}
     for _, def in ipairs(BARS) do
         local bar = _G[def.frame]
         if bar and self:Read(bar.IsShown, 1, bar) == true then
@@ -2580,7 +1718,6 @@ function A:KeyboardBoxes()
                     local cx, cy = x + w / 2 + rect.cx * scale, y + h / 2 + rect.cy * scale
                     local sw, sh = rect.w * scale, rect.h * scale
                     push(def.frame, "bar", cx - sw / 2, cy - sh / 2, sw, sh)
-                    for _, name in ipairs(rect.mates or {}) do mated[name] = true end
                 else
                     push(def.frame, "bar", x, y, w, h)
                 end
@@ -2588,7 +1725,7 @@ function A:KeyboardBoxes()
         end
     end
     for _, name in ipairs(self:KeyboardMicroNames()) do
-        local frame = not mated[name] and _G[name] or nil
+        local frame = _G[name]
         if frame and self:Read(frame.IsShown, 1, frame) == true then
             local x, y, w, h = rectOf(self, frame)
             if x then push(name, name == "BagsBar" and "bags" or "micro", x, y, w, h) end
@@ -2686,10 +1823,9 @@ end
 
 
 function A:KeyboardReport(emit)
-    emit(string.format("keyboard bars: %s | skin %s | mast head %s | centre %s | mode %s",
+    emit(string.format("keyboard bars: %s | skin %s | centre %s | mode %s",
         self.keyboardBarsActive and "on" or "off",
         tostring(self.db and self:GetOption("keyboardSkin")),
-        tostring(self.db and self:GetOption("keyboardMastHead")),
         tostring(self.db and self:GetOption("keyboardCentre")),
         self:ClickInputMode()))
 

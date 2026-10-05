@@ -74,6 +74,7 @@ function A:BuildReport()
     else
         add("Blocked actions: none")
     end
+    if self.PlateAuraLine then add(self:PlateAuraLine()) end
     local changed = self:ChangedKeys(nil)
     local parts = {}
     for _, key in ipairs(changed) do

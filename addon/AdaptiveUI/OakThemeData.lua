@@ -1,0 +1,46 @@
+local _, A = ...
+
+
+
+A.oakWood = {
+    ["oak-bumper"] = { 0.1194, 0.1374, 0.1569 },
+    ["oak-compass-tile"] = { 0.1260, 0.1484, 0.1693 },
+    ["oak-divider"] = { 0.1057, 0.1455, 0.1623 },
+    ["oak-kb-face"] = { 0.1554, 0.1694, 0.1867 },
+    ["oak-kb-socket"] = { 0.1478, 0.1617, 0.1783 },
+    ["oak-knot"] = { 0.1574, 0.1672, 0.1721 },
+    ["oak-map-mantle"] = { 0.1085, 0.1509, 0.1779 },
+    ["oak-plate-cap"] = { 0.0987, 0.1348, 0.1506 },
+    ["oak-plate-plain"] = { 0.0987, 0.1348, 0.1506 },
+    ["oak-plate2-cap"] = { 0.1026, 0.1639, 0.2006 },
+    ["oak-plate2-plain"] = { 0.1026, 0.1639, 0.2006 },
+    ["oak-plate3-cap"] = { 0.0959, 0.1472, 0.1782 },
+    ["oak-plate3-plain"] = { 0.0959, 0.1472, 0.1782 },
+    ["oak-rail"] = { 0.1198, 0.1433, 0.1620 },
+    ["oak-small-cap"] = { 0.1492, 0.1720, 0.1849 },
+    ["oak-small-plain"] = { 0.1492, 0.1720, 0.1849 },
+    ["oak-tile"] = { 0.1513, 0.1682, 0.1888 },
+    ["oak-tile-pip"] = { 0.1545, 0.1618, 0.1739 },
+    ["oak-window-branch"] = { 0.1015, 0.1394, 0.1475 },
+}
+A.oakMark = {
+    ["oak-bumper"] = { file = "oak-bumper-mark", hi = 0.9213 },
+    ["oak-compass-tile"] = { file = "oak-compass-tile-mark", hi = 1.0000 },
+    ["oak-divider"] = { file = "oak-divider-mark", hi = 0.9495 },
+    ["oak-kb-face"] = { file = "oak-kb-face-mark", hi = 0.9067 },
+    ["oak-kb-socket"] = { file = "oak-kb-socket-mark", hi = 1.0000 },
+    ["oak-map-mantle"] = { file = "oak-map-mantle-mark", hi = 0.8911 },
+    ["oak-plate-cap"] = { file = "oak-plate-cap-mark", hi = 0.9620 },
+    ["oak-plate-plain"] = { file = "oak-plate-plain-mark", hi = 0.9205 },
+    ["oak-plate2-cap"] = { file = "oak-plate2-cap-mark", hi = 0.9607 },
+    ["oak-plate2-plain"] = { file = "oak-plate2-plain-mark", hi = 0.9457 },
+    ["oak-plate3-cap"] = { file = "oak-plate3-cap-mark", hi = 0.9143 },
+    ["oak-plate3-plain"] = { file = "oak-plate3-plain-mark", hi = 0.9143 },
+    ["oak-rail"] = { file = "oak-rail-mark", hi = 0.8518 },
+    ["oak-small-cap"] = { file = "oak-small-cap-mark", hi = 0.9175 },
+    ["oak-small-plain"] = { file = "oak-small-plain-mark", hi = 0.9107 },
+    ["oak-stud"] = { file = "oak-stud-mark", hi = 0.9322 },
+    ["oak-tile"] = { file = "oak-tile-mark", hi = 1.0000 },
+    ["oak-tile-pip"] = { file = "oak-tile-pip-mark", hi = 0.7246 },
+    ["oak-window-branch"] = { file = "oak-window-branch-mark", hi = 0.9706 },
+}

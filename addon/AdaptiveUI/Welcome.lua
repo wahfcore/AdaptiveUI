@@ -46,7 +46,7 @@ local STEP_COUNT = 6
 local BODY, TITLE = 14, 16
 
 
-A.welcomeSchemes = { "dusk", "ember", "frost", "obsidian", "verdant", "porcelain" }
+A.welcomeSchemes = { "oakborn", "dusk", "ember", "frost", "obsidian", "porcelain" }
 
 local function text(parent, size, heading, x, y, width, role, wrap, justify)
     local fs = parent:CreateFontString(nil, "OVERLAY")
@@ -298,6 +298,19 @@ function A:CreateWelcome()
     ui.unitNote:SetHeight(40)
     ui.primary[3] = unitTiles[1]
 
+    section(s3, -284, "Look")
+    local lookDefs = {}
+    for i, def in ipairs({
+        { "oakborn", "AUI Oakborn", "The flagship: carved oak." },
+        { "dusk", "AUI Dusk", "Obsidian stone." },
+        { "blizzard", "Blizzard", "The game's own frames." },
+    }) do
+        lookDefs[i] = { value = def[1], title = def[2], desc = def[3],
+            x = M + (i - 1) * (THIRD + GUTTER), y = -302, w = THIRD, h = 70,
+            apply = function() A:SetOption("look", def[1]) end }
+    end
+    ui.lookTiles = group(s3, lookDefs, function() return A:GetOption("look") end)
+
 
     local s4 = newStep(4, "Your look", "The game behind this window shows each choice.")
     section(s4, -52, "Colour scheme")
@@ -314,7 +327,7 @@ function A:CreateWelcome()
     local schemeTiles = group(s4, schemeDefs, function() return A:GetOption("themeScheme") end)
     local afterSchemes = -70 - math.ceil(#schemeDefs / 3) * SCHEME_PITCH
     text(s4, BODY, false, M, afterSchemes - 2, CONTENT, "muted", false):SetText(
-        "Ten more schemes, and your own colours, in Options > Look.")
+        "Eleven more schemes, and your own colours, in Options > Look.")
     local styleTop = afterSchemes - 30
     section(s4, styleTop, "HUD style")
     group(s4, {
@@ -430,7 +443,8 @@ function A:CreateWelcome()
         local lines = {
             "Input:  " .. (INPUT_LABEL[A.db.mode] or A.db.mode) .. "   |   Screen:  " .. (SIZE_LABEL[size] or "your own sizes"),
             "Unit frames:  " .. (A.db.unitMode == "plus" and "AdaptiveUI plates" or "Blizzard's, restyled"),
-            "Look:  " .. schemeName(A:GetOption("themeScheme")) .. ", " .. (STYLE_LABEL[A.db.style] or A.db.style)
+            "Look:  " .. (({ oakborn = "AUI Oakborn", dusk = "AUI Dusk", blizzard = "Blizzard" })[A:GetOption("look")] or "")
+                .. ", " .. schemeName(A:GetOption("themeScheme")) .. ", " .. (STYLE_LABEL[A.db.style] or A.db.style)
                 .. ", " .. (MOTION_LABEL[A:MotionLevel()] or A:MotionLevel()) .. " movement",
             "Extras:  action camera " .. (A:GetOption("actionCamera") and "on" or "off")
                 .. ", damage readout " .. (A:GetOption("dpsStripOn") and "on" or "off"),
@@ -522,6 +536,8 @@ function A:OpenWelcome()
     ui.go(1)
     self:PlaceWindow(ui.frame, "Welcome")
     ui.active = true
+
+    if self.WindowBranchFoot then self:WindowBranchFoot(ui.frame) end
     ui.frame:Show()
     pcall(ui.frame.Raise, ui.frame)
 end

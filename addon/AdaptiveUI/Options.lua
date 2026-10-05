@@ -43,45 +43,6 @@ for _, scheme in ipairs(A.schemes) do SCHEME_VALUES[#SCHEME_VALUES + 1] = { valu
 
 SCHEME_VALUES[#SCHEME_VALUES + 1] = { value = "custom", label = "Custom" }
 
-A.optionGroups = {
-    { key = "general", label = "General" },
-    { key = "theme", label = "Theme" },
-    { key = "casts", label = "Cast bars" },
-    { key = "plus", label = "Unit frames" },
-
-
-
-
-
-    { key = "gauges", label = "Gauges and marks" },
-    { key = "plustext", label = "Plate text" },
-    { key = "pluscolor", label = "Plate colors" },
-    { key = "plusparty", label = "Party / pet / ToT" },
-    { key = "damage", label = "Damage strip" },
-    { key = "info", label = "Info strips" },
-    { key = "infomore", label = "More strips" },
-    { key = "infobar", label = "Info bar" },
-    { key = "movers", label = "Movers" },
-    { key = "actions", label = "Action bars" },
-
-
-
-
-
-
-    { key = "keyboard", label = "Keyboard bars" },
-
-
-
-
-
-    { key = "compass", label = "Compass" },
-    { key = "minimap", label = "Minimap / auras" },
-    { key = "panels", label = "Tracker / chat" },
-    { key = "tooltip", label = "Tooltips" },
-    { key = "profiles", label = "Profiles" },
-}
-
 A.options = {
 
 
@@ -89,6 +50,16 @@ A.options = {
 
 
 
+
+
+
+
+
+    { key = "look", label = "Look", type = "enum", widget = "look", default = "dusk", values = {
+          { value = "oakborn", label = "AUI Oakborn" },
+          { value = "dusk", label = "AUI Dusk" },
+          { value = "blizzard", label = "Blizzard" },
+      }, apply = function(self, value) if self.ApplyLook then self:ApplyLook(value) end end },
     { key = "themeScheme", group = "theme", label = "Color scheme", type = "enum", widget = "scheme", default = "dusk", values = SCHEME_VALUES,
 
 
@@ -298,7 +269,7 @@ A.options = {
 
 
 
-    { key = "windowBanner", group = "general", label = "Painted masthead on the windows", type = "bool", default = false },
+
 
 
 
@@ -344,18 +315,15 @@ A.options = {
 
 
     { key = "plateSkin", group = "plustext", label = "Unit plate style", type = "enum",
-      default = "bar", values = {
+      default = "inlay", values = {
 
 
 
 
 
           { value = "inlay", label = "Inlay (the bars are the painting)" },
-          { value = "mantle", label = "Mantle (health on the painting)" },
-          { value = "tinted", label = "Tinted (the painting is the bar)" },
-          { value = "plate02", label = "Plate 02 (painted, 0.50)" },
-          { value = "bar", label = "Bar (painted, 0.43)" },
-          { value = "classic", label = "Classic (0.41)" },
+
+
       } },
 
 
@@ -363,9 +331,10 @@ A.options = {
 
 
 
+
+
     { key = "plateMantleCast", label = "Cast bar on the mantle", type = "enum",
-      default = "face", values = {
-          { value = "face", label = "In the painting's face" },
+      default = "seam", values = {
           { value = "above", label = "A plank above the name" },
 
 
@@ -380,10 +349,23 @@ A.options = {
 
 
 
+
+
+
+
     { key = "plateFillStyle", group = "pluscolor", label = "Health and mana fill", type = "enum",
-      default = "color", values = {
+      default = "auto", values = {
+          { value = "auto", label = "The look's own" },
           { value = "color", label = "Colour fill in the channel" },
-          { value = "carved", label = "Carved: the art chips away to the colour" },
+
+
+      } },
+
+
+    { key = "oakPlate", group = "pluscolor", label = "Plate shape", type = "enum", default = "smooth", values = {
+          { value = "smooth", label = "Smooth" },
+          { value = "rough", label = "Rough" },
+          { value = "straight", label = "Straight" },
       } },
     { key = "plusPlayerOn", group = "plus", label = "Player plate", type = "bool", default = true },
     { key = "plusTargetOn", group = "plus", label = "Target plate", type = "bool", default = true },
@@ -682,11 +664,6 @@ A.options = {
 
 
 
-    { key = "actionSocketSkin", group = "actions", label = "Action slot skin", type = "enum",
-      default = "authored", values = {
-          { value = "authored", label = "Authored socket" },
-          { value = "classic", label = "Classic (0.40)" },
-      } },
 
 
 
@@ -706,11 +683,8 @@ A.options = {
 
 
 
-    { key = "compassLayout", group = "compass", label = "Compass layout", type = "enum",
-      default = "live", values = {
-          { value = "live", label = "Live (centred)" },
-          { value = "classic", label = "Classic (0.43)" },
-      } },
+
+
 
 
 
@@ -742,15 +716,11 @@ A.options = {
 
 
     { key = "compassGround", group = "compass", label = "Under the compass", type = "enum",
-      default = "base", values = {
+      default = "divider", values = {
 
 
           { value = "divider", label = "Your divider under the cross" },
-          { value = "base", label = "Base strip under the cross" },
           { value = "none", label = "Nothing" },
-          { value = "rail", label = "Rail under the hero arm (0.48)" },
-          { value = "slab", label = "Obsidian slab under each arm (0.44.1)" },
-          { value = "frame", label = "Frame (0.44)" },
       } },
 
 
@@ -771,11 +741,7 @@ A.options = {
 
 
 
-    { key = "compassEmptyStyle", group = "compass", label = "Empty compass slot", type = "enum",
-      default = "faint", values = {
-          { value = "faint", label = "Faint socket" },
-          { value = "socket", label = "Full socket with pip (0.48)" },
-      } },
+
 
 
 
@@ -793,7 +759,6 @@ A.options = {
     { key = "compassButtonSkin", tab = "compass", label = "Compass button skin", type = "enum",
       default = "tiles", values = {
           { value = "tiles", label = "Painted tiles (compass_bg)" },
-          { value = "socket", label = "Authored socket (0.49)" },
       } },
 
 
@@ -810,11 +775,6 @@ A.options = {
 
 
 
-    { key = "compassPromptSeat", tab = "compass", label = "Trigger prompt seat", type = "enum",
-      default = "arm", values = {
-          { value = "arm", label = "Under its own arm" },
-          { value = "shelf", label = "On the shelf's cap (0.44)" },
-      } },
 
 
 
@@ -838,26 +798,18 @@ A.options = {
 
 
 
-    { key = "compassSkin", group = "compass", label = "Compass skin", type = "enum",
-      default = "rail", values = {
-          { value = "rail", label = "Keyboard-bar family (rail)" },
-          { value = "classic", label = "Classic (0.47)" },
-      } },
-
-
-
-    { key = "compassSlotBrass", group = "compass", label = "Brass lip on every compass slot", type = "bool", default = false },
 
 
 
 
 
-    { key = "compassRailArms", group = "compass", label = "Rail under", type = "enum",
-      default = "hero", values = {
-          { value = "hero", label = "Enlarged arms only (hero)" },
-          { value = "all", label = "Every arm" },
-          { value = "none", label = "No arm (shelf only)" },
-      } },
+
+
+
+
+
+
+
 
 
 
@@ -875,7 +827,6 @@ A.options = {
           { value = "heroThumb", label = "Hero bottom arm (thumb)" },
           { value = "heroLeft", label = "Hero left arm (LT)" },
           { value = "heroRight", label = "Hero right arm (RT)" },
-          { value = "rows", label = "All rows (0.48 rails, 1.25)" },
       },
       apply = function(self, value) self:ApplyCompassPreset(value) end },
 
@@ -893,7 +844,7 @@ A.options = {
 
 
 
-    { key = "compassGroundEdge", group = "actions", label = "Lit edge on the frame ground", type = "bool", default = true },
+
 
 
 
@@ -914,7 +865,7 @@ A.options = {
 
 
 
-    { key = "compassRhombus", group = "actions", label = "Rhombus outline round the compass", type = "bool", default = false },
+
 
 
 
@@ -970,7 +921,7 @@ A.options = {
 
 
     { key = "keyboardSkin", group = "keyboard", label = "Keyboard bar style", type = "enum",
-      default = "authored", values = {
+      default = "base", values = {
 
 
 
@@ -981,14 +932,8 @@ A.options = {
 
 
           { value = "base", label = "Bar 04 under the buttons" },
-          { value = "bar04", label = "Bar 04 (the buttons set into it)" },
-          { value = "bright", label = "Inlay, buttons fully backed" },
-          { value = "inlay", label = "Inlay (the row in your painted bar)" },
-          { value = "edge", label = "Edge (tiles over your painted bar)" },
-          { value = "footer", label = "Footer (tiles over the painted rail)" },
-          { value = "bare", label = "Bare (tiles alone)" },
-          { value = "slab02", label = "Slab 02 (painted, 0.50)" },
-          { value = "authored", label = "Carved bar (0.45)" },
+
+
           { value = "classic", label = "Classic (0.44)" },
       } },
 
@@ -1008,19 +953,14 @@ A.options = {
 
 
     { key = "keyboardBackdrop", label = "Backdrop behind the bar", type = "enum",
-      default = "shelf", values = {
+      default = "fade", values = {
 
           { value = "fade", label = "Black fade (behind the bar and the menu row)" },
-          { value = "shelf", label = "Shelf (behind the buttons)" },
-          { value = "hearth", label = "Hearth (the whole stack)" },
+
           { value = "off", label = "None (0.51)" },
       } },
-    { key = "keyboardMastHead", group = "keyboard", label = "Mast head", type = "enum",
-      default = "both", values = {
-          { value = "both", label = "Both ends" },
-          { value = "left", label = "Left end only" },
-          { value = "none", label = "Neither (plain caps)" },
-      } },
+
+
 
 
 
@@ -1066,17 +1006,12 @@ A.options = {
 
 
     { key = "keyboardSlotSkin", group = "keyboard", label = "Slot style", type = "enum",
-      default = "facet", values = {
+      default = "tile", values = {
           { value = "tile", label = "Painted tile" },
-          { value = "facet", label = "Square facet (0.45)" },
+
           { value = "classic", label = "Blizzard's icon frame" },
       } },
 
-
-
-
-
-    { key = "keyboardSlotBrass", group = "keyboard", label = "Brass lip on every slot", type = "bool", default = false },
 
 
 
@@ -1102,7 +1037,7 @@ A.options = {
 
 
 
-    { key = "keyboardMicroSlab", group = "keyboard", label = "Slab behind the micro menu and bags", type = "bool", default = true },
+
 
 
 
@@ -1116,11 +1051,8 @@ A.options = {
           { value = "full", label = "Full (0.50)" },
           { value = "none", label = "Hidden" },
       } },
-    { key = "keyboardEmptyStyle", group = "keyboard", label = "Empty slot", type = "enum",
-      default = "faint", values = {
-          { value = "faint", label = "Faint socket" },
-          { value = "socket", label = "Full socket with pip (0.45)" },
-      } },
+
+
 
 
 
@@ -1134,11 +1066,7 @@ A.options = {
 
 
 
-    { key = "chromeSkin", group = "minimap", label = "Map and window chrome", type = "enum",
-      default = "authored", values = {
-          { value = "authored", label = "Authored (0.46)" },
-          { value = "classic", label = "Classic (0.45)" },
-      } },
+
 
 
 
@@ -1170,33 +1098,33 @@ A.options = {
 
 
 
-    { key = "mapSkin", label = "Map card", type = "enum", default = "painted", values = {
+    { key = "mapSkin", label = "Map card", type = "enum", default = "shelf", values = {
 
 
 
 
+
+
+
+          { value = "shelf", label = "Oak shelf (the map standing on your oak shelf, its name and clock inside)" },
 
           { value = "base", label = "Base (the map standing on your minimal panel)" },
-          { value = "plaque", label = "Plaque (the map on your minimal panel)" },
-          { value = "foot", label = "Foot (your minimal panel under the map)" },
-          { value = "painted", label = "Painted (your map panel)" },
           { value = "card", label = "Card (0.46-0.52)" },
       } },
-    { key = "windowSkin", label = "Settings window", type = "enum", default = "painted", values = {
+    { key = "windowSkin", label = "Settings window", type = "enum", default = "branch", values = {
 
-          { value = "ledge", label = "Flat, bar 04 as its foot" },
+
+          { value = "branch", label = "Flat, your oak branch as its foot" },
           { value = "painted", label = "Painted (your options panel)" },
           { value = "flat", label = "Flat (0.47-0.52)" },
       } },
     { key = "trackerStyle", label = "Objectives", type = "enum", default = "tidy", values = {
           { value = "tidy", label = "Tidy (no header boxes)" },
           { value = "bare", label = "Bare (no backing)" },
-          { value = "boxed", label = "Boxed headers (0.52)" },
       } },
     { key = "chatStyle", label = "Chat", type = "enum", default = "tidy", values = {
           { value = "tidy", label = "Tidy (input only while typing)" },
           { value = "bare", label = "Bare (no backing)" },
-          { value = "boxed", label = "Boxed (0.52)" },
       } },
 
 
@@ -1268,9 +1196,8 @@ A.options = {
 
 
 
-    { key = "plusSigil", group = "gauges", label = "Sigil badge on the unit plates", type = "bool", default = true },
-    { key = "plusStud", group = "gauges", label = "End stud on the unit plates", type = "bool", default = true },
-    { key = "plusAccentMark", group = "gauges", label = "Accent mark on the unit plates", type = "bool", default = true },
+
+
     { key = "plusKeyline", group = "gauges", label = "Brass rules and edges on the unit plates", type = "bool", default = true },
     { key = "plusRim", group = "gauges", label = "Crisp outline on the plate planes", type = "bool", default = true },
     { key = "plusGlow", group = "gauges", label = "Lit edges on the stud and the gauges", type = "bool", default = true },
@@ -1328,9 +1255,6 @@ A.options = {
 
 
 
-
-
-    { key = "optionsLayout", type = "enum", default = "sections", values = choice("sections", "Six sections", "tabs", "Nineteen tabs (0.46)") },
     { key = "optionsAdvanced", type = "bool", default = false },
 }
 for _, name in ipairs({ "actions", "units", "party", "auras", "minimap", "objectives", "chat", "tooltips" }) do
@@ -1362,12 +1286,6 @@ end
 
 A.options[#A.options + 1] = { key = "compassHeroSeeded", type = "bool", default = false }
 
-A.options[#A.options + 1] = { key = "compassV3Settled", type = "bool", default = false }
-
-A.options[#A.options + 1] = { key = "barsV4Settled", type = "bool", default = false }
-
-A.options[#A.options + 1] = { key = "barsV5Settled", type = "bool", default = false }
-
 
 
 
@@ -1376,7 +1294,7 @@ A.options[#A.options + 1] = { key = "barsV5Settled", type = "bool", default = fa
 
 A.options[#A.options + 1] = { key = "compassDividerLight", label = "Held trigger lights the divider", type = "bool",
     default = true }
-A.options[#A.options + 1] = { key = "xpLane", label = "Experience bar", type = "enum", default = "blizzard",
+A.options[#A.options + 1] = { key = "xpLane", label = "Experience bar", type = "enum", default = "inlay",
     values = {
         { value = "blizzard", label = "Blizzard's own, where Edit Mode puts it" },
         { value = "inlay", label = "Inside the painted bar (pass 7)" },
@@ -1396,13 +1314,21 @@ A.options[#A.options + 1] = { key = "xpLane", label = "Experience bar", type = "
 
 
 
-A.options[#A.options + 1] = { key = "compassBumperSkin", label = "Bumper chips", type = "enum", default = "plaque",
+A.options[#A.options + 1] = { key = "compassBumperSkin", label = "Bumper chips", type = "enum", default = "arm",
     values = {
         { value = "arm", label = "Your rb+lb plaque on its arm" },
-        { value = "plaque", label = "Your rb+lb plaque (0.56)" },
         { value = "native", label = "Blizzard's own (0.54)" },
     } }
 A.options[#A.options + 1] = { key = "compassBumperGlow", label = "Bumper plaque glows while held", type = "bool", default = true }
+
+
+
+A.options[#A.options + 1] = { key = "compassPromptStyle", label = "Trigger prompt look", type = "enum", default = "auto",
+    values = {
+        { value = "auto", label = "Match the look" },
+        { value = "flat", label = "Plain black" },
+        { value = "native", label = "Controller pictures" },
+    } }
 A.options[#A.options + 1] = { key = "recolourMarks", label = "Brass follows the theme", type = "enum", default = "matched",
     values = {
         { value = "matched", label = "In the theme's colour, at brass brightness" },
@@ -1419,17 +1345,7 @@ A.options[#A.options + 1] = { key = "artMaterial", label = "Painted art follows 
 A.options[#A.options + 1] = { key = "artGlaze", label = "Painted art: colour glaze", type = "number", default = 0.6,
     min = 0, max = 1, step = 0.1, format = "%.0f%%", scale = 100 }
 
-A.options[#A.options + 1] = { key = "themeFollowSettled", type = "bool", default = false }
-
-A.options[#A.options + 1] = { key = "pass7Settled", type = "bool", default = false }
-
-A.options[#A.options + 1] = { key = "pass9Settled", type = "bool", default = false }
-
-A.options[#A.options + 1] = { key = "barsV6Settled", type = "bool", default = false }
-
-A.options[#A.options + 1] = { key = "chromeV2Settled", type = "bool", default = false }
-
-A.options[#A.options + 1] = { key = "crestMapSettled", type = "bool", default = false }
+A.options[#A.options + 1] = { key = "lookSettled", type = "bool", default = false }
 
 
 
@@ -1538,12 +1454,7 @@ end
 
 
 
-
-A.shippedDefaults = {
-    plateSkin = "inlay", keyboardSkin = "base", keyboardSlotSkin = "tile", keyboardMicroSlab = false,
-    keyboardBackdrop = "fade", xpLane = "inlay", mapSkin = "base", windowSkin = "ledge", compassGround = "divider",
-    compassBumperSkin = "arm",
-}
+A.shippedDefaults = { look = "oakborn" }
 function A:ResetValue(option)
     local shipped = self.shippedDefaults[option.key]
     if shipped ~= nil then return shipped end
@@ -1560,6 +1471,7 @@ end
 
 
 function A:StoreRaw(profile, key, value) setRaw(profile, key, value) end
+function A:ReadRaw(profile, key) return getRaw(profile, key) end
 function A:IsSparseDefault(key, value) return sparseDefault(key, value) end
 
 function A:GetOption(key)
@@ -1601,6 +1513,7 @@ function A:QueueOptionsApplied()
 end
 
 function A:OptionsApplied()
+    if self.SyncLookArt then self:SyncLookArt() end
     self.dirty, self.nativeDirty, self.layoutDirty = true, true, true
     self.plusFailed = nil
     self:Changed()
@@ -1663,236 +1576,6 @@ end
 
 
 
-
-
-
-
-
-
-function A:SettleCompassV3(profile)
-    if profile.compassV3Settled == true then return false end
-    profile.compassV3Settled = true
-    local notes = {}
-    if profile.compassPreset == "heroThumb" then
-        local seeded = true
-        for _, id in ipairs(A.compassGroupOrder or {}) do
-            local want = A.compassHeroDefaults[id] or 0.90
-            if math.abs((tonumber(profile["compassGroupSize." .. id]) or 1) - want) > 0.0005 then
-                seeded = false
-            end
-        end
-        if seeded then
-            profile.compassPreset = "classic"
-            for _, id in ipairs(A.compassGroupOrder or {}) do profile["compassGroupSize." .. id] = 1 end
-            notes[#notes + 1] = "compass: the 0.48.1 hero-thumb sizes are back to one size; "
-                .. "pick a hero arm under Compass if you want one bigger"
-        end
-    end
-    if profile.compassGround == "slab" or profile.compassGround == nil then
-        profile.compassGround = "base"
-        notes[#notes + 1] = "compass: the base strip is under the cross now (Compass > Under the compass)"
-    end
-    if #notes > 0 then
-        self.pendingNotes = self.pendingNotes or {}
-        for _, note in ipairs(notes) do self.pendingNotes[#self.pendingNotes + 1] = note end
-    end
-    return #notes > 0
-end
-
-
-
-
-
-
-
-
-
-
-A.plateStyleSettle = {
-    { key = "plateSkin", from = "bar", to = "plate02",
-      note = "unit plates: the new painted plate is on (Look > Plate styles to change it)" },
-    { key = "keyboardSkin", from = "authored", to = "slab02",
-      note = "keyboard bars: the new painted slab is on (Look > Plate styles)" },
-    { key = "keyboardSlotSkin", from = "facet", to = "tile",
-      note = "keyboard slots: the painted button tiles are on (Look > Plate styles)" },
-}
-function A:SettlePlateStyles(profile)
-    if profile.plateStylesSettled == true then return false end
-    profile.plateStylesSettled = true
-    local notes = {}
-    for _, step in ipairs(self.plateStyleSettle) do
-        local have = profile[step.key]
-        if have == nil or have == step.from then
-            profile[step.key] = step.to
-            notes[#notes + 1] = step.note
-        end
-    end
-    if #notes > 0 then
-        self.pendingNotes = self.pendingNotes or {}
-        for _, note in ipairs(notes) do self.pendingNotes[#self.pendingNotes + 1] = note end
-    end
-    return #notes > 0
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
-A.barsV4Settle = {
-    { key = "plateSkin", from = { plate02 = true }, to = "mantle",
-      note = "unit plates: the new mantle is on -- the health bar stands on your painting. "
-          .. "Back to 0.50: /aui set plateSkin plate02 (Look > Plate styles)" },
-    { key = "keyboardSkin", from = { slab02 = true }, to = "footer",
-      note = "keyboard bar: the new footer rail is on, the tiles float over it. "
-          .. "Back to 0.50: /aui set keyboardSkin slab02 and /aui set keyboardMicroSlab on (Look > Plate styles)" },
-}
-function A:SettleBarsV4(profile)
-    if profile.barsV4Settled == true then return false end
-    profile.barsV4Settled = true
-    local notes, moved = {}, {}
-    for _, step in ipairs(self.barsV4Settle) do
-        local have = profile[step.key]
-        if have == nil or step.from[have] then
-            profile[step.key] = step.to
-            notes[#notes + 1] = step.note
-            moved[step.key] = have or "default"
-        end
-    end
-    if moved.keyboardSkin and (profile.keyboardMicroSlab == nil or profile.keyboardMicroSlab == true) then
-        profile.keyboardMicroSlab = false
-    end
-
-    self.barsV4Moved = moved
-    if #notes > 0 then
-        self.pendingNotes = self.pendingNotes or {}
-
-        local drop = {}
-        for _, step in ipairs(self.plateStyleSettle or {}) do
-            if moved[step.key] then drop[step.note] = true end
-        end
-        local kept = {}
-        for _, note in ipairs(self.pendingNotes) do
-            if not drop[note] then kept[#kept + 1] = note end
-        end
-        self.pendingNotes = kept
-        for _, note in ipairs(notes) do self.pendingNotes[#self.pendingNotes + 1] = note end
-    end
-    return #notes > 0
-end
-
-
-
-
-
-
-
-
-
-
-A.barsV5Back = "Back to 0.51: /aui set plateSkin mantle and /aui set keyboardBackdrop off"
-A.barsV5Settle = {
-    { key = "plateSkin", from = { mantle = true }, to = "inlay",
-      note = "unit plates: the inlay is on -- the health and mana bars are your painting now, the cast "
-          .. "runs in its seam, and the keyboard bar stands on a shelf. " .. A.barsV5Back
-          .. " (Look > Plate styles)" },
-}
-function A:SettleBarsV5(profile)
-    if profile.barsV5Settled == true then return false end
-    profile.barsV5Settled = true
-    local notes, moved = {}, {}
-    for _, step in ipairs(self.barsV5Settle) do
-        local have = profile[step.key]
-        if have == nil or step.from[have] then
-            profile[step.key] = step.to
-            notes[#notes + 1] = step.note
-            moved[step.key] = have or "default"
-        end
-    end
-    self.barsV5Moved = moved
-    if #notes > 0 then
-        self.pendingNotes = self.pendingNotes or {}
-        local drop = {}
-        for _, step in ipairs(self.barsV4Settle or {}) do
-            if moved[step.key] then drop[step.note] = true end
-        end
-        for _, step in ipairs(self.plateStyleSettle or {}) do
-            if moved[step.key] then drop[step.note] = true end
-        end
-        local kept = {}
-        for _, note in ipairs(self.pendingNotes) do
-            if not drop[note] then kept[#kept + 1] = note end
-        end
-        self.pendingNotes = kept
-        for _, note in ipairs(notes) do self.pendingNotes[#self.pendingNotes + 1] = note end
-    end
-    return #notes > 0
-end
-
-
-
-
-
-
-
-
-
-
-
-A.barsV6Back = "Back to 0.52: /aui set keyboardSkin footer and /aui set compassGround base"
-A.barsV6Settle = {
-    { key = "keyboardSkin", from = { footer = true },
-      note = "your new action bar is on with the buttons inside it (tiles over it instead: /aui set keyboardSkin edge)",
-      to = "inlay" },
-    { key = "compassGround", from = { base = true },
-      note = "your compass divider is under the cross (nothing there: /aui set compassGround none)",
-      to = "divider" },
-}
-function A:SettleBarsV6(profile)
-    if profile.barsV6Settled == true then return false end
-    profile.barsV6Settled = true
-    local parts, moved = {}, {}
-    for _, step in ipairs(self.barsV6Settle) do
-        local have = profile[step.key]
-        if have == nil or step.from[have] then
-            profile[step.key] = step.to
-            parts[#parts + 1] = step.note
-            moved[step.key] = have or "default"
-        end
-    end
-    self.barsV6Moved = moved
-    if #parts == 0 then return false end
-    self.pendingNotes = self.pendingNotes or {}
-    local drop = {}
-    for _, list in ipairs({ self.barsV5Settle or {}, self.barsV4Settle or {}, self.plateStyleSettle or {} }) do
-        for _, step in ipairs(list) do
-            if moved[step.key] then drop[step.note] = true end
-        end
-    end
-    if moved.compassGround then
-        drop["compass: the base strip is under the cross now (Compass > Under the compass)"] = true
-    end
-    local kept = {}
-    for _, note in ipairs(self.pendingNotes) do
-        if not drop[note] then kept[#kept + 1] = note end
-    end
-    self.pendingNotes = kept
-    self.pendingNotes[#self.pendingNotes + 1] = "bars v6: " .. table.concat(parts, "; ") .. ". "
-        .. A.barsV6Back .. " (Look > Plate styles)"
-    return true
-end
-
-
-
-
-
 function A:XpLaneMode()
     if not (self.db and self.optionIndex and self.optionIndex.xpLane) then return "blizzard" end
     if self:GetOption("xpLane") ~= "inlay" then return "blizzard" end
@@ -1901,179 +1584,6 @@ function A:XpLaneMode()
 end
 
 
-
-
-
-
-
-
-
-
-A.pass7Back = "Back to 0.54: /aui set pass7 back"
-A.pass7Settle = {
-    { key = "keyboardSkin", from = { inlay = true }, to = "bar04" },
-    { key = "keyboardBackdrop", from = { shelf = true }, to = "fade" },
-    { key = "xpLane", from = { blizzard = true }, to = "inlay" },
-    { key = "mapSkin", from = { painted = true }, to = "plaque" },
-    { key = "windowSkin", from = { painted = true }, to = "ledge" },
-}
-
-A.pass7Values = {
-    back = { keyboardSkin = "inlay", keyboardBackdrop = "shelf", xpLane = "blizzard", mapSkin = "painted",
-             windowSkin = "painted", compassBumperSkin = "native", recolourMarks = "accent" },
-    on = { keyboardSkin = "bar04", keyboardBackdrop = "fade", xpLane = "inlay", mapSkin = "plaque",
-           windowSkin = "ledge", compassBumperSkin = "plaque", recolourMarks = "matched" },
-}
-A.pass7Note = "pass 7: your action bar 04 holds the buttons over a black fade with your XP inside it, your "
-    .. "rb+lb plaques sit behind the bumper chips, the map sits on your minimal panel and the Settings window "
-    .. "stands on bar 04; brass follows the theme. Your 0.54 bar with brighter buttons instead: /aui set "
-    .. "keyboardSkin bright. The panel under the map: /aui set mapSkin foot. " .. A.pass7Back
-function A:SettlePass7(profile)
-    if profile.pass7Settled == true then return false end
-    profile.pass7Settled = true
-    local moved = {}
-    local any = false
-    for _, step in ipairs(self.pass7Settle) do
-        local have = profile[step.key]
-        if have == nil or step.from[have] then
-            profile[step.key] = step.to
-            moved[step.key] = have or "default"
-            any = true
-        end
-    end
-    self.pass7Moved = moved
-    if not any then return false end
-    self.pendingNotes = self.pendingNotes or {}
-    self.pendingNotes[#self.pendingNotes + 1] = A.pass7Note
-    return true
-end
-
-
-
-
-
-
-
-A.pass9Back = "Back to 0.56: /aui set pass9 back"
-A.pass9Settle = {
-    { key = "keyboardSkin", from = { bar04 = true }, to = "base" },
-    { key = "mapSkin", from = { plaque = true }, to = "base" },
-    { key = "compassBumperSkin", from = { plaque = true }, to = "arm" },
-}
-A.pass9Values = {
-    back = { keyboardSkin = "bar04", mapSkin = "plaque", compassBumperSkin = "plaque" },
-    on = { keyboardSkin = "base", mapSkin = "base", compassBumperSkin = "arm" },
-}
-A.pass9Note = "pass 9: your bar 04 is under the buttons now, the map stands on its panel with the text set in "
-    .. "and the clock beside the coordinates, and the bumper plaques sit on their arms without the red and "
-    .. "green marks. " .. A.pass9Back
-function A:SettlePass9(profile)
-    if profile.pass9Settled == true then return false end
-    profile.pass9Settled = true
-    local moved, any = {}, false
-    for _, step in ipairs(self.pass9Settle) do
-        local have = profile[step.key]
-        if have == nil or step.from[have] then
-            profile[step.key], moved[step.key], any = step.to, have or "default", true
-        end
-    end
-    self.pass9Moved = moved
-    if not any then return false end
-    self.pendingNotes = self.pendingNotes or {}
-    self.pendingNotes[#self.pendingNotes + 1] = A.pass9Note
-    return true
-end
-
-
-
-
-
-
-
-A.themeFollowNote = "Your painted art now follows your colour scheme (back: /aui set artMaterial painted)"
-function A:SettleThemeFollow(profile)
-    if profile.themeFollowSettled == true then return false end
-    profile.themeFollowSettled = true
-    local have = profile.artMaterial
-    if have ~= nil and have ~= "painted" then return false end
-    profile.artMaterial = "scheme"
-    self.themeFollowMoved = have or "default"
-    self.pendingNotes = self.pendingNotes or {}
-    self.pendingNotes[#self.pendingNotes + 1] = A.themeFollowNote
-    return true
-end
-
-function A:Pass7Line()
-    if not (self.db and self.optionIndex) then return "pass 7: no profile" end
-    return string.format("pass 7: keyboard %s (wearing %s) | backdrop %s | xp %s (live %s) | bumpers %s | map %s | "
-        .. "window %s | marks %s | stone %s | settled %s",
-        tostring(self:GetOption("keyboardSkin")), tostring(self.KeyboardSkin and self:KeyboardSkin() or "?"),
-        tostring(self:GetOption("keyboardBackdrop")), tostring(self:GetOption("xpLane")), self:XpLaneMode(),
-        tostring(self:GetOption("compassBumperSkin")), tostring(self:GetOption("mapSkin")),
-        tostring(self:GetOption("windowSkin")), tostring(self:GetOption("recolourMarks")),
-        tostring(self:GetOption("artMaterial")), tostring(self:GetOption("pass7Settled")))
-end
-
-function A:BarsV6Line()
-    if not (self.db and self.optionIndex) then return "bars v6: no profile" end
-    local moved = self.barsV6Moved or {}
-    local parts = {}
-    for key, from in pairs(moved) do parts[#parts + 1] = key .. " from " .. tostring(from) end
-    table.sort(parts)
-    return string.format("bars v6: keyboard %s (wearing %s) | compass ground %s (wearing %s) | xp %s | settled %s%s",
-        tostring(self:GetOption("keyboardSkin")), tostring(self.KeyboardSkin and self:KeyboardSkin() or "?"),
-        tostring(self:GetOption("compassGround")), tostring(self.CompassGroundMode and self:CompassGroundMode() or "?"),
-        tostring(self:GetOption("xpLane")) .. " (live: " .. self:XpLaneMode() .. ")", tostring(self:GetOption("barsV6Settled")),
-        #parts > 0 and (" this login (" .. table.concat(parts, ", ") .. "; " .. A.barsV6Back .. ")") or "")
-end
-
-
-
-
-
-
-
-
-
-
-A.chromeV2Back = "Back to 0.52: /aui set mapSkin card, windowSkin flat, trackerStyle boxed, "
-    .. "chatStyle boxed, raidSkin native, plateSmallSkin inlay"
-A.chromeV2Note = "chrome v2: your map and options panels are the map card and the Settings window, the "
-    .. "chat input shows only while you type, the objectives lost their header boxes, and the raid frames "
-    .. "and the small plates wear your raid tile. " .. A.chromeV2Back .. "."
-function A:SettleChromeV2(profile)
-    if profile.chromeV2Settled == true then return false end
-    profile.chromeV2Settled = true
-    local fresh = true
-    for _, key in ipairs({ "mapSkin", "windowSkin", "trackerStyle", "chatStyle", "plateSmallSkin", "raidSkin" }) do
-        if profile[key] ~= nil then fresh = false end
-    end
-    self.chromeV2Moved = fresh
-    if fresh then
-        self.pendingNotes = self.pendingNotes or {}
-        self.pendingNotes[#self.pendingNotes + 1] = A.chromeV2Note
-    end
-    return fresh
-end
-
-
-
-
-
-A.crestMapMove = { both = "windows", map = "off" }
-function A:SettleCrestMap(profile)
-    if profile.crestMapSettled == true then return false end
-    profile.crestMapSettled = true
-    local to = A.crestMapMove[profile.chromeCrest]
-    if not to then return false end
-    local from = profile.chromeCrest
-    profile.chromeCrest = to
-    self.crestMapNote = "the crest is off the minimap (back: /aui set chromeCrest " .. from .. ")"
-    self.pendingNotes = self.pendingNotes or {}
-    self.pendingNotes[#self.pendingNotes + 1] = self.crestMapNote
-    return true
-end
-
 function A:ChromeV2Line()
     if not (self.db and self.optionIndex) then return "chrome v2: no profile" end
 
@@ -2081,12 +1591,10 @@ function A:ChromeV2Line()
     local cap = self.mapCardCap
     local cover = cap and string.format(" | map card scaled %.2f -> %.2f so it clears the objectives "
         .. "(your minimapScale is unchanged)", cap.asked, cap.got) or ""
-    return string.format("chrome v2: map %s | window %s | objectives %s | chat %s | small plates %s | raid %s | settled %s%s%s",
+    return string.format("chrome v2: map %s | window %s | objectives %s | chat %s | small plates %s | raid %s%s",
         tostring(self:GetOption("mapSkin")), tostring(self:GetOption("windowSkin")),
         tostring(self:GetOption("trackerStyle")), tostring(self:GetOption("chatStyle")),
-        tostring(self:GetOption("plateSmallSkin")), tostring(self:GetOption("raidSkin")),
-        tostring(self:GetOption("chromeV2Settled")),
-        self.chromeV2Moved and (" this login (" .. A.chromeV2Back .. ")") or "", cover)
+        tostring(self:GetOption("plateSmallSkin")), tostring(self:GetOption("raidSkin")), cover)
 end
 
 
@@ -2095,34 +1603,6 @@ end
 
 function A:SetCommand(message)
     local key, value = string.match(message or "", "^%s*%S+%s+(%S+)%s+(%S+)")
-
-    if key and key:lower() == "pass7" and value and self.pass7Values[value:lower()] then
-        if self:IsCombat() then
-            self:Print("Out of combat, please: pass 7 was not changed.")
-            return false
-        end
-        local set = self.pass7Values[value:lower()]
-        local names = {}
-        for name in pairs(set) do names[#names + 1] = name end
-        table.sort(names)
-        for _, name in ipairs(names) do self:SetOption(name, set[name]) end
-        self:Print("pass 7 " .. value:lower() .. ": " .. table.concat(names, ", "))
-        return true
-    end
-
-    if key and key:lower() == "pass9" and value and self.pass9Values[value:lower()] then
-        if self:IsCombat() then
-            self:Print("Out of combat, please: pass 9 was not changed.")
-            return false
-        end
-        local set = self.pass9Values[value:lower()]
-        local names = {}
-        for name in pairs(set) do names[#names + 1] = name end
-        table.sort(names)
-        for _, name in ipairs(names) do self:SetOption(name, set[name]) end
-        self:Print("pass 9 " .. value:lower() .. ": " .. table.concat(names, ", "))
-        return true
-    end
     local option = key and self.optionIndex[key]
     if not option then
 
@@ -2131,7 +1611,7 @@ function A:SetCommand(message)
         end
     end
     if not option or value == nil then
-        self:Print("usage: /aui set KEY VALUE, e.g. /aui set plateSkin plate02")
+        self:Print("usage: /aui set KEY VALUE, e.g. /aui set plateMantleCast above")
         return false
     end
     local v = value
@@ -2162,34 +1642,6 @@ function A:SetCommand(message)
     return true
 end
 
-
-
-function A:BarsV5Line()
-    if not (self.db and self.optionIndex) then return "bars v5: no profile" end
-    local moved = self.barsV5Moved or {}
-    local parts = {}
-    for key, from in pairs(moved) do parts[#parts + 1] = key .. " from " .. tostring(from) end
-    table.sort(parts)
-    return string.format("bars v5: plate %s (wearing %s) | backdrop %s | settled %s%s",
-        tostring(self:GetOption("plateSkin")), tostring(self.PlateSkin and self:PlateSkin() or "?"),
-        tostring(self:GetOption("keyboardBackdrop")), tostring(self:GetOption("barsV5Settled")),
-        #parts > 0 and (" this login (" .. table.concat(parts, ", ") .. "; " .. A.barsV5Back .. ")") or "")
-end
-
-function A:BarsV4Line()
-    if not (self.db and self.optionIndex) then return "bars v4: no profile" end
-    local moved = self.barsV4Moved or {}
-    local parts = {}
-    for key, from in pairs(moved) do parts[#parts + 1] = key .. " from " .. tostring(from) end
-    table.sort(parts)
-    return string.format("bars v4: plate %s (wearing %s) | keyboard %s | settled %s%s",
-        tostring(self:GetOption("plateSkin")), tostring(self.PlateSkin and self:PlateSkin() or "?"),
-        tostring(self:GetOption("keyboardSkin")),
-        tostring(self:GetOption("barsV4Settled")),
-        #parts > 0 and (" this login (" .. table.concat(parts, ", ") .. "; back: /aui set plateSkin plate02, "
-            .. "/aui set keyboardSkin slab02)") or "")
-end
-
 function A:NormalizeProfile(profile)
 
 
@@ -2200,16 +1652,11 @@ function A:NormalizeProfile(profile)
     local heard = self.pendingNotes and #self.pendingNotes or 0
     self:MigrateActionBars(profile)
     self:SeedCompassHero(profile)
-    self:SettleCompassV3(profile)
-    self:SettlePlateStyles(profile)
-    self:SettleBarsV4(profile)
-    self:SettleBarsV5(profile)
-    self:SettleBarsV6(profile)
-    self:SettleChromeV2(profile)
-    self:SettleCrestMap(profile)
-    self:SettlePass7(profile)
-    self:SettlePass9(profile)
-    self:SettleThemeFollow(profile)
+    if self.SettleLook then self:SettleLook(profile) end
+
+
+
+    if self.ScrubProfile then self:ScrubProfile(profile, fresh) end
     if fresh and self.pendingNotes then
         for i = #self.pendingNotes, heard + 1, -1 do table.remove(self.pendingNotes, i) end
         if #self.pendingNotes == 0 then self.pendingNotes = nil end
@@ -2362,7 +1809,6 @@ function A:MigrateProfiles(root)
         if (tonumber(profile.plusDesign) or 0) < 4 then
             if profile.gaugeTicks == true then profile.gaugeTicks = false end
             if profile.plusDanger == true then profile.plusDanger = false end
-            if profile.compassRhombus == true then profile.compassRhombus = false end
             if profile.plusHealthFormat == "current" then profile.plusHealthFormat = "percent" end
             profile.plusDesign = 4
         end
@@ -2606,11 +2052,9 @@ A.optionSections = {
     { key = "controls", label = "Controls", short = "Pad, keys, camera", desc = "Controller or keyboard, button pictures, camera, tooltips." },
     { key = "profiles", label = "Profiles", short = "Saved setups, per spec", desc = "Saved setups, per character and per spec." },
     { key = "help", label = "Help & tools", short = "Report, reset, turn off", desc = "Turn things off, report a problem, reset, run the welcome." },
-    { key = "classic", label = "Classic looks", short = "Go back to earlier looks", advanced = true,
-      desc = "Every earlier look AdaptiveUI has shipped, one switch each." },
 }
 
-A.optionSectionAlias = { advanced = "help", general = "look", vetoes = "classic" }
+A.optionSectionAlias = { advanced = "help", general = "look", vetoes = "look", classic = "look" }
 
 
 
@@ -2641,9 +2085,12 @@ A.optionGroupSection = {
 
 A.optionKeySection = {
 
+    look = { "look", "Look" },
+
 
     plateSkin = { "look", "Plate styles" },
     plateFillStyle = { "look", "Plate styles" },
+    oakPlate = { "look", "Plate styles" },
     plateMantleCast = { "look", "Plate styles" },
     keyboardSkin = { "look", "Plate styles" },
     keyboardEmptyHotkey = { "look", "Plate styles" },
@@ -2663,7 +2110,6 @@ A.optionKeySection = {
     scale = { "layout", "Unit frames" },
     actionDiamond = { "look", "Action slots" },
     compassIconShape = { "look", "Action slots" },
-    keyboardMastHead = { "look", "Action slots" },
     emptyRecede = { "look", "Action slots" },
     iconCrop = { "look", "Action slots" },
     style = { "look", "Surfaces and type" },
@@ -2685,39 +2131,30 @@ A.optionKeySection = {
     plusUnified = { "look", "Plate details" }, plusRim = { "look", "Plate details" },
     plusGlow = { "look", "Plate details" }, plusFlash = { "look", "Plate details" },
     plusCorner = { "look", "Plate details" }, plusKeyline = { "look", "Plate details" },
-    plusStud = { "look", "Plate details" }, plusSigil = { "look", "Plate details" },
-    plusAccentMark = { "look", "Plate details" }, plusBarTexture = { "look", "Plate details" },
+    plusBarTexture = { "look", "Plate details" },
     flatBars = { "look", "Plate details" }, gaugeTicks = { "look", "Plate details" },
     plusNumberStyle = { "look", "Plate details" }, plusPixelSnap = { "look", "Plate details" },
     unitVeil = { "look", "Surfaces and depth" }, themeBezel = { "look", "Surfaces and depth" },
     themeShadow = { "look", "Surfaces and depth" }, themeTextShadow = { "look", "Surfaces and depth" },
     elevBase = { "look", "Surfaces and depth" }, elevPanel = { "look", "Surfaces and depth" },
-    elevRaised = { "look", "Surfaces and depth" }, windowBanner = { "look", "Surfaces and depth" },
+    elevRaised = { "look", "Surfaces and depth" },
     borders = { "look", "Surfaces and depth" }, accentRule = { "look", "Surfaces and depth" },
     actionWash = { "look", "Surfaces and depth" },
 
     keyboardHotkeyAbbrev = { "layout", "Action bars (keyboard)" },
     keyboardSlotInset = { "layout", "Action bars (keyboard)" },
-    keyboardSlotBrass = { "layout", "Action bars (keyboard)" },
     xpLane = { "layout", "Action bars (keyboard)" },
-    compassRhombus = { "layout", "Action bars (controller)" },
-    compassGroundEdge = { "layout", "Action bars (controller)" },
     clusterTray = { "layout", "Action bars (controller)" },
-    compassSlotBrass = { "layout", "Action bars (controller)" },
     compassAutoSpread = { "layout", "Action bars (controller)" },
     compassDividerLight = { "layout", "Action bars (controller)" },
     compassBumperGlow = { "layout", "Action bars (controller)" },
+    compassPromptStyle = { "layout", "Action bars (controller)" },
     auraTrayEmpty = { "layout", "Minimap and auras" },
     castRestrictedStrip = { "combat", "Cast bars" },
 
 
-    actionSocketSkin = { "classic", "Earlier looks" },
-    compassSkin = { "classic", "Earlier looks" },
-    compassButtonSkin = { "classic", "Earlier looks" },
-    compassBumperSkin = { "classic", "Earlier looks" },
-    compassPromptSeat = { "classic", "Earlier looks" },
-    chromeSkin = { "classic", "Earlier looks" },
-    casts = { "classic", "Earlier looks" },
+    compassBumperSkin = { "layout", "Action bars (controller)" },
+    casts = { "combat", "Cast bars" },
 }
 
 
@@ -2729,8 +2166,10 @@ end
 
 
 
-A.optionUnlisted = { auraTraySlots = true, optionsLayout = true, optionsAdvanced = true, optionsChangedOnly = true,
-    optionsAdvancedSeen = true, firstRunDefaults = true }
+
+
+A.optionUnlisted = { auraTraySlots = true, optionsAdvanced = true, optionsChangedOnly = true,
+    optionsAdvancedSeen = true, firstRunDefaults = true, plateSkin = true, compassButtonSkin = true }
 
 A.optionAdvancedKeys = {}
 
@@ -2739,18 +2178,16 @@ A.optionAdvancedKeys = {}
 
 
 A.optionBasic = {
-    look = { "themeScheme", "unitMode", "plateSkin", "motionLevel", "textScale", "opacity", "style" },
+    look = { "look", "themeScheme", "unitMode", "motionLevel", "textScale", "opacity", "style" },
     layout = { "safeZone" },
     combat = { "castPlayerMode", "castTargetMode", "dpsStripOn", "plusDanger" },
     controls = { "mode", "autoSwitchInput", "actionGlyphs", "actionCamera", "tooltipScale" },
     profiles = {},
     help = {},
-    classic = {},
 }
 
 
 A.optionSimpleValues = {
-    plateSkin = { inlay = true, mantle = true, tinted = true },
 }
 
 
@@ -2759,17 +2196,17 @@ A.optionSimpleValues = {
 local PLATE_GROUPS = { plus = true, plustext = true, pluscolor = true, plusparty = true }
 local PAD_GROUPS = { actions = true, compass = true }
 A.optionRequireKeys = {
-    plateSkin = "plates", plateFillStyle = "plates", plateMantleCast = "plates", plusFocusTargetOn = "plates",
+    plateSkin = "plates", plateFillStyle = "plates", oakPlate = "plates", plateMantleCast = "plates", plusFocusTargetOn = "plates",
     plusFocusTargetTargetOn = "plates", plateSmallSkin = "plates", unitVeil = "plates", flatBars = "plates",
     plusBarTexture = "plates", gaugeTicks = "plates", plusUnified = "plates", plusRim = "plates", plusGlow = "plates",
-    plusCorner = "plates", plusKeyline = "plates", plusStud = "plates", plusSigil = "plates", plusAccentMark = "plates",
+    plusCorner = "plates", plusKeyline = "plates",
     plusPixelSnap = "plates", plusLossTrail = "plates", plusHealGhost = "plates", plusDanger = "plates",
     keyboardSkin = "keyboard", keyboardBackdrop = "keyboard", keyboardSlotSkin = "keyboard",
-    keyboardEmptyHotkey = "keyboard", keyboardMicroSkin = "keyboard", keyboardMastHead = "keyboard", xpLane = "keyboard",
+    keyboardEmptyHotkey = "keyboard", keyboardMicroSkin = "keyboard", xpLane = "keyboard",
     actionDiamond = "controller", compassIconShape = "controller", compassBumperGlow = "controller",
-    compassDividerLight = "controller", actionWash = "controller", actionSocketSkin = "controller",
-    compassSkin = "controller", compassButtonSkin = "controller", compassBumperSkin = "controller",
-    compassPromptSeat = "controller",
+    compassDividerLight = "controller", actionWash = "controller",
+    compassPromptStyle = "controller",
+    compassButtonSkin = "controller", compassBumperSkin = "controller",
 }
 
 A.optionRequireExempt = { unitMode = true, scale = true, actionCamera = true, dockScale = true, emptyRecede = true,
@@ -2789,7 +2226,6 @@ end
 A.optionRequireWhy = { plates = "with AdaptiveUI plates", controller = "with the controller bars",
     keyboard = "with the keyboard bars", frame = "with the frame under the controller bars" }
 function A:OptionInapplicable(option)
-    if option.key == "compassGroundEdge" and self.db and self:GetOption("compassGround") ~= "frame" then return "frame" end
     local need = self:OptionRequirement(option)
     if not need or not self.db then return nil end
     if need == "plates" then return self.db.unitMode ~= "plus" and need or nil end
@@ -2853,7 +2289,6 @@ A.optionKeywords = {
     chatAlpha = "chat backing transparent",
     trackerAlpha = "quest tracker objectives backing transparent",
     keyboardSkin = "keyboard action bar design painted",
-    compassLayout = "controller compass layout",
     mapSkin = "minimap map frame",
     windowSkin = "window options frame",
 }
@@ -2898,7 +2333,6 @@ A.optionDesc = {
     borders = "One-pixel outlines on panels and slots.",
     plusPixelSnap = "Round every plate edge to a whole screen pixel.",
     opacity = "Lower lets the world through.",
-    windowBanner = "The painted dusk valley behind window titles.",
     elevBase = "Opacity of the ambient panels: chat, map card, tracker.",
     elevPanel = "Opacity of the hero panels.",
     elevRaised = "Opacity of tooltips and the edit box.",
@@ -2906,19 +2340,20 @@ A.optionDesc = {
     style = "Console RPG draws full panels; Ultra-minimal draws less.",
     mode = "Which glyphs and which action-bar layout you get.",
     unitMode = "Lite restyles Blizzard's frames. Plates are AdaptiveUI's own.",
-    plateSkin = "Inlay: the health and mana are your painting. Mantle: the health stands on it (0.51). Tinted, or the 0.50 plate, the 0.43 bar, the 0.41 plate.",
-    plateMantleCast = "The cast as light in the painting's seam, in its face at half strength (mantle), or a plank above the name.",
-    mapSkin = "Painted: your map panel is the minimap card. Card: the 0.46 card.",
-    windowSkin = "Painted: your options panel is this window. Flat: the 0.47 window.",
-    trackerStyle = "Tidy: no header boxes, one soft backing. Bare: no backing. Boxed: 0.52.",
-    chatStyle = "Tidy: the input shows only while you type. Bare: no backing. Boxed: 0.52.",
+    plateSkin = "Inlay: the health and mana are your painting.",
+    plateMantleCast = "The cast as light in the painting's seam, or a plank above the name.",
+    mapSkin = "Oak shelf: the map stands on your oak shelf, its name and clock inside it. Base: the map standing on your panel. Card: Blizzard's map in a plain card.",
+    windowSkin = "Flat, oak foot: a flat window, your oak branch along its foot. Painted: your options panel is this window.",
+    trackerStyle = "Tidy: no header boxes, one soft backing. Bare: no backing.",
+    chatStyle = "Tidy: the input shows only while you type. Bare: no backing.",
     plateSmallSkin = "Tile: target of target, focus, its targets and pet wear the raid tile. Inlay: the plate painting (0.52).",
     raidSkin = "Tile: Blizzard's raid frames wear the raid tile (appearance only). Native: untouched.",
     plusFocusTargetOn = "A plate for your focus's target.",
     plusFocusTargetTargetOn = "A plate for your focus's target's target.",
-    keyboardBackdrop = "A card behind the buttons that rises off the painted rail, the experience bar its edge. Hearth: the whole stack. None: 0.51.",
+    keyboardBackdrop = "A black fade behind the bar and the menu row, or none.",
     keyboardEmptyHotkey = "The keybind on a slot with nothing in it: faint, full, or hidden.",
-    plateFillStyle = "Carved chips the painting away to reveal your lost health in your colour, red under a fifth.",
+    plateFillStyle = "The look's own: under AUI Oakborn the wood chips away to reveal your lost health in your colour, red under a fifth.",
+    oakPlate = "Which oak plate your unit frames wear under AUI Oakborn.",
     plusWidth = "Height follows: the painting keeps its shape.",
     plusSmallWidth = "The focus, pet and party plates.",
     scale = "The whole unit frame cluster.",
@@ -2941,31 +2376,23 @@ A.optionDesc = {
     castTargetAnchor = "Docked on the health bar, or free.",
     castRestrictedStrip = "Draw a cast the client will not let us read, without a timer.",
     dockScale = "The controller compass and its arms.",
-    compassLayout = "Live follows Blizzard's own geometry; the others are fixed patterns.",
     actionGlyphs = "Draw the controller button under each slot.",
     actionDiamond = "Diamond slots instead of squares.",
-    actionSocketSkin = "The authored socket, or the 0.40 slot.",
-    compassButtonSkin = "Your painted compass tiles behind each button, or the 0.49 authored socket.",
+    compassButtonSkin = "Your painted compass tiles behind each button.",
     compassIconShape = "Square icons on the tile as painted (the keyboard bar's shape), or the tile turned to a diamond.",
     actionWash = "How dark the ground under an arm is drawn.",
     emptyRecede = "An unbound slot fades to its empty socket.",
-    compassGround = "Your divider under the cross, the 0.52 strip, a slab under each arm, a frame, or nothing.",
-    compassSkin = "The keyboard bar's slot and rail on the compass, or the 0.47 look exactly.",
-    compassSlotBrass = "The 0.41 brass lip on every slot. Off keeps one accent per object.",
-    compassRailArms = "Which arms stand in the keyboard bar's slab: the enlarged ones, all, or none.",
+    compassGround = "Your divider under the cross, or nothing.",
     compassPreset = "Writes the eight group sizes as a starting point. The sizes stay yours afterwards.",
     compassAutoSpread = "Big groups push the side arms out. Off keeps the width and caps the sizes.",
     actionCamera = "Over-the-shoulder action camera. Changes the game camera; off by default.",
     keyboardSkin = "Inlay: the buttons sit in your painted bar. Edge: they float over it. Footer: the 0.52 rail. Bare, slabs, or Blizzard's frame.",
-    keyboardMastHead = "The notch, boss and diamond at the ends of the slab.",
     keyboardCentre = "Centre the keyboard bar cluster on the screen.",
-    keyboardSlotSkin = "The painted tile, the square facet or Blizzard's frame on every action slot, bag slot and menu button.",
-    keyboardSlotBrass = "A brass lip on every slot, not only the checked one.",
+    keyboardSlotSkin = "The painted tile or Blizzard's frame on every action slot, bag slot and menu button.",
     keyboardHotkeyAbbrev = "S-1 instead of Shift-1.",
     minimapScale = "The map card and everything on it.",
     minimapCoords = "Your coordinates under the map.",
     minimapZone = "The zone name above the map.",
-    chromeSkin = "The map, windows and tracker in the authored chrome, or as 0.45 drew them.",
     chromeCrest = "Where the seated crest appears.",
     chromeTrackerHead = "The objectives header cut and footed like the zone strip.",
     trackerAlpha = "The backing behind the objectives.",
@@ -2982,7 +2409,6 @@ A.optionDesc = {
     plusPartyMax = "How many party plates to draw.",
     plusPartyDirection = "Stack the party up or down from the first plate.",
     plusTotPlacement = "Under the target, or beside it.",
-    optionsLayout = "Six sections with search, or the nineteen-tab column of 0.46.",
     optionsAdvanced = "Show every option, or the Basic set.",
 }
 
@@ -3009,6 +2435,12 @@ end
 
 function A:SectionKey(key)
     if type(key) ~= "string" then return nil end
+
+    if self.advancedSections and self.db and self:GetOption("optionsAdvanced") == true then
+        local adv = self.advancedSectionAlias[key] or key
+        if self:AdvancedSection(adv) then return adv end
+    end
+    key = (self.simpleSectionAlias and self.simpleSectionAlias[key]) or key
     key = self.optionSectionAlias[key] or key
     for _, s in ipairs(self.optionSections) do if s.key == key then return key end end
     return nil
@@ -3100,8 +2532,6 @@ function A:SearchOptions(term)
     local hits, tagHits = {}, 0
     for _, option in ipairs(self.options) do
         local section, sub = self:OptionSection(option)
-
-        if section == "classic" and self.db and self:GetOption("optionsAdvanced") ~= true then section = nil end
         if section then
             local score = 0
             if has(option.label) then score = 3

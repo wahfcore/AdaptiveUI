@@ -268,34 +268,14 @@ end
 
 
 
-
-
 function A:PlusHealthHeight()
-    if self:PlateStands() then
-        local _, h = self:StandGauge(false, "health")
-        return h
-    end
-    if self:BarSkinOn() then
-        local _, h = self:BarGauge(self:BarPlateHeight(false), "health")
-        return h
-    end
-    return self:PlusSnap(self:GetOption("plusHealthHeight"))
+    local _, h = self:StandGauge(false, "health")
+    return h
 end
 function A:PlusPowerHeight()
-    if self:PlateStands() then
-        if (tonumber(self:GetOption("plusPowerHeight")) or 0) <= 0 then return 0 end
-        if self:PlateInlay() then
-            local _, h = self:StandGauge(false, "power")
-            return h
-        end
-        return self:MantleGeometry(false, true).mana
-    end
-    if self:BarSkinOn() then
-        if (tonumber(self:GetOption("plusPowerHeight")) or 0) <= 0 then return 0 end
-        local _, h = self:BarGauge(self:BarPlateHeight(false), "power")
-        return h
-    end
-    return self:PlusSnap(self:GetOption("plusPowerHeight"))
+    if (tonumber(self:GetOption("plusPowerHeight")) or 0) <= 0 then return 0 end
+    local _, h = self:StandGauge(false, "power")
+    return h
 end
 function A:PlusInset() return self:PlusSnap(self.tokens.space.sm) end
 function A:PlusGaugeGap() return self:PlusSnap(self.tokens.space.xs) end
@@ -338,164 +318,7 @@ function A:PlusPartyBar() return self:PlusSnap(self:GetOption("plusPartyBar")) e
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-A.barArt = {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ratio    = 12.2277 / 1.8,
-
-
-
-
-
-
-
-    capL     = 0.28125,
-    capR     = 0.09375,
-    capLA    = 386 / 224,
-    capRA    = 96 / 224,
-
-
-
-
-
-
-    lanes = {
-        health = { 17 / 224, 109 / 224 },
-        power  = { 126 / 224, 158 / 224 },
-        cast   = { 174 / 224, 199 / 224 },
-    },
-
-
-    faceTop  = 12 / 224,
-    footTop  = 207 / 224,
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-A.plate02Art = {
-    ratio    = 12.2277 / 1.8,
-    capL     = 132 / 1024,
-    capR     = 86 / 1024,
-    capLA    = 230 / 196,
-    capRA    = 149 / 196,
-    lanes = {
-        health = { 31 / 196, 117 / 196 },
-        power  = { 129 / 196, 157 / 196 },
-        cast   = { 158 / 196, 188 / 196 },
-    },
-    faceTop  = 31 / 196,
-    footTop  = 188 / 196,
-
-
-
-
-
-
-    fillHeadA = 165 / 196,
-    fillTailA = 113 / 196,
-
-
-
-    rowTailA  = 76 / 196,
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-A.mantleArt = {
+A.inlayArt = {
     ratio     = 1779 / 196,
     capL      = 132 / 1024,
     capR      = 138 / 1024,
@@ -507,47 +330,7 @@ A.mantleArt = {
     faceTop   = 31 / 196,
     faceBot   = 157 / 196,
     footTop   = 1,
-    plankH    = 0.5,
     manaH     = 0.25,
-    lanes     = { health = { 31 / 196, 157 / 196 }, power = { 31 / 196, 157 / 196 },
-                  cast = { 31 / 196, 157 / 196 } },
-}
-
-
-A.tintedArt = setmetatable({ plankH = 0, fill = "plate02-fill", fillHeadA = 185 / 196 },
-    { __index = A.mantleArt })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-A.inlayArt = setmetatable({
     plankH = 0, inlay = true, fill = "meter",
     winL = 59 / 196, winR = 218 / 196,
     winTop = 2 / 196, winBot = 157 / 196,
@@ -557,106 +340,31 @@ A.inlayArt = setmetatable({
 
     base = { health = { 0.1499, 0.2018, 0.2364 }, power = { 0.2480, 0.2941, 0.3287 } },
     lum = "plate02-inlay-lum", cap = "plate02-inlay-cap",
-}, { __index = A.mantleArt })
-A.plateArts = { bar = A.barArt, plate02 = A.plate02Art, mantle = A.mantleArt, tinted = A.tintedArt,
-    inlay = A.inlayArt }
-A.plateFiles = { bar = "bar-plate", plate02 = "plate02", mantle = "plate02-plain", tinted = "plate02-plain",
-    inlay = "plate02-plain" }
-
-
-
-
-A.mantleTroughTone = { 29 / 255, 37 / 255, 43 / 255 }
-A.mantleTroughAlpha = 0.22
-
-
-
+}
 
 
 
 function A:PlateSkin()
-    if not (self.db and self.optionIndex) then return "classic" end
-    local skin = self:GetOption("plateSkin")
-    local slots = self.artSlots or {}
-
-
-
-    local standing = skin == "mantle" or skin == "tinted" or skin == "inlay"
-    if standing and slots.plate02Plain then
-        if skin == "tinted" and not slots.plate02Fill then return "mantle" end
-
-        if skin == "inlay" and not (slots.plate02InlayLum and slots.plate02InlayCap) then return "mantle" end
-        return skin
-    end
-    if (standing or skin == "plate02") and slots.plate02 then return "plate02" end
-    if (standing or skin == "plate02" or skin == "bar") and slots.barPlate then return "bar" end
-    return "classic"
-end
-
-
-
-function A:PlateStands()
-    local skin = self:PlateSkin()
-    return skin == "mantle" or skin == "tinted" or skin == "inlay"
-end
-
-
-function A:PlateInlay()
-    return self:PlateSkin() == "inlay"
+    return "inlay"
 end
 
 
 
 
-
-function A:MantleGeometry(compact, withPower)
-    local a = self:PlateArt()
+function A:MantleGeometry(compact)
     local w = self:PlusPlateWidth(compact)
-    local art = math.max(10, self:PlusSnap(w / (a.ratio or A.mantleArt.ratio)))
-    local plank = (tonumber(a.plankH) or 0) > 0 and self:PlusSnap(art * a.plankH) or 0
-    local mana = 0
-
-    if withPower and not a.inlay and (tonumber(self:GetOption("plusPowerHeight")) or 0) > 0 then
-        mana = self:PlusSnap(art * (a.manaH or 0.25))
-    end
-    return { w = w, art = art, plank = plank, mana = mana, artTop = plank,
-             manaTop = plank + art, total = plank + art + mana }
+    local art = math.max(10, self:PlusSnap(w / self:PlateArt().ratio))
+    return { w = w, art = art, plank = 0, mana = 0, artTop = 0, manaTop = art, total = art }
 end
-
 
 
 
 function A:StandGauge(compact, which)
-    local g = self:MantleGeometry(compact, which == "power")
-    local art = self:PlateArt()
-    if art.inlay then
-
-        local lane = art.lanes[which == "power" and "power" or "health"]
-        local top = self:PlusSnap(g.art * lane[1])
-        local bot = self:PlusSnap(g.art * lane[2])
-        return top, math.max(self:PlatePixel(), bot - top)
-    end
-    if which == "power" then return g.manaTop, g.mana end
-    if g.plank > 0 then return 0, g.plank end
-    local a = self:PlateArt()
-    local top = self:PlusSnap(g.art * a.bandTop)
-    local bot = self:PlusSnap(g.art * a.faceBot)
+    local g = self:MantleGeometry(compact)
+    local lane = self:PlateArt().lanes[which == "power" and "power" or "health"]
+    local top = self:PlusSnap(g.art * lane[1])
+    local bot = self:PlusSnap(g.art * lane[2])
     return top, math.max(self:PlatePixel(), bot - top)
-end
-
-
-
-
-
-function A:MantleFace(compact)
-    local g = self:MantleGeometry(compact, false)
-    local a = self:PlateArt()
-    local px = self:PlatePixel()
-    local top = self:PlusSnap(g.art * a.faceTop) + px
-    local bot = self:PlusSnap(g.art * a.faceBot)
-    local head = self:PlusSnap(g.art * a.fillHeadA) + px
-    local tail = self:PlusSnap(g.art * a.fillTailA) + px
-    return g.artTop + top, math.max(px, bot - top), head, tail
 end
 
 
@@ -685,26 +393,22 @@ end
 
 
 
+
+A.plateStud = { fromTail = (1779 - 1613) / 196, y = 90 / 196, size = 60 / 196 }
 function A:PlateDiamond(compact)
     local g = self:MantleGeometry(compact, false)
-    local fromTail = g.art * ((1779 - 1613) / 196)
-    local y = g.artTop + g.art * (90 / 196)
-    return fromTail, y, g.art * (60 / 196)
-end
-
-
-function A:BarSkinOn()
-    return self:PlateSkin() ~= "classic"
+    local s = A.plateStud
+    return g.art * s.fromTail, g.artTop + g.art * s.y, g.art * s.size
 end
 
 
 
 function A:PlateArt()
-    return self.plateArts[self:PlateSkin()] or A.barArt
+    return A.inlayArt
 end
 
 function A:PlateFile()
-    return self.plateFiles[self:PlateSkin()] or "bar-plate"
+    return "plate02-plain"
 end
 
 
@@ -717,40 +421,6 @@ end
 
 
 
-function A:BarBands(height)
-    local art, px = self:PlateArt(), self:PlatePixel()
-    local top = self:PlusSnap(height * art.faceTop)
-    local foot = self:PlusSnap(height * art.footTop)
-    if foot <= top then foot = top + px end
-    return top, foot
-end
-
-
-
-function A:BarLane(height, which)
-    local art = self:PlateArt()
-    local lane = art.lanes[which] or art.lanes.health
-    local px = self:PlatePixel()
-    local top = self:PlusSnap(height * lane[1])
-    local bot = self:PlusSnap(height * lane[2])
-    if bot <= top then bot = top + px end
-    return top, bot - top
-end
-
-
-
-
-
-
-function A:BarGauge(height, which)
-    local top, h = self:BarLane(height, which)
-    local px = self:PlatePixel()
-    if h > px * 2 then return top + px, h - px end
-    return top, math.max(px, h)
-end
-
-
-
 
 
 
@@ -758,7 +428,6 @@ end
 
 
 function A:PlusAbove(compact)
-    if not self:BarSkinOn() then return 0 end
     return self:PlusSnap(compact and self:PlusCompactRow() or self:PlusNameRow())
         + self:PlusGaugeGap()
 end
@@ -771,33 +440,8 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-function A:PlusFloatLead(compact)
-    if not self:BarSkinOn() then return 0 end
-    if self:PlateStands() then return 0 end
-    return self:PlusSnap(self.tokens.space.xs)
-end
-
-
-
-
-
-
-
-
-
-
-
 function A:PlusFloatType()
-    return self:BarSkinOn() and "OUTLINE" or nil
+    return "OUTLINE"
 end
 
 
@@ -808,12 +452,57 @@ function A:PlusRowHeight()
 end
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+A.plateShade = { alpha = 1.0, side = 0.10, depth = 1.50 }
+function A:PlateShade(plate, on, width, height, mirror, tile, top)
+    local file = on and type(plate) == "table" and self.OakShadeFile and self:OakShadeFile(tile) or nil
+    local t = plate and plate.shade
+    if not file or not (tonumber(height) and height > 0) then
+        if t and t:IsShown() then t:Hide() end
+        return false
+    end
+    if not t then
+        if type(plate.CreateTexture) ~= "function" then return false end
+        t = self:Own(plate:CreateTexture(nil, "BACKGROUND", nil, -8))
+        plate.shade = t
+    end
+    local path = self.artPath .. file .. ".tga"
+    if t:GetTexture() ~= path then t:SetTexture(path, "CLAMP", "CLAMP") end
+    local s = A.plateShade
+    top = tonumber(top) or 0
+    local key = string.format("%.3f|%.3f|%.3f|%s|%.3f", width, height, top, tostring(mirror), s.alpha)
+    if plate.shadeKey ~= key then
+        plate.shadeKey = key
+        local side = height * s.side
+        t:ClearAllPoints()
+        t:SetPoint("TOPLEFT", plate, "TOPLEFT", -side, -top)
+        t:SetSize(width + 2 * side, height * s.depth)
+        if mirror then t:SetTexCoord(1, 0, 0, 1) else t:SetTexCoord(0, 1, 0, 1) end
+        t:SetAlpha(s.alpha)
+    end
+    if not t:IsShown() then t:Show() end
+    return true
+end
+
+
 function A:BarFrame(host, layer, sublevel)
     local art = {}
     for _, key in ipairs({ "left", "mid", "right" }) do
 
 
-        art[key] = self:PaintedTexture(host, layer or "BACKGROUND", sublevel or -7, "bar-plate")
+
+        art[key] = self:PaintedTexture(host, layer or "BACKGROUND", sublevel or -7, self:PlateFile())
         art[key]:Hide()
         self:SyncPainted(art[key])
     end
@@ -888,19 +577,9 @@ function A:PlaceBarFrame(art, host, width, height, mirror, alpha, on, top)
 end
 
 
-
-
 function A:PlusSmallHealthHeight()
-    if self:PlateStands() then
-        local _, h = self:StandGauge(true, "health")
-        return h
-    end
-    if self:BarSkinOn() then
-        local _, h = self:BarGauge(self:BarPlateHeight(true), "health")
-        return h
-    end
-    local hh = self:GetOption("plusHealthHeight")
-    return self:PlusSnap(math.max(6, math.min(hh, 2 * math.floor(hh * 0.66 / 2 + 0.5))))
+    local _, h = self:StandGauge(true, "health")
+    return h
 end
 
 
@@ -923,19 +602,8 @@ A.plusInboard = { player = "RIGHT", target = "LEFT" }
 
 
 
-
-
-
-
-
-
-
-function A:PlusHeroHeight(withPower)
-    if self:PlateStands() then return self:MantleGeometry(false, withPower).total end
-    if self:BarSkinOn() then return self:BarPlateHeight(false) end
-    local hh, ph = self:PlusHealthHeight(), self:PlusPowerHeight()
-    return self:PlusHeaderTop() + hh
-        + ((withPower and ph > 0) and (self:PlusGaugeGap() + ph) or 0) + self:PlusInset()
+function A:PlusHeroHeight()
+    return self:MantleGeometry(false).total
 end
 
 
@@ -981,13 +649,15 @@ end
 
 
 
-function A:TileLight(widget, variant, on)
+function A:TileLight(widget, variant, on, chip)
     local bar = widget and widget.value
     if not bar or type(bar.CreateTexture) ~= "function" then return end
     if not on then
-        for _, key in ipairs({ "tileBase", "tileLum", "tileCap" }) do
+        for _, key in ipairs({ "tileBase", "tileLum", "tileCap", "tileWood" }) do
             if widget[key] and widget[key]:IsShown() then widget[key]:Hide() end
         end
+        local woodTwin = widget.tileWood and widget.tileWood.auiTwin
+        if woodTwin and woodTwin:IsShown() then woodTwin:Hide() end
         local twin = widget.tileCap and widget.tileCap.auiTwin
         if twin and twin:IsShown() then twin:Hide() end
         widget.tileKey = nil
@@ -1004,7 +674,7 @@ function A:TileLight(widget, variant, on)
         widget.tileCap = self:Own(bar:CreateTexture(nil, "OVERLAY", nil, 6))
     end
     local mirror = self:GetOption("plusMirror") and type(plate) == "table" and plate.mirror == true or false
-    local key = variant .. "|" .. tostring(mirror)
+    local key = variant .. "|" .. tostring(mirror) .. "|" .. self:LookName("tile-plain")
     if widget.tileKey ~= key then
         widget.tileKey = key
         local t = self.tileArts[variant].base
@@ -1013,7 +683,7 @@ function A:TileLight(widget, variant, on)
             widget.tileBase:ClearAllPoints()
             widget.tileBase:SetAllPoints(bar)
         end
-        widget.tileLum:SetTexture(self.artPath .. "tile-" .. variant .. "-lum.tga", "CLAMP", "CLAMP")
+        widget.tileLum:SetTexture(self.artPath .. self:LookName("tile-" .. variant .. "-lum") .. ".tga", "CLAMP", "CLAMP")
         widget.tileCap:ClearAllPoints()
         if type(plate) == "table" then widget.tileCap:SetAllPoints(plate) end
         local u0, u1 = 0, 1
@@ -1022,7 +692,31 @@ function A:TileLight(widget, variant, on)
         widget.tileCap:SetTexCoord(u0, u1, 0, 1)
     end
     for _, part in ipairs({ "tileBase", "tileLum", "tileCap" }) do
-        if widget[part] and not widget[part]:IsShown() then widget[part]:Show() end
+
+        local want = part == "tileCap" or not chip
+        if widget[part] and widget[part]:IsShown() ~= want then widget[part]:SetShown(want) end
+    end
+
+
+
+
+
+    if chip and not widget.tileWood and type(plate) == "table" and type(plate.CreateTexture) == "function" then
+        widget.tileWood = self:Own(plate:CreateTexture(nil, "BACKGROUND", nil, 6))
+    end
+    local wood = widget.tileWood
+    if wood then
+        if chip then
+            wood:ClearAllPoints()
+            wood:SetAllPoints(plate)
+            if mirror then wood:SetTexCoord(1, 0, 0, 1) else wood:SetTexCoord(0, 1, 0, 1) end
+            if not wood:IsShown() then wood:Show() end
+
+            self:DressPaintedRegion(wood, "tile-plain")
+        else
+            if wood:IsShown() then wood:Hide() end
+            if wood.auiTwin and wood.auiTwin:IsShown() then wood.auiTwin:Hide() end
+        end
     end
 
 
@@ -1030,11 +724,8 @@ function A:TileLight(widget, variant, on)
 end
 
 function A:PlusCompactHeight()
-    if self:PlateStands() then return self:MantleGeometry(true, false).total end
-    if self:BarSkinOn() then return self:BarPlateHeight(true) end
-    return self:PlusCompactTop() + self:PlusSmallHealthHeight() + self:PlusInset()
+    return self:MantleGeometry(true).total
 end
-
 
 
 
@@ -1045,11 +736,7 @@ end
 
 A.plusTotAirPx = 8
 function A:PlusTotGap()
-    local gap = self:PlusFloatGap()
-    if self:PlateStands() then
-        gap = math.max(gap, self:PlusSnap(A.plusTotAirPx * self:PlatePixel()))
-    end
-    return gap
+    return math.max(self:PlusFloatGap(), self:PlusSnap(A.plusTotAirPx * self:PlatePixel()))
 end
 
 function A:PlusBelow()
@@ -1069,40 +756,8 @@ end
 
 
 
-
 A.plusCutFloor = 6
-
-
-
-
-
-
 function A:PlusDetailFloor() return self:PlusSnap(self.plusCutFloor) - 1e-9 end
-function A:PlusCutSize(height)
-
-
-
-
-
-
-
-
-
-
-
-    if self:BarSkinOn() then return 0 end
-    if self:FlatBars() then return 0 end
-    if (tonumber(height) or 0) < self:PlusDetailFloor() then return 0 end
-
-
-
-
-
-
-
-    if self:PixelSnapOn() then return math.max(3, self:PlusSnap(height)) end
-    return math.max(3, math.floor(height + 0.5))
-end
 
 
 
@@ -1138,7 +793,7 @@ A.PlusLift = lift
 
 A.plusPowerCalm, A.plusPowerDim = 0.34, 0.92
 function A:PlusPowerQuiet(r, g, b, a)
-    if not (r and self:BarSkinOn()) then return r, g, b, a end
+    if not r then return r, g, b, a end
     local mean = (r + g + b) / 3
     local k, v = self.plusPowerCalm, self.plusPowerDim
     return (r + (mean - r) * k) * v, (g + (mean - g) * k) * v, (b + (mean - b) * k) * v, a
@@ -1159,53 +814,7 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 A.plusCarveRed = 0.20
-
-function A:PlusCarved()
-    if not (self.db and self.optionIndex and self.optionIndex.plateFillStyle) then return false end
-    if not self:BarSkinOn() then return false end
-    return self:GetOption("plateFillStyle") == "carved"
-end
-
-
-
-function A:PlusCarveTint()
-    local file = self:PlateFile()
-    local _, on = self:PlaintedPathSafe(file)
-    if on then return self:PaintedBodyTint(file) end
-    return 1, 1, 1
-end
-
-
-
-
-
 
 
 
@@ -1213,33 +822,21 @@ end
 function A:StandFill(widget, mirror, isPower)
     local bar = widget and widget.value
     if not bar then return false end
-    local art = self:PlateArt()
+    local want = self:PlateArt().fill
+
+    if widget.chip then want = A.chipFiles.clear end
+    local key = want .. (mirror and "|m" or "")
 
 
-    local want = ((not isPower) or art.inlay) and self:PlateStands() and art.fill or nil
-    local key = want and (want .. (mirror and "|m" or "")) or nil
-
-
-    if widget.finish then widget.finish.barfinishfill = (want and art.inlay) and (want .. ".tga") or nil end
-    if widget.standFill == key then return key ~= nil end
+    if widget.finish then widget.finish.barfinishfill = want .. ".tga" end
+    if widget.standFill == key then return true end
     widget.standFill = key
+    pcall(bar.SetStatusBarTexture, bar, self.artPath .. want .. ".tga")
     local fill = type(bar.GetStatusBarTexture) == "function" and bar:GetStatusBarTexture() or nil
-    if key then
-        pcall(bar.SetStatusBarTexture, bar, self.artPath .. want .. ".tga")
-        fill = type(bar.GetStatusBarTexture) == "function" and bar:GetStatusBarTexture() or fill
-        if fill and type(fill.SetTexCoord) == "function" then
-            if mirror then pcall(fill.SetTexCoord, fill, 1, 0, 0, 1) else pcall(fill.SetTexCoord, fill, 0, 1, 0, 1) end
-        end
-        return true
+    if fill and type(fill.SetTexCoord) == "function" then
+        if mirror then pcall(fill.SetTexCoord, fill, 1, 0, 0, 1) else pcall(fill.SetTexCoord, fill, 0, 1, 0, 1) end
     end
-    if fill and type(fill.SetTexCoord) == "function" then pcall(fill.SetTexCoord, fill, 0, 1, 0, 1) end
-    if not widget.carved then
-        local flat = self:FlatBars()
-        local material = flat and self.BarTextureOn and self:BarTextureOn()
-        pcall(bar.SetStatusBarTexture, bar, self.artPath
-            .. (flat and (material and "bar-obsidian.tga" or "meter.tga") or "bar-gradient.tga"))
-    end
-    return false
+    return true
 end
 
 
@@ -1259,7 +856,7 @@ end
 
 
 A.inlaySeamTone = { 0.02, 0.03, 0.035, 0.85 }
-function A:InlayLight(widget, lane, on)
+function A:InlayLight(widget, lane, on, chip)
     local bar = widget and widget.value
     if not bar or type(bar.CreateTexture) ~= "function" then return end
     if not on then
@@ -1287,11 +884,11 @@ function A:InlayLight(widget, lane, on)
         end
         widget.inlayBase:ClearAllPoints()
         widget.inlayBase:SetAllPoints(bar)
-        widget.inlayBase:Show()
+
+        widget.inlayBase:SetShown(not chip)
     end
     if not widget.inlayLum then
         local lum = self:Own(bar:CreateTexture(nil, "OVERLAY", nil, -8))
-        lum:SetTexture(self.artPath .. art.lum .. ".tga", "CLAMP", "CLAMP")
         lum:SetBlendMode("MOD")
         lum:SetAllPoints(bar)
         widget.inlayLum = lum
@@ -1300,6 +897,9 @@ function A:InlayLight(widget, lane, on)
         cap:SetAllPoints(bar)
         widget.inlayCap = cap
     end
+
+    local lumPath = self.artPath .. art.lum .. ".tga"
+    if widget.inlayLum:GetTexture() ~= lumPath then widget.inlayLum:SetTexture(lumPath, "CLAMP", "CLAMP") end
     local mirror = self:GetOption("plusMirror") and type(plate) == "table" and plate.mirror == true
         and not plate.isParty or false
     local rows = art.lanes[lane] or art.lanes.health
@@ -1313,7 +913,7 @@ function A:InlayLight(widget, lane, on)
         widget.inlayLum:SetTexCoord(u0, u1, v0, v1)
         widget.inlayCap:SetTexCoord(u0, u1, v0, v1)
     end
-    widget.inlayLum:Show()
+    widget.inlayLum:SetShown(not chip)
     widget.inlayCap:Show()
 
 
@@ -1329,7 +929,7 @@ function A:InlayLight(widget, lane, on)
         widget.inlaySeam:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", 0, 0)
         widget.inlaySeam:SetPoint("TOPRIGHT", bar, "BOTTOMRIGHT", 0, 0)
         widget.inlaySeam:SetHeight(px)
-        widget.inlaySeam:Show()
+        widget.inlaySeam:SetShown(not chip)
     end
 end
 
@@ -1343,11 +943,279 @@ end
 
 
 
-A.healGhostAlpha = { carved = 0.45, mantle = 0.55, gain = 0.72 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A.chipFiles = { head = "oak-chip-head", reveal = "oak-chip-reveal", rim = "oak-chip-rim", clear = "oak-chip-clear",
+    debris = "oak-chip-debris", mask = "oak-chip-mask" }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A.chipDebrisWidth = 1.5
+
+
+
+
+A.chipWidth = 1.6
+A.chipTexU = 102.4 / 128
+
+
+
+A.chipReach = (1.6 - 0.08) / 1.6
+
+
+
+A.chipHeadMinPx = 10
+
+
+
+function A:PlusChipOn()
+    if not (self.db and self.optionIndex and self.optionIndex.plateFillStyle) then return false end
+    if self.lookArtFor ~= "oakborn" then return false end
+    local style = self:GetOption("plateFillStyle")
+    if style ~= "auto" and style ~= "carved" then return false end
+    local slots = self.artSlots or {}
+    return slots.oakChipHead ~= nil and slots.oakChipReveal ~= nil and slots.oakChipRim ~= nil
+        and slots.oakChipClear ~= nil
+end
+
+
+
+function A:PlusChipFor(tileVariant)
+    if not self:PlusChipOn() then return false end
+    local file = tileVariant and "tile-plain" or self:PlateFile()
+    return self:LookName(file) ~= file
+end
+
+local function chipPiece(self, frame, sublevel, file, bar, u1)
+    local t = self:Own(frame:CreateTexture(nil, "ARTWORK", nil, sublevel))
+    t:SetTexture(self.artPath .. file .. ".tga", "CLAMP", "CLAMP")
+    if u1 then t:SetTexCoord(0, u1, 0, 1) end
+    self.PlusClipToBar(self, bar, t)
+    t:Hide()
+    return t
+end
+
+
+
+function A:PlusChip(widget, on, height, lane, tileVariant)
+    local bar = widget and widget.value
+    if not bar then return false end
+    if not on then
+        if widget.finish and widget.finish.barfinishchip then
+            widget.finish.barfinishchip = nil
+            self:ApplyBarFinish(widget.finish, "barfinish")
+        end
+        if widget.chip then
+            widget.chip, widget.chipKey, widget.chipGlide = nil, nil, nil
+            for _, key in ipairs({ "chipBody", "chipHead", "chipRim", "chipDebris" }) do
+                if widget[key] then widget[key]:Hide() end
+            end
+        end
+        return false
+    end
+    local plate = widget.plate or (type(bar.GetParent) == "function" and bar:GetParent()) or nil
+    if not widget.chipFrame then
+        if type(plate) ~= "table" then return false end
+        local f = self:Own(CreateFrame("Frame", nil, plate))
+        local base = self:Number(plate.GetFrameLevel, 1, plate) or 1
+        pcall(f.SetFrameLevel, f, base + 1)
+        if type(f.EnableMouse) == "function" then f:EnableMouse(false) end
+        f:SetAllPoints(bar)
+        widget.chipFrame = f
+        local files = A.chipFiles
+        widget.chipBody = chipPiece(self, f, 1, files.reveal, bar)
+        widget.chipHead = chipPiece(self, f, 2, files.head, bar, A.chipTexU)
+        widget.chipRim = chipPiece(self, f, 3, files.rim, bar, A.chipTexU)
+    end
+    if not widget.chipDebris and (self.artSlots or {}).oakChipDebris and (self.artSlots or {}).oakChipMask then
+        local f = widget.chipFrame
+        widget.chipDebris = chipPiece(self, f, 4, A.chipFiles.debris, bar)
+        if type(f.CreateMaskTexture) == "function" then
+            local ok, mask = pcall(f.CreateMaskTexture, f, nil, "ARTWORK")
+            if ok and mask then
+                self:Own(mask)
+                mask:SetTexture(self.artPath .. A.chipFiles.mask .. ".tga", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+                pcall(widget.chipDebris.AddMaskTexture, widget.chipDebris, mask)
+                widget.chipRevealMask = mask
+            end
+        end
+    end
+    widget.chip, widget.chipLane = true, lane
+
+    if widget.finish and widget.finish.barfinishchip ~= true then
+        widget.finish.barfinishchip = true
+        self:ApplyBarFinish(widget.finish, "barfinish")
+    end
+    widget.chipFile = tileVariant and "tile-plain" or self:PlateFile()
+    widget.chipHeight = height
+    self:PlusChipAnchor(widget)
+
+    local r, g, b = self:PaintedBodyTint(widget.chipFile)
+    local rim = widget.chipRim
+    local cr, cg, cb = rim:GetVertexColor()
+    if math.abs((cr or 1) - r) > 1e-4 or math.abs((cg or 1) - g) > 1e-4 or math.abs((cb or 1) - b) > 1e-4 then
+        rim:SetVertexColor(r, g, b, 1)
+        if widget.chipDebris then widget.chipDebris:SetVertexColor(r, g, b, 1) end
+    end
+    return true
+end
+
+
+
+function A:PlusChipAnchor(widget)
+    local bar = widget and widget.value
+    if not (bar and widget.chip and widget.chipBody) then return end
+    local fill = type(bar.GetStatusBarTexture) == "function" and bar:GetStatusBarTexture() or nil
+    local down = widget.chipDown == true or fill == nil
+    local laneH = tonumber(widget.chipHeight) or 0
+    local w = math.max(self:PlatePixel(), self:PlusSnap(laneH * A.chipWidth))
+
+
+    local thin = laneH < A.chipHeadMinPx * self:PlatePixel()
+    local motion = self:MotionLevel()
+
+    widget.chipGlide = (motion == "subtle" and not thin and not down and widget.chipLane ~= "power") or nil
+    local trail = widget.trail
+    local trailFill = trail and type(trail.GetStatusBarTexture) == "function" and trail:GetStatusBarTexture() or nil
+    local crumble = motion == "full" and not thin and not down and widget.chipDebris ~= nil
+        and widget.chipRevealMask ~= nil and trailFill ~= nil
+    local key = string.format("%s|%s|%.4f|%s", tostring(down), tostring(thin), w, tostring(crumble))
+    if widget.chipKey == key then return end
+    widget.chipKey = key
+    local body, head, rim = widget.chipBody, widget.chipHead, widget.chipRim
+    local debris, reveal = widget.chipDebris, widget.chipRevealMask
+    if debris then
+        debris:ClearAllPoints()
+        if crumble then
+
+            debris:SetPoint("TOPRIGHT", trailFill, "TOPRIGHT", 0, 0)
+            debris:SetPoint("BOTTOMRIGHT", trailFill, "BOTTOMRIGHT", 0, 0)
+            debris:SetWidth(math.max(self:PlatePixel(), self:PlusSnap(laneH * A.chipDebrisWidth)))
+            reveal:ClearAllPoints()
+            reveal:SetPoint("TOPLEFT", fill, "TOPRIGHT", 0, 0)
+            reveal:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+            debris:Show()
+        else
+            debris:Hide()
+        end
+    end
+    body:ClearAllPoints(); head:ClearAllPoints(); rim:ClearAllPoints()
+    if down then
+        body:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
+        body:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+        body:Show(); head:Hide(); rim:Hide()
+        return
+    end
+    if thin then
+        body:SetPoint("TOPLEFT", fill, "TOPRIGHT", 0, 0)
+        body:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+        body:Show(); head:Hide(); rim:Hide()
+        return
+    end
+    for _, t in ipairs({ head, rim }) do
+        t:SetPoint("TOPLEFT", fill, "TOPRIGHT", 0, 0)
+        t:SetPoint("BOTTOMLEFT", fill, "BOTTOMRIGHT", 0, 0)
+        t:SetWidth(w)
+        t:Show()
+    end
+    body:SetPoint("TOPLEFT", fill, "TOPRIGHT", w * A.chipReach, 0)
+    body:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    body:Show()
+end
+
+
+function A:PaintChip(widget, r, g, b)
+    if not (widget and widget.chipBody and r) then return end
+    widget.chipBody:SetVertexColor(r, g, b, 1)
+    widget.chipHead:SetVertexColor(r, g, b, 1)
+end
+
+
+
+function A:PlusChipColour(widget, unit, kind)
+    local rgb = widget and widget.lossRGB
+    if not (rgb and widget.chipBody) then return "off" end
+    if kind ~= "power" and widget.chipDown ~= true then
+        local curve = self:LossCurve(rgb[1], rgb[2], rgb[3])
+        if curve and type(UnitHealthPercent) == "function" then
+            local ok, c = pcall(UnitHealthPercent, unit, true, curve)
+            if ok and type(c) == "table" then
+
+                local a = pcall(widget.chipBody.SetVertexColor, widget.chipBody, c.r, c.g, c.b, 1)
+                local b = pcall(widget.chipHead.SetVertexColor, widget.chipHead, c.r, c.g, c.b, 1)
+                if a and b then
+                    self.carveCurveLive = true
+                    return "curve"
+                end
+            end
+        end
+        self.carveCurveLive = false
+    end
+    self:PaintChip(widget, rgb[1], rgb[2], rgb[3])
+    return "plain"
+end
+
+
+
+
+
+
+A.healGhostAlpha = { carved = 0.45, mantle = 0.55 }
 function A:HealGhostStyle()
-    if self:PlusCarved() then return "carved" end
-    if self:PlateStands() then return "mantle" end
-    return "gain"
+    if self:PlusChipOn() then return "carved" end
+    return "mantle"
 end
 function A:PaintHealGhost(widget, r, g, b)
     local heal = widget and widget.heal
@@ -1409,87 +1277,14 @@ function A:LossCurve(r, g, b)
 end
 
 
-
-function A:PlusFillStyle(widget, which, plateH, mirror)
-    local bar, loss = widget and widget.value, widget and widget.loss
-    if not bar then return false end
-    local carved = self:PlusCarved() and (tonumber(plateH) or 0) > 0
-    if carved then
-        local art = self:PlateArt()
-        local file = self:PlaintedPathSafe(self:PlateFile())
-        local top, h = self:BarGauge(plateH, which)
-        local v0, v1 = top / plateH, (top + h) / plateH
-        local u0, u1 = art.capL, 1 - art.capR
-        if mirror then u0, u1 = u1, u0 end
-        local key = string.format("%s|%.4f|%.4f|%.4f|%.4f", file, u0, u1, v0, v1)
-        if widget.carvedKey ~= key then
-            widget.carvedKey = key
-            pcall(bar.SetStatusBarTexture, bar, file)
-            local fill = type(bar.GetStatusBarTexture) == "function" and bar:GetStatusBarTexture() or nil
-            if fill and type(fill.SetTexCoord) == "function" then pcall(fill.SetTexCoord, fill, u0, u1, v0, v1) end
-        end
-        widget.carved = true
-        if loss then
-            loss:ClearAllPoints()
-            loss:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-            loss:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
-            if not loss:IsShown() then loss:Show() end
-        end
-        return true
-    end
-    if widget.carved then
-        widget.carved, widget.carvedKey = nil, nil
-        local fill = type(bar.GetStatusBarTexture) == "function" and bar:GetStatusBarTexture() or nil
-        if fill and type(fill.SetTexCoord) == "function" then pcall(fill.SetTexCoord, fill, 0, 1, 0, 1) end
-
-
-        local flat = self:FlatBars()
-        local material = flat and self.BarTextureOn and self:BarTextureOn()
-        pcall(bar.SetStatusBarTexture, bar, self.artPath
-            .. (flat and (material and "bar-obsidian.tga" or "meter.tga") or "bar-gradient.tga"))
-        if loss and loss:IsShown() then loss:Hide() end
-    end
-    return false
-end
-
-
-
-
-function A:PlusCarveColour(widget, unit, kind, powerType)
-    local loss = widget and widget.loss
-    if not (loss and widget.carved) then return "off" end
-    local rgb = widget.lossRGB
-    if not rgb then return "off" end
-    local curve = self:LossCurve(rgb[1], rgb[2], rgb[3])
-    if curve then
-        local api = kind == "power" and UnitPowerPercent or UnitHealthPercent
-        if type(api) == "function" then
-            local ok, c = pcall(function()
-                if kind == "power" then return api(unit, powerType, false, curve) end
-                return api(unit, true, curve)
-            end)
-            if ok and type(c) == "table" then
-
-
-                if pcall(loss.SetVertexColor, loss, c.r, c.g, c.b, 1) then
-                    self.carveCurveLive = true
-                    return "curve"
-                end
-            end
-        end
-    end
-    self.carveCurveLive = false
-    loss:SetVertexColor(rgb[1], rgb[2], rgb[3], 1)
-    return "plain"
-end
-
-
 function A:CarveReport()
-    if not self:PlusCarved() then return "carved fill: off" end
-    local curves = type(C_CurveUtil) == "table" and type(C_CurveUtil.CreateColorCurve) == "function"
-    return string.format("carved fill: on | colour curve %s | last paint %s",
-        curves and "available" or "ABSENT (plain unit colour, no red step)",
-        self.carveCurveLive == true and "curve" or (self.carveCurveLive == false and "plain" or "none yet"))
+    if self:PlusChipOn() then
+        local live = type(C_CurveUtil) == "table" and type(C_CurveUtil.CreateColorCurve) == "function"
+        return string.format("chip: on | plate %s | colour curve %s | last paint %s",
+            tostring(self.OakPlateShape and self:OakPlateShape()), live and "available" or "ABSENT",
+            self.carveCurveLive == true and "curve" or (self.carveCurveLive == false and "plain" or "none yet"))
+    end
+    return "chip: off"
 end
 
 
@@ -1640,110 +1435,13 @@ local function newPlate(self, name, height, width, parent, compact)
 
 
 
-
-
-
-    plate.depth = {}
-    self:Elevate(plate.depth, plate, "d", plate, 0, 0, plate, 0, 0, compact and "base" or "panel")
     plate.hero = not compact
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     plate.barFrame = self:BarFrame(plate, "BACKGROUND", -7)
-    plate.block = flatPanel(self, plate, "BACKGROUND", -7)
-
-
-    plate.bg = plate.block.body
-    plate.shelf = flatPanel(self, plate, "BACKGROUND", -6)
-    plate.stud = flatPanel(self, plate, "BACKGROUND", -5)
-
-
-
-
-
-    plate.blockRim = flatPanel(self, plate, "BACKGROUND", -8)
-    plate.shelfRim = flatPanel(self, plate, "BACKGROUND", -8)
-    plate.blockRim.body:Hide()
-    plate.shelfRim.body:Hide()
-
-
-
-
-
-
-
-    plate.studEdge = self:Own(plate:CreateTexture(nil, "BACKGROUND", nil, -4))
-    self:Tint(plate.studEdge, "tint", "color", 0.85)
-    plate.studEdge:Hide()
-
-
-
-
-
-
-
-
-
-
-
-
-
-    plate.badge = {}
-    plate.badgeDisc, plate.accentMark =
-        self:SigilBadge(plate, plate.badge, "b", 18, "diamond", "ARTWORK", 0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    plate.surface = {}
-    plate.sheen, plate.lip = self:BlockSurface(plate, plate.surface, "s", compact and 0.10 or 0.17)
-
 
 
     plate.veil = {}
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1765,63 +1463,12 @@ local function newPlate(self, name, height, width, parent, compact)
     plate.name:SetWordWrap(false)
     self:Tint(plate.name, "text", "text")
 
-
-
-
-
-
-
-
-
-
-
-
-    plate.levelChip = self:Own(plate:CreateTexture(nil, "BACKGROUND", nil, -3))
-
-
-    self:Tint(plate.levelChip, "inkDeep", "color", 0.85)
-
-
-
-
-
-
-
-
-    plate.levelChipLine = self:Own(plate:CreateTexture(nil, "BORDER", nil, 1))
-    self:Tint(plate.levelChipLine, "accent", "color", 0.5)
     plate.level = plate:CreateFontString(nil, "OVERLAY")
     self:SetPixelFont(plate.level, compact and "caption" or "body", self:UnitScale(), false)
     plate.level:SetPoint("TOPRIGHT", plate, "TOPRIGHT", -sp.sm, -sp.sm)
     plate.level:SetWidth(compact and 18 or 22)
     plate.level:SetJustifyH("CENTER")
     self:Tint(plate.level, "accent", "text", 0.92)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    if not compact then
-        plate.keyline = self:Own(plate:CreateTexture(nil, "ARTWORK", nil, 2))
-        plate.keyline:SetHeight(1)
-        self:Tint(plate.keyline, "accent", "color", 0.55)
-        plate.keylineCut = self:Own(plate:CreateTexture(nil, "ARTWORK", nil, 2))
-        plate.keylineCut:SetTexture(self.artPath .. "bar-chamfer.tga", "CLAMP", "CLAMP")
-        plate.keylineCut:SetTexCoord(1, 0, 0, 1)
-        self:Tint(plate.keylineCut, "accent", "vertex", 0.55)
-    end
 
 
 
@@ -1872,22 +1519,14 @@ end
 
 
 
-local function anchorCut(self, piece, bar, inset, height)
+local function anchorCut(self, piece, bar, inset)
 
 
-
-
-
-    local leaned = self:PlusCutSize(height) > 0
-    local cut = leaned and math.max(3, height + inset * 2) or 0
     piece.body:ClearAllPoints()
     piece.body:SetPoint("TOPLEFT", bar, "TOPLEFT", -inset, inset)
-    piece.body:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", inset - cut, -inset)
-    piece.wedge:ClearAllPoints()
-    piece.wedge:SetPoint("TOPRIGHT", bar, "TOPRIGHT", inset, inset)
-    piece.wedge:SetSize(math.max(1, cut), math.max(1, cut))
-    piece.wedge:SetShown(leaned)
-    return cut
+    piece.body:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", inset, -inset)
+    piece.wedge:Hide()
+    return 0
 end
 
 
@@ -2214,16 +1853,7 @@ local function newBar(self, plate, y, height, width, compact)
     clipToBar(self, bar, healCut)
     clipToBar(self, bar, trailCut)
     clipToBar(self, bar, finish.barfinishB8)
-
-
-
-
-    local loss = self:Own(plate:CreateTexture(nil, "BACKGROUND", nil, -6))
-    loss:SetTexture(self.artPath .. "meter.tga", "CLAMP", "CLAMP")
-    loss:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-    loss:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
-    loss:Hide()
-    return { value = bar, trail = trail, heal = heal, label = label, text = text, finish = finish, loss = loss,
+    return { value = bar, trail = trail, heal = heal, label = label, text = text, finish = finish,
              back = back, ghost = ghost, keyline = key, trailCut = trailCut, healCut = healCut,
              seam = seam, lead = lead,
              redlineArt = redline,
@@ -2250,68 +1880,10 @@ local PARTY_ROW_H = 40
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-function A.PlateRule(self, plate, side, role, size)
-    if plate.rule then return plate.rule end
-    plate.ruleSide = side or "LEFT"
-    local tone = role == "dynamic" and "tint" or "accent"
-    plate.rule = self:Own(plate:CreateTexture(nil, "OVERLAY", nil, 2))
-    plate.rule:SetTexture(self.artPath .. "diamond-mask.tga", "CLAMP", "CLAMP")
-    plate.rule:SetSize(size or 10, size or 10)
-    self:Tint(plate.rule, tone, "vertex", 1)
-    plate.ruleGlow = self:Own(plate:CreateTexture(nil, "OVERLAY", nil, 1))
-    plate.ruleGlow:SetTexture(self.artPath .. "diamond-glow.tga", "CLAMP", "CLAMP")
-    plate.ruleGlow:SetBlendMode("ADD")
-    plate.ruleGlow:SetSize((size or 10) * 2.4, (size or 10) * 2.4)
-    self:Tint(plate.ruleGlow, tone, "vertex", 0.55)
-    plate.ruleGlow:SetPoint("CENTER", plate.rule, "CENTER", 0, 0)
-    return plate.rule
-end
-
-
-
-
-
-
-
-function A:PaintPlateRule(plate, r, g, b)
+function A:PaintPlateLight(plate, r, g, b)
     if not plate or not r then return end
-    if plate.rule then plate.rule:SetVertexColor(r, g, b, 1) end
-    if plate.ruleGlow then plate.ruleGlow:SetVertexColor(r, g, b, 0.55) end
-    if plate.studEdge then
-        local lr, lg, lb = lift(r, g, b, 0.3)
-        plate.studEdge:SetColorTexture(lr, lg, lb, 0.9)
-    end
-    if plate.rimLit and plate.rimShown and plate.blockRim then
-        A.PlusPaintRim(self, plate.blockRim, r, g, b, 0.7)
-
-
-
-        if self:PlusUnified() and plate.shelfRim then
-            A.PlusPaintRim(self, plate.shelfRim, r, g, b, 0.7)
-        end
-    end
+    plate.lightRGB = { r, g, b }
     if plate.flashFx then self:PaintEdgeFlash(plate.flashFx, lift(r, g, b, 0.35)) end
-end
-
-
-
-
-function A.PlusPaintRim(self, rim, r, g, b, a)
-    if not rim then return end
-    rim.body:SetColorTexture(r, g, b, a or 1)
-    rim.tail:SetColorTexture(r, g, b, a or 1)
-    rim.wedge:SetVertexColor(r, g, b, a or 1)
 end
 
 
@@ -2422,21 +1994,6 @@ end
 function A:PlusSeam()
     return self:PlusUnified() and 0 or self.plusSeam
 end
-
-
-
-function A:PlusFooterOn()
-
-
-
-
-    if self:BarSkinOn() then return false end
-    if not self:PlusUnified() then return false end
-    if not (self.db and self.optionIndex) then return false end
-    return self:GetOption("dpsStripOn") == true and self:GetOption("plusPlayerOn") == true
-        and self.plusActive == true
-end
-
 
 
 
@@ -2572,7 +2129,7 @@ function A:MeasureCompass(say)
     local uiR = rect(ui)
     local screenAxis = uiR and (uiR.x + uiR.w / 2) or 0
     say(string.format("measure compass | screen axis %.1f px | DOCK.cx %d | spread %d | layout %s | ground %s | dockScale %.3f",
-        screenAxis, D.cx or 0, D.spread or 0, self:CompassLive() and "live" or "classic",
+        screenAxis, D.cx or 0, D.spread or 0, "live",
         self:CompassGroundMode(), self:LayoutMetrics().dockScale))
     local root = show("root", _G.GamepadMainActionBarFrame)
     local rootAxis = root and (root.x + root.w / 2) or screenAxis
@@ -2722,9 +2279,8 @@ function A:MeasureCompass(say)
             if ox > 0 and oy > 0 then groupWorst = math.max(groupWorst, math.min(ox, oy)) end
         end
     end
-    say(string.format("  SUMMARY  worst group overlap %.2f px | skin %s | rail under %s | auto-spread %s",
+    say(string.format("  SUMMARY  worst group overlap %.2f px | skin %s | auto-spread %s",
         groupWorst, self.CompassSkin and self:CompassSkin() or "n/a",
-        tostring(self.optionIndex and self.optionIndex.compassRailArms and self:GetOption("compassRailArms") or "n/a"),
         tostring(self.optionIndex and self.optionIndex.compassAutoSpread and self:GetOption("compassAutoSpread") or "n/a")))
     say("  The first three must each be <= 0.5 px. The mover is the player's and is not an error.")
     return { axis = axisErr, mirror = mirror, overlap = worst, legend = legend and true or false,
@@ -2817,114 +2373,17 @@ function A:MeasureCommand(argument)
     end
 end
 
-function A:PlusStudWidth(compact)
-    if not self:GetOption("plusStud") then return 0 end
-
-
-    return self:PlusSnap(compact and self.plusStudSmall or self.plusStud)
-end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-A.plusSigil = {
-    player = "spark", target = "diamond", focus = "moon",
-    pet = "leaf", tot = "drop", party = "moon",
-    focustarget = "drop", focustargettarget = "drop",
-}
-function A:PlusBadgeOn()
-    if not (self.db and self.optionIndex) then return false end
-    return self:GetOption("plusSigil") == true
-end
-
-
-
-
-function A:PlusMarkSize(compact)
-    if self:PlusBadgeOn() then return compact and 15 or 20 end
-    return compact and 7 or 9
-end
-
-
 
 
 
 
 function A:PlusGaugeInset(compact)
-
-
-
-
-
-
-
-
-
-
-
-
-    if self:PlateSkin() == "mantle" then return 0 end
-
-
-    if self:PlateInlay() then
-        return self:PlusSnap(self:BarPlateHeight(compact) * self:PlateArt().winL)
-    end
-    if self:BarSkinOn() then
-        local px, art = self:PlatePixel(), self:PlateArt()
-        return self:PlusSnap(self:BarPlateHeight(compact) * (art.fillHeadA or art.capLA)) + px
-    end
-    local stud = self:PlusStudWidth(compact)
-    return stud > 0 and (stud + self:PlusSeamGap()) or self:PlusInset()
+    return self:PlusSnap(self:BarPlateHeight(compact) * self:PlateArt().winL)
 end
-
-
-
 
 
 function A:BarTailInset(compact)
-    if self:PlateSkin() == "mantle" then return 0 end
-    if self:PlateInlay() then
-        return self:PlusSnap(self:BarPlateHeight(compact) * self:PlateArt().winR)
-    end
-    local art = self:PlateArt()
-    return self:PlusSnap(self:BarPlateHeight(compact) * (art.fillTailA or art.capRA)) + self:PlatePixel()
-end
-
-
-
-
-function A:PlusFloatTail(compact)
-    local art = self:PlateArt()
-
-
-    if art.inlay then return 0 end
-    if art.rowTailA then
-        return self:PlusSnap(self:BarPlateHeight(compact) * art.rowTailA) + self:PlatePixel()
-    end
-    return self:BarTailInset(compact)
+    return self:PlusSnap(self:BarPlateHeight(compact) * self:PlateArt().winR)
 end
 
 
@@ -2937,273 +2396,27 @@ end
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function A:BarSkin(plate, width, mirror, compact, isParty, px)
+function A:PlusSkin(plate, width, rowTop, mirror, compact, isParty, px)
     local height = self:Number(plate.GetHeight, 1, plate) or 0
-
 
 
     if self:SmallTile(plate.plusId) then
         self:PlaceBarFrame(plate.barFrame, plate, width, height, mirror, 1, false)
-        for _, panel in ipairs({ plate.shelf, plate.block, plate.stud, plate.shelfRim, plate.blockRim }) do
-            panel.body:Hide(); panel.wedge:Hide(); panel.tail:Hide()
-        end
-        plate.rimShown, plate.shelfCut = false, 0
-        for _, region in ipairs({ plate.sheen, plate.lip, plate.levelChip, plate.levelChipLine, plate.keyline,
-            plate.keylineCut, plate.badgeDisc, plate.accentMark, plate.studEdge }) do
-            if region then region:Hide() end
-        end
-        self:SuppressDepth(plate.depth, "d", true)
+        local tileMirror = self:GetOption("plusMirror") and plate.mirror == true or false
+        self:PlateShade(plate, true, width, height, tileMirror, true)
         return 0, -height
     end
     local alpha = plate.hero and self:Surface("panel") or self:Surface("base")
-
-
-
-    local artTop, artH = 0, height
-    local stands = self:PlateStands()
-    if stands then
-        local g = self:MantleGeometry(compact, false)
-        artTop, artH = g.artTop, g.art
-    end
-    local head = self:PlaceBarFrame(plate.barFrame, plate, width, artH, mirror, alpha, true, artTop)
-    for _, panel in ipairs({ plate.shelf, plate.block, plate.stud, plate.shelfRim, plate.blockRim }) do
-        panel.body:Hide(); panel.wedge:Hide(); panel.tail:Hide()
-    end
-    plate.rimShown = false
-    plate.shelfCut = 0
-
-
-
-
-    local function stand(region) if region then region:Hide() end end
-    stand(plate.sheen); stand(plate.lip)
-    stand(plate.levelChip); stand(plate.levelChipLine)
-    stand(plate.keyline); stand(plate.keylineCut)
-    stand(plate.badgeDisc); stand(plate.accentMark)
-
-
-
-
-
-    local glowOn = self:GetOption("plusGlow") and not isParty and not stands
-    if glowOn and head > 0 then
-        local lit = math.max(2, px * 2)
-        local top, foot = self:BarBands(height)
-        local x = mirror and (width - head) or (head - lit)
-        plate.studEdge:ClearAllPoints()
-        plate.studEdge:SetPoint("TOPLEFT", plate, "TOPLEFT", x, -top)
-        plate.studEdge:SetPoint("BOTTOMRIGHT", plate, "TOPLEFT", x + lit, -foot)
-        plate.studEdge:Show()
-    else
-        plate.studEdge:Hide()
-    end
+    local artH = self:MantleGeometry(compact).art
+    self:PlaceBarFrame(plate.barFrame, plate, width, artH, mirror, alpha, true, 0)
+    self:PlateShade(plate, true, width, artH, mirror, false, 0)
     if plate.flashFx then
         self:SizeEdgeFlash(plate.flashFx, math.max(2, px * 2))
         plate.flashFx:ClearAllPoints()
         plate.flashFx:SetPoint("TOPLEFT", plate, "TOPLEFT", -px, px)
         plate.flashFx:SetPoint("BOTTOMRIGHT", plate, "BOTTOMRIGHT", px, -px)
     end
-
-
-
-    self:SuppressDepth(plate.depth, "d", true)
     return 0, -height
-end
-
-function A:PlusSkin(plate, width, rowTop, mirror, compact, isParty, px)
-    if self:BarSkinOn() then
-        return self:BarSkin(plate, width, mirror, compact, isParty, px)
-    end
-    if plate.barFrame then self:PlaceBarFrame(plate.barFrame, plate, width, 0, mirror, 1, false) end
-    local sp = self.tokens.space
-    local height = self:Number(plate.GetHeight, 1, plate) or 0
-    local unified = self:PlusUnified()
-
-
-
-    local seam = self:PlusSeam()
-
-
-
-
-
-
-
-    local rowSpan = math.max(12, rowTop - self.plusSeam)
-    if px and px > 0.05 then rowSpan = math.max(12, math.floor(rowSpan / px + 0.5) * px) end
-    local shelfBottom = -rowSpan
-    local alpha = plate.hero and self:Surface("panel") or self:Surface("base")
-
-
-
-    local step = isParty and 0 or self:PlusStep()
-    local cut = isParty and 0 or math.max(6, math.floor(-shelfBottom * self.plusShelfLean))
-
-
-    local shelfCorner = mirror and "TOPLEFT" or "TOPRIGHT"
-    local shelfX0, shelfX1 = mirror and step or 0, mirror and 0 or -step
-    cut = placePanel(self, plate.shelf, plate, shelfX0, shelfX1,
-        0, shelfBottom, shelfCorner, cut)
-    tintPanel(self, plate.shelf, "inkStep", alpha)
-
-
-
-
-    plate.shelf.body:Show()
-
-
-
-
-    plate.shelfCut = cut
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    local footCorner = mirror and "BOTTOMRIGHT" or "BOTTOMLEFT"
-    local blockH = shelfBottom - seam + height
-    local foot = (isParty or not self:GetOption("plusCorner")) and 0
-        or math.max(0, math.min(self.plusFootCut, math.floor(blockH * 0.45)))
-
-
-
-
-    if self.plus and plate == self.plus.player and self:PlusFooterOn() then foot = 0 end
-    placePanel(self, plate.block, plate, 0, 0, shelfBottom - seam, -height, footCorner, foot)
-    tintPanel(self, plate.block, "ink", alpha)
-    plate.block.body:Show()
-
-
-    local studW = isParty and 0 or self:PlusStudWidth(compact)
-    if studW > 0 then
-        placePanel(self, plate.stud, plate,
-            mirror and (width - studW) or 0, mirror and 0 or -(width - studW),
-            shelfBottom - seam, -height, footCorner, math.min(foot, studW - 2))
-        tintPanel(self, plate.stud, "inkStud", alpha)
-    else
-        plate.stud.wedge:Hide()
-        plate.stud.tail:Hide()
-    end
-    plate.stud.body:SetShown(studW > 0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    local keyed = self:GetOption("plusKeyline")
-    local rimOn = keyed and self:GetOption("plusRim")
-    plate.rimShown = rimOn
-    placeRim(self, plate.shelfRim, plate, px, shelfX0, shelfX1, 0, shelfBottom, shelfCorner, cut, rimOn)
-    placeRim(self, plate.blockRim, plate, px, 0, 0, shelfBottom - seam, -height, footCorner, foot, rimOn)
-
-
-
-
-
-
-
-
-
-
-    local rimRole = isParty and "edge" or "accent"
-    local rimAlpha = isParty and nil or 0.80
-    tintPanel(self, plate.shelfRim, rimRole, rimAlpha)
-    tintPanel(self, plate.blockRim, unified and rimRole or "edge", unified and rimAlpha or nil)
-
-
-
-    local glowOn = self:GetOption("plusGlow")
-    if studW > 0 and glowOn then
-        local lit = math.max(2, px * 2)
-        local inboardX = mirror and (width - studW) or (studW - lit)
-        plate.studEdge:ClearAllPoints()
-        plate.studEdge:SetPoint("TOPLEFT", plate, "TOPLEFT", inboardX, shelfBottom - seam)
-        plate.studEdge:SetPoint("BOTTOMRIGHT", plate, "TOPLEFT", inboardX + lit, -height)
-        plate.studEdge:Show()
-    else
-        plate.studEdge:Hide()
-    end
-
-
-    if plate.flashFx then
-        self:SizeEdgeFlash(plate.flashFx, math.max(2, px * 2))
-        plate.flashFx:ClearAllPoints()
-        plate.flashFx:SetPoint("TOPLEFT", plate, "TOPLEFT", -px, px)
-        plate.flashFx:SetPoint("BOTTOMRIGHT", plate, "BOTTOMRIGHT", px, -px)
-    end
-
-
-
-    self:LayoutBlockSurface(plate, plate.surface, "s",
-        math.max(8, rowTop - sp.xs), sp.sm, px, keyed,
-        plate.shelf.body, plate.block.body)
-
-
-
-    local badge = self:PlusBadgeOn()
-    local markSize = self:PlusMarkSize(compact)
-    local head = mirror and "RIGHT" or "LEFT"
-    local marked = not isParty and self:GetOption("plusAccentMark")
-
-
-
-    local y = shelfBottom / 2
-    plate.badgeDisc:ClearAllPoints()
-    plate.badgeDisc:SetSize(markSize, markSize)
-    plate.badgeDisc:SetPoint("TOP" .. head, plate, "TOP" .. head,
-        (mirror and -1 or 1) * sp.sm, y + markSize / 2)
-    plate.badgeDisc:SetShown(marked and badge)
-
-
-
-    self:SigilBadge(plate, plate.badge, "b", markSize, plate.sigil, "ARTWORK", 0)
-    if not badge then
-        plate.accentMark:SetTexture(self.artPath .. "diamond-mask.tga", "CLAMP", "CLAMP")
-        plate.accentMark:SetSize(markSize, markSize)
-        plate.accentMark:ClearAllPoints()
-        plate.accentMark:SetPoint("TOP" .. head, plate, "TOP" .. head,
-            (mirror and -1 or 1) * sp.sm, y + markSize / 2)
-    end
-    plate.accentMark:SetShown(marked)
-    return studW, shelfBottom
 end
 
 function A:CreatePlusUnits()
@@ -3230,13 +2443,6 @@ function A:CreatePlusUnits()
 
 
     plus.target.mirror = true
-
-
-
-
-
-
-    plus.target.rimLit = true
 
 
     local shh = self:PlusSmallHealthHeight()
@@ -3282,16 +2488,10 @@ function A:CreatePlusUnits()
     end
 
 
-    A.PlateRule(self, plus.player, "LEFT", nil, 10)
-    A.PlateRule(self, plus.target, "LEFT", "dynamic", 10)
-    for _, key in ipairs(A.plusSmallIds) do A.PlateRule(self, plus[key], "LEFT", "dynamic", 6) end
 
-
-    for key, glyph in pairs(self.plusSigil) do
-        local plate = plus[key]
-        if plate and key ~= "party" then plate.sigil = glyph end
-    end
-    for _, member in ipairs(plus.party.members) do member.sigil = self.plusSigil.party end
+    plus.player.lightTone = "accent"
+    plus.target.lightTone = "tint"
+    for _, key in ipairs(A.plusSmallIds) do plus[key].lightTone = "tint" end
     for _, plate in ipairs({ plus.player, plus.target, plus.focus, plus.pet, plus.tot, plus.focustarget,
         plus.focustargettarget, plus.party }) do plate:Hide() end
     self.plus = plus
@@ -3588,19 +2788,10 @@ function A:LayoutPlus()
 
 
     local platePx = self:PlatePixel()
-
-
-
-    local barSkin = self:BarSkinOn()
-
-    local stands = self:PlateStands()
     local w, sw = self:PlusPlateWidth(false), self:PlusPlateWidth(true)
 
 
-    local hh, ph = self:PlusHealthHeight(), self:PlusPowerHeight()
-    local pad = self:PlusInset()
-    local shh = self:PlusSmallHealthHeight()
-    local top, ctop = self:PlusHeaderTop(), self:PlusCompactTop()
+    local ph = self:PlusPowerHeight()
     local player, target = plus.player, plus.target
     player:SetSize(w, self:PlusHeroHeight(true))
     target:SetSize(w, self:PlusHeroHeight(false))
@@ -3629,16 +2820,7 @@ function A:LayoutPlus()
 
 
     local mirrorOn = self:GetOption("plusMirror")
-
-
-    local function rowTopFor(plate)
-        local bar = plate.health and plate.health.value
-        local plateTop = self:Number(plate.GetTop, 1, plate)
-        local barTop = bar and self:Number(bar.GetTop, 1, bar)
-        if plateTop and barTop and plateTop > barTop then return plateTop - barTop end
-        return (plate.hero and self:PlusHeaderTop() or self:PlusCompactTop())
-    end
-    local function textLayout(plate, width, rowTop, isParty, ground, groundDy, compact)
+    local function textLayout(plate, width, isParty, compact)
         local rowH = compact and self:PlusCompactRow() or self:PlusNameRow()
         local mirror = mirrorOn and plate.mirror == true and not isParty
         local lead = mirror and "RIGHT" or "LEFT"
@@ -3646,10 +2828,7 @@ function A:LayoutPlus()
         local tail = mirror and "LEFT" or "RIGHT"
         local sign = mirror and -1 or 1
 
-
-
-        local studW = self:PlusSkin(plate, width, rowTopFor(plate),
-            mirror, compact, isParty, platePx)
+        self:PlusSkin(plate, width, nil, mirror, compact, isParty, platePx)
 
 
 
@@ -3657,26 +2836,8 @@ function A:LayoutPlus()
 
 
 
-
-        local bar = self:BarSkinOn()
-        if bar then rowTop = rowH + self:PlusGaugeGap() end
-        local pip = (not isParty) and not bar
-            and self:GetOption("plusAccentMark") and self:PlusMarkSize(compact) or 0
-
-
-
-
-
-
-
-
-        local x0 = bar and self:PlusFloatLead(compact)
-            or (sp.sm + (pip > 0 and (pip + 6) or 0))
-
-
-
-        local x1 = bar and self:PlusFloatTail(compact)
-            or (sp.sm + (isParty and 0 or (self:PlusStep() + (plate.shelfCut or 0) / 2)))
+        local rowTop = rowH + self:PlusGaugeGap()
+        local x0, x1 = 0, 0
         local nameFloor = self:PlusNameFloor(compact)
         local levelShown = showLevel and not isParty
 
@@ -3696,39 +2857,9 @@ function A:LayoutPlus()
 
 
 
-
-
-
-
-
-
-
-
-        if bar then
-
-
-
-
-
-
-
-
-
-            plate.level:SetPoint("TOP" .. lead, plate, "TOP" .. lead, sign * x0, rowTop)
-
-
-
-            plate.level:SetJustifyH(self:PlateStands() and lead or "CENTER")
-            if levelShown then nameX = x0 + levelW + 6 end
-        elseif levelPos ~= "right" and levelShown then
-            plate.level:SetPoint("TOP" .. lead, plate, "TOP" .. lead, sign * x0, rowTop)
-            plate.level:SetJustifyH("CENTER")
-            nameX = x0 + levelW + 6
-        else
-            plate.level:SetPoint("TOP" .. tail, plate, "TOP" .. tail, -sign * x1, rowTop)
-            plate.level:SetJustifyH("CENTER")
-            if levelShown then reserve = reserve + levelW + 6 end
-        end
+        plate.level:SetPoint("TOP" .. lead, plate, "TOP" .. lead, sign * x0, rowTop)
+        plate.level:SetJustifyH(lead)
+        if levelShown then nameX = x0 + levelW + 6 end
         if namePos == "center" then
             plate.name:SetPoint("TOP", plate, "TOP", 0, rowTop)
             plate.name:SetJustifyH("CENTER")
@@ -3738,52 +2869,6 @@ function A:LayoutPlus()
         end
         plate.name:SetWidth(math.max(nameFloor, width - nameX - x1 - reserve))
         plate.level:SetShown(levelShown)
-
-
-
-        if plate.levelChip then
-
-
-            local chipOn = levelShown and not compact and not bar
-            local chipH = math.max(12, math.floor(rowH * 0.62 + 0.5))
-            plate.levelChip:ClearAllPoints()
-            plate.levelChip:SetPoint("CENTER", plate.level, "CENTER", 0, 0)
-            plate.levelChip:SetSize(levelW + 6, chipH)
-            plate.levelChip:SetShown(chipOn)
-            plate.levelChipLine:ClearAllPoints()
-            plate.levelChipLine:SetPoint("BOTTOMLEFT", plate.levelChip, "BOTTOMLEFT", 0, 0)
-            plate.levelChipLine:SetPoint("BOTTOMRIGHT", plate.levelChip, "BOTTOMRIGHT", 0, 0)
-            plate.levelChipLine:SetHeight(platePx)
-
-
-
-
-
-            plate.levelChipLine:SetShown(chipOn and self:GetOption("plusKeyline"))
-        end
-
-
-
-
-
-        if plate.rule then
-            local size = compact and 7 or 9
-
-
-
-
-            local on = self:GetOption("playerRule") and not isParty and not bar
-            plate.rule:ClearAllPoints()
-            plate.rule:SetSize(size, size)
-            if studW > 0 then
-                plate.rule:SetPoint("CENTER", plate.stud.body, "CENTER", 0, 0)
-            else
-                plate.rule:SetPoint("TOP" .. lead, plate, "TOP" .. lead, sign * sp.sm,
-                    rowTop - (rowH - size) / 2)
-            end
-            plate.rule:SetShown(on)
-            plate.ruleGlow:SetShown(false)
-        end
         self:FitPlateName(plate, compact)
 
 
@@ -3804,9 +2889,6 @@ function A:LayoutPlus()
             text:SetPoint(anchor, plate.health.value, anchor, hp == "left" and 4 or 0, 0)
             text:SetJustifyH(anchor)
         end
-
-
-        self:PlusSkin(plate, width, rowTopFor(plate), mirror, compact, isParty, platePx)
 
 
 
@@ -3830,11 +2912,6 @@ function A:LayoutPlus()
             plate.sweepFx:SetPoint("TOPRIGHT", plate, "TOPLEFT", 0, 2)
             plate.sweepFx:SetPoint("BOTTOMRIGHT", plate, "BOTTOMLEFT", 0, -2)
         end
-
-
-
-
-        self:SuppressDepth(plate.depth, "d", bar == true)
     end
 
 
@@ -3842,22 +2919,17 @@ function A:LayoutPlus()
 
 
     local ticksOn = self:GetOption("gaugeTicks")
-    local plateInlay = self:PlateInlay()
     local function cutTo(bar, height)
 
 
 
         local barPlate = bar.plate or (bar.value and type(bar.value.GetParent) == "function" and bar.value:GetParent())
         local tileVariant = type(barPlate) == "table" and self:SmallTile(barPlate.plusId) or nil
-        local inlay = plateInlay or tileVariant ~= nil
-        local cutSide = self:PlusCutSize(height)
-        if bar.cut then
-            bar.cut:SetSize(math.max(1, cutSide), math.max(1, cutSide))
+        local lane = bar == player.power and "power" or "health"
 
+        local chip = self:PlusChipFor(tileVariant)
 
-
-            bar.cut:SetShown(cutSide > 0 and not inlay)
-        end
+        if bar.cut then bar.cut:Hide() end
 
 
 
@@ -3867,7 +2939,7 @@ function A:LayoutPlus()
 
         if bar.seam then
             bar.seam:SetWidth(math.max(2, math.floor(platePx * 2 + 0.5)))
-            bar.seam:SetShown(self:FlatBars() and height >= self:PlusDetailFloor())
+            bar.seam:SetShown(self:FlatBars() and height >= self:PlusDetailFloor() and not chip)
         end
 
 
@@ -3876,7 +2948,8 @@ function A:LayoutPlus()
 
         if bar.lead then
             bar.lead:SetWidth(math.max(2, math.floor(platePx * 2 + 0.5)))
-            bar.lead:SetShown(self:FlatBars() and height >= self:PlusDetailFloor() and self:GetOption("plusGlow"))
+            bar.lead:SetShown(self:FlatBars() and height >= self:PlusDetailFloor() and self:GetOption("plusGlow")
+                and not chip)
         end
         if bar.trail then
 
@@ -3884,36 +2957,17 @@ function A:LayoutPlus()
 
 
             pcall(bar.trail.SetStatusBarTexture, bar.trail,
-                self.artPath .. (self:FlatBars() and "meter.tga" or "bar-gradient.tga"))
+                self.artPath .. (chip and (A.chipFiles.clear .. ".tga")
+                    or (self:FlatBars() and "meter.tga" or "bar-gradient.tga")))
             bar.trail:ClearAllPoints()
             bar.trail:SetPoint("TOPLEFT", bar.value, "TOPLEFT", 0, 0)
             bar.trail:SetSize(barW, height)
-            if bar.trailCut then
-
-
-
-
-
-
-
-
-
-
-
-
-                local side = math.floor(self:PlusCutSize(height) / 2)
-                bar.trailCut:SetSize(math.max(1, side), math.max(1, side))
-                bar.trailCut:SetShown(side > 0)
-            end
+            if bar.trailCut then bar.trailCut:Hide() end
         end
         if bar.heal then
             bar.heal:SetSize(math.max(1, barW), height)
             if bar.heal.auiMask then bar.heal.auiMask:SetAllPoints(bar.value) end
-            if bar.healCut then
-                local side = self:PlusCutSize(height)
-                bar.healCut:SetSize(math.max(1, side), math.max(1, side))
-                bar.healCut:SetShown(side > 0)
-            end
+            if bar.healCut then bar.healCut:Hide() end
         end
 
 
@@ -3921,7 +2975,9 @@ function A:LayoutPlus()
 
 
         if bar.redlineArt then
+
             local art, on = bar.redlineArt, bar.redline == true and self:GetOption("plusDanger") and height >= 8
+                and not chip
             if on then
                 local x, notch = barW * TICKS[1], math.max(3, math.floor(height / 3))
                 art.stem:ClearAllPoints()
@@ -3940,55 +2996,27 @@ function A:LayoutPlus()
 
 
         if bar.keyline then
-            anchorCut(self, bar.keyline, bar.value, 1, height)
-            local housed = not self:FlatBars()
-            bar.keyline.body:SetShown(housed)
-            if not housed then bar.keyline.wedge:Hide() end
+            anchorCut(self, bar.keyline, bar.value, 1)
+            bar.keyline.body:SetShown(not self:FlatBars())
         end
-
-
-
-
-
-
 
 
 
         if bar.back then
-            anchorCut(self, bar.back, bar.value, 0, height)
-
-
-
-
-
-            local wash = stands and self:PlateSkin() == "mantle"
-            if wash ~= (bar.back.auiWash == true) then
-                bar.back.auiWash = wash or nil
-                if wash then
-                    self.themed[bar.back.body] = nil
-                    local t = A.mantleTroughTone
-                    bar.back.body:SetColorTexture(t[1], t[2], t[3], A.mantleTroughAlpha)
-                else
-                    self:Tint(bar.back.body, "well", "color")
-                end
-            end
-
-
-            bar.back.body:SetShown((wash or not barSkin) and not inlay)
-            if inlay then bar.back.wedge:Hide() end
+            anchorCut(self, bar.back, bar.value, 0)
+            bar.back.body:Hide()
         end
         local cut = 0
         if bar.ghost then
-            cut = anchorCut(self, bar.ghost, bar.value, 0, height)
+            cut = anchorCut(self, bar.ghost, bar.value, 0)
             self:Tint(bar.ghost.body, "tint", "color", self:PlusTroughAlpha())
             self:Tint(bar.ghost.wedge, "tint", "vertex", self:PlusTroughAlpha())
-
-
-            if inlay then bar.ghost.body:Hide(); bar.ghost.wedge:Hide() else bar.ghost.body:Show() end
+            bar.ghost.body:Hide()
         end
 
-        self:InlayLight(bar, bar == player.power and "power" or "health", plateInlay and not tileVariant)
-        self:TileLight(bar, tileVariant, tileVariant ~= nil)
+        self:InlayLight(bar, lane, not tileVariant, chip)
+        self:TileLight(bar, tileVariant, tileVariant ~= nil, chip)
+        self:PlusChip(bar, chip, height, lane, tileVariant)
         if bar.ticks then
             local barWidth = self:Number(bar.value.GetWidth, 1, bar.value) or 0
             for i, tick in ipairs(bar.ticks) do
@@ -3998,7 +3026,7 @@ function A:LayoutPlus()
                 tick:SetPoint("BOTTOM", bar.value, "BOTTOMLEFT", x, 0)
 
 
-                tick:SetShown(ticksOn and height >= self:PlusDetailFloor() and x < barWidth - cut - 1)
+                tick:SetShown(ticksOn and height >= self:PlusDetailFloor() and x < barWidth - cut - 1 and not chip)
             end
         end
 
@@ -4036,30 +3064,13 @@ function A:LayoutPlus()
     for _, plate in ipairs({ player, target, plus.focus, plus.pet, plus.tot, plus.focustarget, plus.focustargettarget }) do
         local width = plate:GetWidth()
         local compact = not plate.hero
-        local barH = compact and shh or hh
         local tileVariant = self:SmallTile(plate.plusId)
-
-
 
 
         local mirrored = mirrorOn and plate.mirror == true
         local inset = self:PlusGaugeInset(compact)
-        local gaugeTop = compact and ctop or top
-        local tailIn = pad
-        if stands then
-
-
-            gaugeTop, barH = self:StandGauge(compact, "health")
-            tailIn = self:BarTailInset(compact)
-        elseif barSkin then
-
-
-
-
-            local plateH = self:Number(plate.GetHeight, 1, plate) or 0
-            gaugeTop, barH = self:BarGauge(plateH, "health")
-            tailIn = self:BarTailInset(compact)
-        end
+        local gaugeTop, barH = self:StandGauge(compact, "health")
+        local tailIn = self:BarTailInset(compact)
         if tileVariant then
 
             local plateH = self:Number(plate.GetHeight, 1, plate) or 0
@@ -4073,10 +3084,8 @@ function A:LayoutPlus()
             mirrored and tailIn or inset, -gaugeTop)
         plate.health.value:SetSize(math.max(8, width - tailIn - inset), barH)
         cutTo(plate.health, barH)
-        self:PlusFillStyle(plate.health, "health",
-            (barSkin and not stands) and (self:Number(plate.GetHeight, 1, plate) or 0) or 0, mirrored)
         self:StandFill(plate.health, mirrored)
-        if tileVariant then
+        if tileVariant and not plate.health.chip then
 
 
             local bar = plate.health.value
@@ -4089,37 +3098,7 @@ function A:LayoutPlus()
             plate.health.standFill = nil
             self:StandFill(plate.health, mirrored)
         end
-
-
-
-
-
-
-
-        if plate.keyline then
-
-
-
-
-
-
-
-            local gap = math.max(2, self:PlusGaugeGap())
-            plate.keyline:ClearAllPoints()
-            plate.keyline:SetPoint("BOTTOMLEFT", plate.health.value, "TOPLEFT", 0, gap)
-            plate.keyline:SetPoint("BOTTOMRIGHT", plate.health.value, "TOPRIGHT",
-                -self:PlusCutSize(barH), gap)
-            plate.keyline:SetHeight(platePx)
-            plate.keylineCut:Hide()
-
-
-
-
-            plate.keyline:SetShown(self:GetOption("plusKeyline") and not barSkin)
-        end
-
-        local last = (plate == player and ph > 0) and player.power.value or plate.health.value
-        textLayout(plate, width, -sp.sm, false, last, -sp.xs, compact)
+        textLayout(plate, width, false, compact)
 
 
 
@@ -4137,40 +3116,12 @@ function A:LayoutPlus()
             (inHeader and not compact) and "value" or "caption", uscale,
 
 
-            (inHeader and barSkin) and self:PlusFloatType() or nil)
+            inHeader and self:PlusFloatType() or nil)
     end
 
 
-
-
-
-
-
-
-
-
-
-
-    local stagger = self:PlusUnified() and 0 or self:PlusCascade()
-    local powerInset = self:PlusGaugeInset(false)
-
-
-
-
-    local powerTop, powerH = top + hh + self:PlusGaugeGap(), math.max(ph, 1)
-    local powerTail = pad + stagger
-    if stands then
-
-
-        powerTop, powerH = self:StandGauge(false, "power")
-        powerTail, powerInset = 0, 0
-        if self:PlateInlay() then
-            powerTail, powerInset = self:BarTailInset(false), self:PlusGaugeInset(false)
-        end
-    elseif barSkin then
-        powerTop, powerH = self:BarGauge(self:Number(player.GetHeight, 1, player) or 0, "power")
-        powerTail = self:BarTailInset(false)
-    end
+    local powerTop, powerH = self:StandGauge(false, "power")
+    local powerTail, powerInset = self:BarTailInset(false), self:PlusGaugeInset(false)
     player.power.value:ClearAllPoints()
     player.power.value:SetPoint("TOPLEFT", player, "TOPLEFT", powerInset, -powerTop)
     player.power.value:SetSize(math.max(1, w - powerTail - powerInset), math.max(powerH, 1))
@@ -4182,8 +3133,6 @@ function A:LayoutPlus()
         player.power.finish.barfinishB6:SetShown(ph > 0 and not self:FlatBars())
     end
     cutTo(player.power, ph)
-    self:PlusFillStyle(player.power, "power",
-        (barSkin and not stands) and (self:Number(player.GetHeight, 1, player) or 0) or 0, false)
     self:StandFill(player.power, false, true)
 
 
@@ -4192,24 +3141,12 @@ function A:LayoutPlus()
 
 
     local party = plus.party
-    local bar = self:PlusPartyBar()
-    local partyTop = self:PlusGaugeGap() + self:PlusSnap(20)
-    local rowH = partyTop + bar + pad
-    local partyTail = pad
 
 
 
-
-
-    if stands then
-        rowH = self:MantleGeometry(true, false).total
-        partyTop, bar = self:StandGauge(true, "health")
-        partyTail = self:BarTailInset(true)
-    elseif barSkin then
-        rowH = self:BarPlateHeight(true)
-        partyTop, bar = self:BarGauge(rowH, "health")
-        partyTail = self:BarTailInset(true)
-    end
+    local rowH = self:MantleGeometry(true).total
+    local partyTop, bar = self:StandGauge(true, "health")
+    local partyTail = self:BarTailInset(true)
     local spacing = self:PlusSnap(self:GetOption("plusPartySpacing"))
 
 
@@ -4217,37 +3154,28 @@ function A:LayoutPlus()
 
 
 
-    if self:BarSkinOn() then
-        spacing = self:PlusAbove(true) + math.max(self:PlusSnap(2), self:PlatePixel())
-            + math.max(0, spacing - self:PlusSnap(8))
-    end
+    spacing = self:PlusAbove(true) + math.max(self:PlusSnap(2), self:PlatePixel())
+        + math.max(0, spacing - self:PlusSnap(8))
     local direction = self:GetOption("plusPartyDirection")
     party:SetSize(sw, PARTY_MAX * rowH + (PARTY_MAX - 1) * spacing)
     for i, member in ipairs(party.members) do
         member:SetSize(sw, rowH)
-        local memberLeft = barSkin and self:PlusGaugeInset(true) or pad
+        local memberLeft = self:PlusGaugeInset(true)
         member.health.value:SetSize(math.max(8, sw - memberLeft - partyTail), bar)
         member.health.value:ClearAllPoints()
         member.health.value:SetPoint("TOPLEFT", member, "TOPLEFT", memberLeft, -partyTop)
         cutTo(member.health, bar)
-        self:PlusFillStyle(member.health, "health", (barSkin and not stands) and rowH or 0, false)
         self:StandFill(member.health, false)
-        textLayout(member, sw, -sp.xs, true, nil, nil, true)
+        textLayout(member, sw, true, true)
         self:SetPixelNumberFont(member.health.text, "caption", uscale,
-            (inHeader and barSkin) and self:PlusFloatType() or nil)
+            inHeader and self:PlusFloatType() or nil)
+
 
         if inHeader then
             member.health.text:ClearAllPoints()
-            if barSkin then
-
-
-                member.health.text:SetPoint("BOTTOMRIGHT", member, "TOPRIGHT",
-                    -(partyTail + 36), self:PlusGaugeGap())
-                member.health.text:SetHeight(self:PlusCompactRow())
-            else
-                member.health.text:SetPoint("TOPRIGHT", member, "TOPRIGHT", -(sp.sm + 36), -sp.xs)
-                member.health.text:SetHeight(20)
-            end
+            member.health.text:SetPoint("BOTTOMRIGHT", member, "TOPRIGHT",
+                -(partyTail + 36), self:PlusGaugeGap())
+            member.health.text:SetHeight(self:PlusCompactRow())
         end
         member.name:SetWidth(math.max(24, sw - sp.sm * 2 - 36 - (inHeader and 46 or 0)))
         member:ClearAllPoints()
@@ -4313,22 +3241,13 @@ end
 
 local function setColor(bar, r, g, b)
     if not r then return end
-    if bar.carved and bar.loss then
-
-
-
+    bar.value:SetStatusBarColor(r, g, b)
+    if bar.chip then
 
 
         bar.lossRGB = { r, g, b }
-        bar.loss:SetVertexColor(r, g, b, 1)
-        bar.value:SetStatusBarColor(A:PlusCarveTint())
-        A:PaintBarGlow(bar.value, r, g, b)
-        if bar.ghost then paintCut(bar.ghost, r, g, b, 0) end
-        A:BarEffectTint(bar, r, g, b)
-        A:PaintHealGhost(bar, r, g, b)
-        return
+        A:PaintChip(bar, r, g, b)
     end
-    bar.value:SetStatusBarColor(r, g, b)
     A:PaintHealGhost(bar, r, g, b)
     A:PaintBarGlow(bar.value, r, g, b)
     if bar.ghost then paintCut(bar.ghost, r, g, b, A.plusTroughTint) end
@@ -4441,6 +3360,8 @@ function A:PlusTrail(widget, unit)
 
 
     local function set(interpolation)
+
+        if trail.auiChipTest then return true end
         return pcall(function()
             trail:SetMinMaxValues(0, UnitHealthMax(unit))
             if interpolation then
@@ -4625,6 +3546,13 @@ function A:BarEffectFor(widget)
 end
 
 function A:LayoutBarEffect(widget, height)
+
+
+
+    if widget and widget.chip then
+        if widget.effectHost and widget.effectHost:IsShown() then widget.effectHost:Hide() end
+        return nil
+    end
     local effect = self:BarEffectFor(widget)
     if not effect then
         if widget and widget.effectHost then widget.effectHost:Hide() end
@@ -4846,6 +3774,129 @@ function A:EffectTestMarker(widget, why)
     self:Print("  nothing this addon draws on that gauge reaches the screen at all.")
     return true
 end
+
+
+
+
+
+
+
+
+
+
+A.chipTestHold = 2.5
+function A:ChipTestCommand(holdArg)
+    local out = { "-- chiptest --" }
+    local function say(text) self:Print(text); out[#out + 1] = text end
+    local function save()
+        local text = table.concat(out, "\n")
+        local prior = type(self.inspectText) == "string" and (self.inspectText .. "\n") or ""
+        self.inspectText = prior .. text
+        if self.StoreInspectReport and self:StoreInspectReport(self.inspectText) then
+            self:Print("chiptest saved with the inspect dump: /reload and send AdaptiveUIInspectDB.")
+        end
+    end
+    if self:IsCombat() then
+        self:Print("chiptest: out of combat only (it writes test values into our own health bar).")
+        return false
+    end
+    if self.chipTestRunning then
+        self:Print("chiptest: already running.")
+        return false
+    end
+    local plate = self.plusActive and self.plus and self.plus.player or nil
+    local widget = plate and plate.health
+    if not (widget and widget.chip and widget.value) then
+        self:Print("chiptest: the player plate is not chipped. It needs AUI Oakborn, Plates on (/aui units plus) "
+            .. "and the plate's fill style on the look's own.")
+        return false
+    end
+    local hold = tonumber(holdArg) or self.chipTestHold
+    if hold ~= hold or hold < 0.4 then hold = 0.4 elseif hold > 10 then hold = 10 end
+    local value, trail = widget.value, widget.trail
+    local motion = self:MotionLevel()
+    local after = type(C_Timer) == "table" and type(C_Timer.After) == "function" and C_Timer.After or nil
+    if not after then
+        self:Print("chiptest: this client has no C_Timer.After; nothing to time the steps with.")
+        return false
+    end
+    local interp = self.barInterpolation
+    local function set(bar, v, eased)
+        if not bar then return end
+        pcall(bar.SetMinMaxValues, bar, 0, 100)
+        if eased and interp then pcall(bar.SetValue, bar, v, interp) else pcall(bar.SetValue, bar, v) end
+    end
+    local function read(label, region)
+        if not region then say("  " .. label .. ": none"); return end
+        local ok, x, y, w, h = pcall(region.GetRect, region)
+        if ok and self:IsPublic(x) and self:IsPublic(w) and type(x) == "number" and type(w) == "number" then
+            say(string.format("  %s: x %.1f y %.1f  %.1f x %.1f  shown %s", label, x, y or 0, w, h or 0,
+                tostring(region.IsShown and region:IsShown())))
+        else
+            say("  " .. label .. ": rect not public (" .. tostring(ok and "secret" or x) .. ")")
+        end
+    end
+    local function masks(region)
+        if not (region and type(region.GetNumMaskTextures) == "function") then return "?" end
+        local ok, n = pcall(region.GetNumMaskTextures, region)
+        return ok and tostring(n) or "error"
+    end
+
+
+
+
+    local token = {}
+    self.chipTestRunning = token
+    local function finish(why)
+        if self.chipTestRunning ~= token then return end
+        self.chipTestRunning = nil
+        if trail then trail.auiTrailUnit, trail.auiChipTest = nil, nil end
+        pcall(self.UpdatePlusUnits, self)
+        say(why)
+        save()
+    end
+    self.chipTestAbort = function() finish("chiptest aborted: combat started; your real health is back.") end
+    local raw = after
+    after = function(delay, fn)
+        raw(delay, function()
+            if self.chipTestRunning ~= token then return end
+            if self:IsCombat() then return finish("chiptest aborted: combat started; your real health is back.") end
+            fn()
+        end)
+    end
+
+    set(value, 100); set(trail, 100)
+    if trail then trail.auiTrailUnit = "chiptest"; trail.auiChipTest = true; trail:SetAlpha(1) end
+    widget.chipKey = nil
+    pcall(self.PlusChipAnchor, self, widget)
+    say(string.format("chiptest: motion %s | easing %s | debris %s (masks %s) | hold %.1fs",
+        motion, interp and "client" or "none", widget.chipDebris and (widget.chipDebris:IsShown() and "on" or "off") or "none",
+        masks(widget.chipDebris), hold))
+    if motion == "off" then say("  Movement is None: the break is immediate and nothing crumbles (as designed).") end
+    if motion == "subtle" then say("  Movement is Reduced: the break GLIDES; no debris is drawn (as designed).") end
+    say("  1/4 now: the plate at 100 %, the wood whole.")
+    after(0.8, function()
+        set(value, 62, widget.chipGlide)
+        say("  2/4 HIT to 62 %: the break is " .. (widget.chipGlide and "gliding" or "instant")
+            .. (motion == "full" and ("; the debris hangs over the fresh colour for " .. hold .. "s. SCREENSHOT NOW.") or "."))
+        read("debris", widget.chipDebris)
+        read("reveal mask", widget.chipRevealMask)
+        local tf = trail and trail.GetStatusBarTexture and trail:GetStatusBarTexture() or nil
+        read("trail edge", tf)
+        after(hold, function()
+            set(trail, 62, true)
+            say("  3/4 CRUMBLE: the trail eases to the break; the debris slides under it. SCREENSHOT ~0.2s in.")
+            after(0.25, function() read("debris (crumbling)", widget.chipDebris) end)
+            after(2.0, function()
+                set(value, 90, widget.chipGlide); set(trail, 90, true)
+                say("  4/4 HEAL to 90 %: the colour closes, no debris on a heal.")
+                after(2.0, function() finish("chiptest done: your real health is back.") end)
+            end)
+        end)
+    end)
+    return true
+end
+
 function A:EffectTestCommand(styleArg, whichArg)
     if self:IsCombat() then
         self:Print("effecttest: out of combat only. It writes two constants into our own trail bar,"
@@ -5088,6 +4139,13 @@ function A:PlusStateCue(plate, unit)
     elseif self:Read(UnitIsGhost, 1, unit) == true then state = "ghost"
     elseif self:Read(UnitIsDeadOrGhost, 1, unit) == true then state = "dead" end
     plate.auiState = state
+    for _, w in ipairs({ widget, plate.power or false }) do
+        if w and w.chip and (w.chipDown == true) ~= (state ~= nil) then
+            w.chipDown = state ~= nil
+            self:PlusChipAnchor(w)
+            if not state then self:PlusChipColour(w, unit, w == widget and "health" or "power") end
+        end
+    end
     if not state then
 
 
@@ -5106,7 +4164,7 @@ function A:PlusStateCue(plate, unit)
 
 
     setColor(widget, self:Color("offline"))
-    if plate.rule then self:PaintPlateRule(plate, self:Color("offline")) end
+    if plate.lightTone then self:PaintPlateLight(plate, self:Color("offline")) end
     if state == "offline" then
         plate:SetAlpha(0.55)
         plate.auiStateAlpha = true
@@ -5121,9 +4179,11 @@ end
 
 
 function A:PlusLightColor(plate)
-    if plate and plate.rule and plate.rule.GetVertexColor then
-        local ok, r, g, b = pcall(plate.rule.GetVertexColor, plate.rule)
-        if ok and type(r) == "number" then return lift(r, g, b, 0.35) end
+    local c = plate and plate.lightRGB
+    if c then return lift(c[1], c[2], c[3], 0.35) end
+    if plate and plate.lightTone then
+        local r, g, b = self:Color(plate.lightTone)
+        return lift(r, g, b, 0.35)
     end
     return self:Color("accent")
 end
@@ -5448,9 +4508,9 @@ local function updateUnitPlate(self, plate, unit, def, optionKey)
     setColor(plate.health, hr, hg, hb)
 
 
-    if hr and plate.rule then self:PaintPlateRule(plate, hr, hg, hb) end
+    if hr and plate.lightTone then self:PaintPlateLight(plate, hr, hg, hb) end
     self:UpdateBar(plate.health, "HEALTH", UnitHealth, UnitHealthMax, unit)
-    self:PlusCarveColour(plate.health, unit, "health")
+    if plate.health.chip then self:PlusChipColour(plate.health, unit, "health") end
     self:PlusTrail(plate.health, unit)
     self:PlusHealGhost(plate.health, unit)
     self:SetPlusNumber(plate.health.text, "health", unit, nil, not plate.hero)
@@ -5487,7 +4547,7 @@ function A:UpdatePlusUnits()
             self:PlateBadge(player, self:PvpBadge("player"))
             setColor(player.health, healthColor(self, "player", "plusColorPlayer"))
             self:UpdateBar(player.health, "HEALTH", UnitHealth, UnitHealthMax, "player")
-            self:PlusCarveColour(player.health, "player", "health")
+            if player.health.chip then self:PlusChipColour(player.health, "player", "health") end
             self:PlusTrail(player.health, "player")
             self:PlusHealGhost(player.health, "player")
             self:SetPlusNumber(player.health.text, "health", "player", nil, false)
@@ -5509,7 +4569,7 @@ function A:UpdatePlusUnits()
             end
             if type(identity.powerType) == "number" then
                 self:UpdateBar(player.power, "POWER", UnitPower, UnitPowerMax, "player", identity.powerType)
-                self:PlusCarveColour(player.power, "player", "power", identity.powerType)
+                if player.power.chip then self:PlusChipColour(player.power, "player", "power") end
                 if self:GetOption("plusPowerText") then
 
 
@@ -5777,26 +4837,8 @@ function A:ApplyDamageStrip()
 
 
 
-
-
-
-
-
-
-
-    local trim = (plate and not self:PlusUnified()) and self:PlusCascade() * 2 or 0
-
-
-
-
-
-
-
-
-
-    local barSkin = plate and self:BarSkinOn() or false
-    if barSkin then trim = 0 end
-    strip:SetSize(math.max(80, width - trim), height)
+    local barSkin = plate ~= nil
+    strip:SetSize(math.max(80, width), height)
     strip:SetScale(scale)
 
 
@@ -5814,51 +4856,28 @@ function A:ApplyDamageStrip()
 
     local inboard = plate and A.plusInboard.player or "RIGHT"
     local outboard = inboard == "RIGHT" and "LEFT" or "RIGHT"
-
-
-
-
-
-    local footerJoined = plate and self:PlusFooterOn()
-    strip:SetPoint("TOP" .. outboard, host, "BOTTOM" .. outboard, 0,
-        (plate and not footerJoined) and -self:PlusFloatGap() or 0)
+    strip:SetPoint("TOP" .. outboard, host, "BOTTOM" .. outboard, 0, plate and -self:PlusFloatGap() or 0)
     strip.bar:ClearAllPoints()
     strip.bar:SetPoint("TOPLEFT", strip, "TOPLEFT", 1, -1)
     strip.bar:SetPoint("BOTTOMRIGHT", strip, "BOTTOMRIGHT", -1, 1)
     strip.value:ClearAllPoints()
 
-
-
-
-    local stands = barSkin and self:PlateStands()
-    local headIn = stands and 0 or (barSkin and self:PlusGaugeInset(false) or sp.sm)
-    strip.value:SetPoint("LEFT", strip, "LEFT", headIn, 0)
+    strip.value:SetPoint("LEFT", strip, "LEFT", barSkin and 0 or sp.sm, 0)
     strip.unit:ClearAllPoints()
     strip.unit:SetPoint("LEFT", strip.value, "RIGHT", sp.xs, -1)
     strip.detail:ClearAllPoints()
     strip.detail:SetPoint("RIGHT", strip, "RIGHT",
-        -(stands and 0 or (barSkin and self:BarTailInset(false) or sp.sm)), 0)
-    strip.detail:SetWidth(math.max(60, (width - trim) * 0.5))
+        -(barSkin and 0 or sp.sm), 0)
+    strip.detail:SetWidth(math.max(60, width * 0.5))
 
 
 
     local veiled = self:GetOption("unitVeil")
 
 
-
-
-
-
-
-
-
-    local footCut = 0
     local footCorner = inboard == "RIGHT" and "BOTTOMLEFT" or "BOTTOMRIGHT"
-    if footerJoined and self:GetOption("plusCorner") then
-        footCut = math.max(0, math.min(A.plusFootCut, math.floor(height * 0.45)))
-    end
     if barSkin then
-        self:PlaceBarFrame(strip.barFrame, strip, math.max(80, width - trim), 0, false, 1, false)
+        self:PlaceBarFrame(strip.barFrame, strip, math.max(80, width), 0, false, 1, false)
         for _, panel in ipairs({ strip.panel, strip.panelRim }) do
             panel.body:Hide(); panel.wedge:Hide(); panel.tail:Hide()
         end
@@ -5869,12 +4888,11 @@ function A:ApplyDamageStrip()
         return
     end
     if strip.barFrame then self:PlaceBarFrame(strip.barFrame, strip, width, 0, false, 1, false) end
-    placePanel(self, strip.panel, strip, 0, 0, 0, -height, footCorner, footCut)
+    placePanel(self, strip.panel, strip, 0, 0, 0, -height, footCorner, 0)
     tintPanel(self, strip.panel, "inkDeep", self:Surface("panel"))
-    A.PlusPlaceRim(self, strip.panelRim, strip, spx, 0, 0, 0, -height, footCorner, footCut,
+    A.PlusPlaceRim(self, strip.panelRim, strip, spx, 0, 0, 0, -height, footCorner, 0,
         self:GetOption("plusKeyline") and self:GetOption("plusRim"))
-
-    tintPanel(self, strip.panelRim, footerJoined and "accent" or "edge", footerJoined and 0.80 or nil)
+    tintPanel(self, strip.panelRim, "edge", nil)
     self:Veil(strip, strip.veil, "v", "inkDeep", self:Surface("panel") * 0.5)
     self:ShowVeil(strip.veil, "v", veiled)
     strip.bg:SetShown(true)

@@ -43,6 +43,8 @@ local ROW = 52
 local ROW2 = 70
 local HEAD = 30
 local NAV_PITCH = 44
+local ADV_PITCH = 30
+local TAB_H = 36
 local CONTROL_W = 300
 local TEXT_W = PAGE_W - CONTROL_W - 24
 
@@ -120,7 +122,7 @@ A.moduleWords = {
 
 
 A.jumpTopics = {
-    { "Colour scheme", "look", "themeScheme" }, { "Unit frames", "look", "unitMode" },
+    { "Look", "look", "look" }, { "Colour scheme", "look", "themeScheme" }, { "Unit frames", "look", "unitMode" },
     { "Text size", "look", "textScale" }, { "Move things", "layout", "@moverLock" },
     { "Action bar size", "layout", "@group:actions" }, { "Minimap", "layout", "@group:minimap" },
     { "Chat", "layout", "@group:chat" }, { "Cast bars", "combat", "castPlayerMode" },
@@ -298,6 +300,96 @@ function rowBuilders.enum(page, option)
         local shown = current
         for _, entry in ipairs(option.values) do if entry.value == current then shown = entry.label end end
         b.label:SetText(tostring(shown))
+    end
+    return row
+end
+
+
+
+
+
+
+
+A.lookTiles = {
+    { value = "oakborn", title = "AUI Oakborn", sub = "The flagship: carved oak", art = "oak-plate-plain" },
+    { value = "dusk", title = "AUI Dusk", sub = "Obsidian stone", art = "plate02-plain" },
+    { value = "blizzard", title = "Blizzard", sub = "The game's own frames", art = nil },
+}
+function rowBuilders.look(page, option)
+    local tileH, gap, top = 86, 8, -30
+    local row = rowFrame(page, ROW + tileH + 4)
+    row.kind = "picker"
+    row.label = K.text(row, LABEL, false, 10, -6, PAGE_W - 240)
+    row.label:SetText(option.label)
+    local n = #A.lookTiles
+    local w = math.floor((PAGE_W - 8 - (n - 1) * gap) / n)
+    row.segments = {}
+    for i, spec in ipairs(A.lookTiles) do
+        local b = K.uiButton(row, "", 4 + (i - 1) * (w + gap), top, w, tileH, function()
+            local ok, why = A:SetOption(option.key, spec.value)
+            if not ok and why then A:Print(tostring(why)) end
+        end)
+        b.value = spec.value
+
+        b.art = b:CreateTexture(nil, "ARTWORK", nil, 1)
+        local artW = w - 24
+        local ratio = spec.value == "oakborn" and (3843 / 410) or (1779 / 196)
+        local artH = math.min(28, math.floor(artW / ratio))
+        artW = math.floor(artH * ratio)
+        b.art:SetPoint("TOPLEFT", b, "TOPLEFT", math.floor((w - artW) / 2), -10)
+        b.art:SetSize(artW, artH)
+
+        local textTop = 16 + artH
+        if spec.art then
+
+
+            local layers = A.artLayers and A.artLayers[spec.art]
+            local body = layers and (layers.body or layers.mat) or spec.art
+            b.art:SetTexture(A.artPath .. body .. ".tga", "CLAMP", "CLAMP")
+            if layers and layers.acc then
+                b.acc = b:CreateTexture(nil, "ARTWORK", nil, 2)
+                b.acc:SetAllPoints(b.art)
+                b.acc:SetTexture(A.artPath .. layers.acc .. ".tga", "CLAMP", "CLAMP")
+                A:Tint(b.acc, A:MarkRole(), "vertex", 1)
+            end
+        else
+            b.art:Hide()
+            textTop = 22
+        end
+        b.label:ClearAllPoints()
+        b.label:SetPoint("TOPLEFT", b, "TOPLEFT", 10, -textTop)
+        b.label:SetWidth(w - 20)
+        b.label:SetJustifyH("CENTER")
+        b.label:SetText(spec.title)
+        b.sub = K.text(b, DESC, false, 10, -(textTop + 20), w - 20, "CENTER", "muted")
+        b.sub:SetText(spec.sub)
+        b.mark = b:CreateTexture(nil, "OVERLAY")
+        b.mark:SetPoint("TOPLEFT", b, "TOPLEFT", 0, -(tileH - 3))
+        b.mark:SetSize(w, 3)
+        A:Tint(b.mark, "accent", "color", 1)
+        row.segments[i] = b
+    end
+    row.back = K.uiButton(row, "", PAGE_W - 260, 2, 256, 24, function() A:ResetLook() end)
+    row.back.label:SetJustifyH("CENTER")
+    row.control = row.segments[1]
+    row.height0 = ROW + tileH + 4
+    row:SetHeight(row.height0)
+    row.tick:SetHeight(row.height0 - 8)
+    row.refresh = function()
+        local current = A:GetOption(option.key)
+        for _, b in ipairs(row.segments) do
+            local on = b.value == current
+            b.mark:SetShown(on)
+            if b.bg then b.bg:SetAlpha(on and 1 or 0.55) end
+            if b.art:IsShown() then b.art:SetAlpha(on and 1 or 0.6) end
+            if b.acc then b.acc:SetAlpha(on and 1 or 0.6) end
+        end
+        local changed = A.LookChanged and A:LookChanged() or 0
+        local name = "the look"
+        for _, spec in ipairs(A.lookTiles) do if spec.value == current then name = spec.title end end
+        row.back.label:SetText(string.format("Back to %s (%d changed)", name, changed))
+        row.back:SetShown(changed > 0)
+        row.tick:SetShown(A:OptionChanged(option.key))
     end
     return row
 end
@@ -707,7 +799,37 @@ function A:CreateOptionsSections()
         ui.navOrder[#ui.navOrder + 1] = b
     end
 
+
+    ui.navAdv = {}
+    ui.navAdvOrder = {}
+    for index, section in ipairs(self.advancedSections or {}) do
+        local b = K.uiButton(frame, "", NAV_X, navTop - (index - 1) * ADV_PITCH, NAV_W, ADV_PITCH - 3, function()
+            A:OpenOptionsSections(section.key)
+        end)
+        b.sectionKey = section.key
+        b.section = section
+        self:SetThemedFont(b.label, LABEL, false)
+        b.label:SetText(section.label)
+        b.label:ClearAllPoints()
+        b.label:SetPoint("LEFT", b, "LEFT", 8, 0)
+        b.mark = b:CreateTexture(nil, "OVERLAY")
+        b.mark:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
+        b.mark:SetSize(3, ADV_PITCH - 3)
+        self:Tint(b.mark, "accent", "color", 1)
+        b:Hide()
+        ui.navAdv[section.key] = b
+        ui.navAdvOrder[#ui.navAdvOrder + 1] = b
+    end
+
+    ui.tabBar = CreateFrame("Frame", nil, frame)
+    ui.tabBar:SetPoint("TOPLEFT", frame, "TOPLEFT", PAGE_X, PAGE_TOP)
+    ui.tabBar:SetSize(PAGE_W, TAB_H)
+    ui.tabBar:Hide()
+    ui.tabButtons = {}
+
+
     local scopeY = navTop - #self.optionSections * NAV_PITCH - 6
+    ui.scopeY = { simple = scopeY, advanced = navTop - #(self.advancedSections or {}) * ADV_PITCH - 6 }
     local half = (NAV_W - 4) / 2
     ui.simpleButton = K.uiButton(frame, "Simple", NAV_X, scopeY, half, 30, function() A:SetOptionsMode(false) end)
     ui.advancedButton = K.uiButton(frame, "Advanced", NAV_X + half + 4, scopeY, half, 30, function() A:SetOptionsMode(true) end)
@@ -745,6 +867,16 @@ function A:CreateOptionsSections()
         ui.view.offset = ui.view.offset + 1; A:RefreshOptionsSections()
     end)
     ui.earlier.auiScroll, ui.more.auiScroll = -1, 1
+
+
+
+
+    ui.nextUp = K.uiButton(page, "", 0, 0, PAGE_W, 40, function(b)
+        if b.target then ui.view.offset = b.target; A:RefreshOptionsSections() end
+    end)
+    ui.nextUp.hint = K.text(ui.nextUp, DESC, false, PAGE_W - 228, -13, 220, "RIGHT", "muted")
+    ui.nextUp.hint:SetText("Show it")
+    ui.nextUp:Hide()
     ui.position = K.text(frame, DESC, false, PAGE_X + 280, PAGE_TOP - PAGE_H - 2, PAGE_W - 280, "RIGHT", "muted")
 
 
@@ -924,13 +1056,6 @@ function A:CreateOptionsSections()
         ui.diagRows[#ui.diagRows + 1] = row
     end
 
-    ui.classicRows = {
-        actionRow(page, "Earlier bar, map and window looks", "Every action bar, map and window look of the release before.",
-            function() A:SetCommand("set pass7 back") end, nil, "Apply"),
-        actionRow(page, "Current looks", "Every action bar, map and window look as it ships now.",
-            function() A:SetCommand("set pass7 on") end, nil, "Apply"),
-    }
-
     ui.banner = rowFrame(page, 58)
     ui.banner.kind = "banner"
     ui.banner.rule = ui.banner:CreateTexture(nil, "ARTWORK")
@@ -971,8 +1096,9 @@ function A:CreateOptionsSections()
         end)
     ui.legend = K.text(frame, DESC, false, NAV_X, -(HEIGHT - 38), 560, "LEFT", "muted")
     ui.legend:SetText("LB RB section   LT RT page   A choose   B back   Y jump   X reset")
+    ui.legendText = { simple = "LB RB section   LT RT page   A choose   B back   Y jump   X reset",
+                      advanced = "LB RB section   LT RT tab   A choose   B back   Y jump   X reset" }
     ui.legend:SetWordWrap(true)
-
 
     frame.auiFooter = { close = ui.closeButton, reset = ui.resetSection, legend = ui.legend,
                         home = { close = { WIDTH - 112, -(HEIGHT - 40) }, reset = { 580, -(HEIGHT - 40) },
@@ -1032,7 +1158,12 @@ function A:CreateOptionsSections()
                 f = type(f.GetParent) == "function" and f:GetParent() or nil
             end
         elseif button == "PADLTRIGGER" or button == "PADRTRIGGER" then
-            A:PageOptions(button == "PADRTRIGGER" and 1 or -1)
+
+            if not A:OptionsTab(button == "PADRTRIGGER" and 1 or -1) then
+                A:PageOptions(button == "PADRTRIGGER" and 1 or -1)
+            else
+                A:GamepadHighlight(frame, A:OptionsEdgeControl("up"))
+            end
             return true
         elseif button == "PADRSTICKDOWN" or button == "PADRSTICKUP" then
             ui.view.offset = ui.view.offset + (button == "PADRSTICKDOWN" and 1 or -1)
@@ -1047,9 +1178,77 @@ function A:CreateOptionsSections()
 end
 
 
+
+
+function A:DrawOptionsTabs(tabs)
+    local ui = self.options_ui
+    if not (ui and ui.tabBar) then return end
+    if not tabs then ui.tabBar:Hide(); return end
+    local current = self:AdvancedTab(ui, ui.current)
+    local widths, total = {}, 0
+    for i, entry in ipairs(tabs) do
+        local b = ui.tabButtons[i]
+        if not b then
+            b = K.uiButton(ui.tabBar, "", 0, 0, 80, TAB_H - 6, function(self_) A:OptionsTab(0, self_.tabKey) end)
+            self:SetThemedFont(b.label, LABEL, false)
+            b.label:SetJustifyH("CENTER")
+            b.mark = b:CreateTexture(nil, "OVERLAY")
+            b.mark:SetPoint("BOTTOMLEFT", b, "BOTTOMLEFT", 0, 0)
+            b.mark:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", 0, 0)
+            b.mark:SetHeight(3)
+            self:Tint(b.mark, "accent", "color", 1)
+            ui.tabButtons[i] = b
+        end
+        b.tabKey = entry[1]
+
+        b.label:SetWidth(PAGE_W)
+        b.label:SetText(entry[2])
+        local w = select(2, pcall(b.label.GetStringWidth, b.label))
+        if type(w) ~= "number" or w <= 0 then w = #entry[2] * 8.5 end
+        widths[i] = w + 24
+        total = total + widths[i] + 4
+    end
+    local k = total > PAGE_W and (PAGE_W / total) or 1
+    local x = 0
+    for i, entry in ipairs(tabs) do
+        local b = ui.tabButtons[i]
+        local w = math.floor(widths[i] * k)
+        b:ClearAllPoints()
+        b:SetPoint("TOPLEFT", ui.tabBar, "TOPLEFT", x, 0)
+        b:SetSize(w, TAB_H - 6)
+        b.label:ClearAllPoints()
+        b.label:SetPoint("CENTER", b, "CENTER", 0, 0)
+        b.label:SetWidth(w - 8)
+        local on = entry[1] == current
+        b.mark:SetShown(on)
+        if b.bg then b.bg:SetAlpha(on and 1 or 0.55) end
+        b:Show()
+        x = x + w + 4
+    end
+    for i = #tabs + 1, #ui.tabButtons do ui.tabButtons[i]:Hide() end
+    ui.tabBar:Show()
+end
+
+
+function A:PlaceOptionsScope(mode)
+    local ui = self.options_ui
+    if not (ui and ui.scopeY) or ui.scopeMode == mode then return end
+    ui.scopeMode = mode
+    local frame, y = ui.frame, ui.scopeY[mode]
+    local half = (NAV_W - 4) / 2
+    ui.simpleButton:ClearAllPoints(); ui.simpleButton:SetPoint("TOPLEFT", frame, "TOPLEFT", NAV_X, y)
+    ui.advancedButton:ClearAllPoints(); ui.advancedButton:SetPoint("TOPLEFT", frame, "TOPLEFT", NAV_X + half + 4, y)
+    ui.scopeCount:ClearAllPoints(); ui.scopeCount:SetPoint("TOPLEFT", frame, "TOPLEFT", NAV_X, y - 34)
+    ui.changedOnly:ClearAllPoints(); ui.changedOnly:SetPoint("TOPLEFT", frame, "TOPLEFT", NAV_X, y - 54)
+end
+
 function A:VisibleSections()
     local out = {}
     local advanced = self:GetOption("optionsAdvanced") == true
+    if advanced and self.advancedSections then
+        for _, s in ipairs(self.advancedSections) do out[#out + 1] = s.key end
+        return out
+    end
     for _, s in ipairs(self.optionSections) do
         if advanced or not s.advanced then out[#out + 1] = s.key end
     end
@@ -1063,7 +1262,14 @@ function A:SetOptionsMode(advanced)
     self:SetOption("optionsAdvanced", advanced and true or false, true)
     if advanced and not was and ui then ui.longBanner = self:GetOption("optionsAdvancedSeen") ~= true end
     if advanced then self:SetOption("optionsAdvancedSeen", true, true) end
-    if not advanced and ui and ui.current == "classic" then ui.current = "look" end
+
+    if ui and ui.current then
+        if advanced and self.advancedSections and not self:AdvancedSection(ui.current) then
+            ui.current = self.advancedSectionAlias[ui.current] or "look"
+        elseif not advanced and self.simpleSectionAlias[ui.current] then
+            ui.current = self.simpleSectionAlias[ui.current]
+        end
+    end
     if not advanced then self:SetOption("optionsChangedOnly", false, true) end
     if ui then ui.view.offset = 0 end
     self:RefreshOptionsSections()
@@ -1175,6 +1381,104 @@ local function simpleItems(self, ui, section)
 end
 
 
+
+function A:AdvancedPageItems(ui, section)
+    local items = {}
+    local function add(row) if row then items[#items + 1] = { row = row } end end
+    local tab = self:AdvancedTab(ui, section)
+    ui.currentTab = tab
+    if section ~= "profiles" then add(ui.banner) end
+    if section == "profiles" then
+        items[#items + 1] = { row = ui.profilePage, tall = 470 }
+        return items
+    end
+    local hidden = 0
+    local function applies(option)
+        if self:OptionInapplicable(option) then
+            if not ui.showInapplicable then hidden = hidden + 1; return false end
+        end
+        return true
+    end
+    if section == "help" then
+        for _, item in ipairs(simpleItems(self, ui, "help")) do items[#items + 1] = item end
+        items[#items + 1] = { heading = "Diagnostics" }
+        for _, row in ipairs(ui.diagRows) do add(row) end
+    elseif section == "layout" and tab == "movers" then
+        items[#items + 1] = { heading = "Every mover" }
+        for _, row in ipairs(ui.moverRows) do add(row) end
+    elseif section == "layout" and tab == "elements" then
+        items[#items + 1] = { heading = "Every element" }
+        for _, row in ipairs(ui.elementRows or {}) do add(row) end
+    else
+        if section == "look" and tab == "scheme" then add(ui.presetRow) end
+        if section == "units" and tab == "general" and self.db.unitMode == "plus" then add(ui.healthRow) end
+        if section == "layout" and tab == "move" then
+            add(ui.moverLock)
+            for _, row in ipairs(ui.groupRows) do add(row) end
+            if ui.extraBarsRow and #self:ExtraBarsShown() > 0 then add(ui.extraBarsRow) end
+        end
+        local blocks = {}
+        for _, block in ipairs(self:AdvancedTabOptions(section, tab, applies)) do
+            local rows = {}
+            for _, option in ipairs(block.options) do
+                local row = ui.rows[option.key]
+                if row then rows[#rows + 1] = row end
+            end
+            if #rows > 0 then blocks[#blocks + 1] = { heading = self:AdvancedHeading(block.subsection), rows = rows } end
+        end
+
+        local named = {}
+        for _, block in ipairs(blocks) do if block.heading then named[block.heading] = true end end
+        local count = 0
+        for _ in pairs(named) do count = count + 1 end
+        local last
+        for _, block in ipairs(blocks) do
+            if count > 1 and block.heading and block.heading ~= last then
+                items[#items + 1] = { heading = block.heading }
+                last = block.heading
+            end
+            for _, row in ipairs(block.rows) do add(row) end
+        end
+    end
+    if hidden > 0 or ui.showInapplicable then
+        ui.inapplicableCount = hidden
+        add(ui.inapplicableRow)
+    end
+    if self:GetOption("optionsChangedOnly") == true then
+        local kept = {}
+        for _, item in ipairs(items) do
+            if item.heading or item.row == ui.banner or (item.row and rowChanged(item.row)) then kept[#kept + 1] = item end
+        end
+        items = {}
+        for i, item in ipairs(kept) do
+            local nextItem = kept[i + 1]
+            if not (item.heading and (not nextItem or nextItem.heading)) then items[#items + 1] = item end
+        end
+    end
+    return items
+end
+
+
+function A:OptionsTab(direction, key)
+    local ui = self.options_ui
+    if not ui then return false end
+    local s = self:AdvancedSection(ui.current)
+    if not (s and s.tabs and #s.tabs > 1) then return false end
+    ui.tabs = ui.tabs or {}
+    if key then
+        ui.tabs[ui.current] = key
+    else
+        local current = self:AdvancedTab(ui, ui.current)
+        local index = 1
+        for i, entry in ipairs(s.tabs) do if entry[1] == current then index = i end end
+        ui.tabs[ui.current] = s.tabs[(index - 1 + direction) % #s.tabs + 1][1]
+    end
+    ui.view.offset = 0
+    self:RefreshOptionsSections()
+    return true
+end
+
+
 local function pageItems(self, ui)
     local items = {}
     if ui.jump then
@@ -1207,7 +1511,11 @@ local function pageItems(self, ui)
         for _, hit in ipairs(self:SearchOptions(term)) do
             local row = ui.rows[hit.option.key]
             if row and not seen[row] then
-                if hit.section ~= lastSection then
+                local place = (self:GetOption("optionsAdvanced") == true and self.AdvancedPlace)
+                    and self:AdvancedPlace(hit.option) or nil
+                if place then
+                    if place ~= lastSection then lastSection = place; items[#items + 1] = { heading = place } end
+                elseif hit.section ~= lastSection then
                     lastSection = hit.section
                     local label
                     for _, s in ipairs(self.optionSections) do if s.key == hit.section then label = s.label end end
@@ -1221,6 +1529,7 @@ local function pageItems(self, ui)
     local section = ui.current
     local advanced = self:GetOption("optionsAdvanced") == true
     if not advanced then return simpleItems(self, ui, section), false end
+    if self.advancedSections then return self:AdvancedPageItems(ui, section), false end
 
     if section ~= "profiles" then items[#items + 1] = { row = ui.banner } end
     for _, item in ipairs(simpleItems(self, ui, section)) do items[#items + 1] = item end
@@ -1254,11 +1563,8 @@ local function pageItems(self, ui)
     elseif section == "help" then
         more[#more + 1] = { heading = "Diagnostics" }
         for _, row in ipairs(ui.diagRows) do more[#more + 1] = { row = row } end
-    elseif section == "classic" then
-        more[#more + 1] = { heading = "All at once" }
-        for _, row in ipairs(ui.classicRows) do more[#more + 1] = { row = row } end
     end
-    if #more > 0 and section ~= "classic" then items[#items + 1] = { heading = "More on this page" } end
+    if #more > 0 then items[#items + 1] = { heading = "More on this page" } end
     for _, item in ipairs(more) do items[#items + 1] = item end
     if hidden > 0 or ui.showInapplicable then
         ui.inapplicableCount = hidden
@@ -1291,6 +1597,18 @@ function A:ResetPage()
         if section == "help" then
             for _, row in ipairs(ui.moduleRows) do row.reset() end
             return true, #ui.moduleRows
+        end
+        if self.advancedSections and not (section == "layout" and ui.currentTab ~= "move") then
+
+            local keys, any = {}, false
+            for _, block in ipairs(self:AdvancedTabOptions(section, self:AdvancedTab(ui, section))) do
+                for _, option in ipairs(block.options) do keys[option.key] = true; any = true end
+            end
+            if section == "layout" then
+                for _, row in ipairs(ui.groupRows) do for k in pairs(row.keys()) do keys[k] = true; any = true end end
+            end
+            if not any then return false, "nothing to reset" end
+            return self:ResetSection(section, keys)
         end
         return self:ResetSection(section)
     end
@@ -1332,6 +1650,18 @@ function A:JumpTo(section, target)
     local ui = self.options_ui
     if not ui then return end
     ui.jump = nil
+
+    if target and self:GetOption("optionsAdvanced") == true and self.advancedSections then
+        local sec, tab
+        if target == "@moverLock" or target:find("^@group:") then sec, tab = "layout", "move"
+        elseif target == "@health" then sec, tab = "units", "general"
+        elseif target == "@report" or target:find("^@module:") or target:find("^@reset:") then sec = "help"
+        elseif self.optionIndex[target] then sec, tab = self:AdvancedHome(self.optionIndex[target]) end
+        if sec then
+            section = sec
+            if tab then ui.tabs = ui.tabs or {}; ui.tabs[sec] = tab end
+        end
+    end
     self:OpenOptionsSections(section)
     if not target then return end
     local want
@@ -1358,10 +1688,22 @@ function A:RefreshOptionsSections()
     local frame, page = ui.frame, ui.page
     self:DressOptionsWindow(frame)
     local advanced = self:GetOption("optionsAdvanced") == true
-    if not advanced and ui.current == "classic" then ui.current = "look" end
     ui.current = ui.current or "look"
     local items, searching = pageItems(self, ui)
     ui.items = items
+
+    local stripSection = advanced and not searching and not ui.jump and self.AdvancedSection
+        and self:AdvancedSection(ui.current) or nil
+    local tabs = stripSection and stripSection.tabs and #stripSection.tabs > 1 and stripSection.tabs or nil
+    local top = tabs and TAB_H or 0
+    local pageH = PAGE_H - top
+    self:DrawOptionsTabs(tabs)
+    if ui.scrollTrack then
+
+        ui.scrollTrack:ClearAllPoints()
+        ui.scrollTrack:SetPoint("TOPLEFT", frame, "TOPLEFT", PAGE_X + PAGE_W + 6, PAGE_TOP - top)
+        ui.scrollTrack:SetHeight(pageH)
+    end
 
     local heights = {}
     for i, item in ipairs(items) do
@@ -1373,14 +1715,14 @@ function A:RefreshOptionsSections()
         local total = 0
         for i = #items, 1, -1 do
             total = total + heights[i]
-            if total > PAGE_H then maxOffset = i; break end
+            if total > pageH then maxOffset = i; break end
         end
     end
     ui.view.offset = math.max(0, math.min(maxOffset, ui.view.offset or 0))
     ui.headings = ui.headings or {}
     for _, h in ipairs(ui.headings) do h:Hide() end
     for _, row in pairs(ui.rows) do row:Hide() end
-    for _, list in ipairs({ ui.moverRows, ui.groupRows, ui.diagRows, ui.moduleRows, ui.jumpRows, ui.classicRows,
+    for _, list in ipairs({ ui.moverRows, ui.groupRows, ui.diagRows, ui.moduleRows, ui.jumpRows,
         ui.elementRows or {} }) do
         for _, row in ipairs(list) do row:Hide() end
     end
@@ -1405,7 +1747,7 @@ function A:RefreshOptionsSections()
             or "They apply only with the other bars or with plates.")
         ui.inapplicableRow.control.label:SetText(ui.showInapplicable and "Hide" or "Show")
     end
-    local y, used, shown = 0, 0, 0
+    local y, used, shown = top, 0, 0
     local headingIndex = 0
     ui.shownList = {}
     for i = ui.view.offset + 1, #items do
@@ -1439,6 +1781,36 @@ function A:RefreshOptionsSections()
     end
     ui.shownRows = shown
     ui.shownCount = used - ui.view.offset
+
+    ui.nextUp:Hide(); ui.nextUp.target = nil
+    if used < #items and PAGE_H - y >= 48 then
+        local name, want = nil, used + 1
+        for j = used + 1, #items do
+            if items[j].heading then
+                name, want = items[j].heading, math.min(#items, j + 1)
+                break
+            end
+        end
+        if not name then
+            local label = items[used + 1].row and items[used + 1].row.label
+            name = label and label.GetText and label:GetText() or nil
+        end
+
+        local target = used
+        for o = ui.view.offset + 1, used do
+            local total = 0
+            for j = o + 1, want do total = total + heights[j] end
+            if total <= pageH then target = o; break end
+        end
+        if name then
+            ui.nextUp.label:SetText("v   Next: " .. name)
+            ui.nextUp.target = target
+            ui.nextUp:ClearAllPoints()
+            ui.nextUp:SetPoint("TOPLEFT", page, "TOPLEFT", 0, -(y + 8))
+            ui.nextUp:Show()
+            ui.shownList[#ui.shownList + 1] = ui.nextUp
+        end
+    end
     ui.empty:SetText(self:GetOption("optionsChangedOnly") == true and not searching
         and "Nothing on this page is changed from its default." or "Nothing matches. Try another word, or clear the search.")
     ui.empty:SetShown(#items == 0)
@@ -1453,22 +1825,31 @@ function A:RefreshOptionsSections()
         ui.scrollTrack:SetShown(scrolls)
         ui.scrollThumb:SetShown(scrolls)
         if scrolls then
-            local h = math.max(24, PAGE_H * onScreen / total)
+            local h = math.max(24, pageH * onScreen / total)
             local travel = math.max(1, total - onScreen)
-            local top = (PAGE_H - h) * math.min(1, ui.view.offset / travel)
+            local thumbTop = (pageH - h) * math.min(1, ui.view.offset / travel)
             ui.scrollThumb:ClearAllPoints()
-            ui.scrollThumb:SetPoint("TOPLEFT", ui.scrollTrack, "TOPLEFT", 0, -top)
+            ui.scrollThumb:SetPoint("TOPLEFT", ui.scrollTrack, "TOPLEFT", 0, -thumbTop)
             ui.scrollThumb:SetHeight(h)
         end
     end
     if ui.current == "profiles" and not searching then ui.profiles.refresh() end
 
+    local byObject = advanced and ui.navAdv and next(ui.navAdv) ~= nil
     for key, b in pairs(ui.nav) do
         local on = key == ui.current and not searching
-        b:SetShown(advanced or not b.section.advanced)
+        b:SetShown(not byObject and (advanced or not b.section.advanced))
         b.mark:SetShown(on)
         b.bg:SetAlpha(on and 1 or 0.55)
     end
+    for key, b in pairs(ui.navAdv or {}) do
+        local on = key == ui.current and not searching
+        b:SetShown(byObject)
+        b.mark:SetShown(on)
+        b.bg:SetAlpha(on and 1 or 0.55)
+    end
+    self:PlaceOptionsScope(byObject and "advanced" or "simple")
+    if ui.legend and ui.legendText then ui.legend:SetText(ui.legendText[tabs and "advanced" or "simple"]) end
     ui.simpleButton.mark:SetShown(not advanced); ui.advancedButton.mark:SetShown(advanced)
     ui.simpleButton.bg:SetAlpha(advanced and 0.55 or 1); ui.advancedButton.bg:SetAlpha(advanced and 1 or 0.55)
     ui.scopeCount:SetText(advanced and string.format("All %d settings", all)
@@ -1488,6 +1869,13 @@ function A:OpenOptionsSections(target)
     local ui = self.options_ui
     if not ui or ui.layout ~= "sections" then return end
     local section, subsection = self:SectionKey(target), nil
+    if target and not section and self:GetOption("optionsAdvanced") == true and self.advancedSections then
+        local at = target == "movers" and { "layout", "move" } or self.advancedGroupHome[target]
+        if at then
+            section = at[1]
+            if at[2] then ui.tabs = ui.tabs or {}; ui.tabs[section] = at[2] end
+        end
+    end
     if target and not section then
         if target == "movers" then
             section, subsection = "layout", nil
@@ -1495,8 +1883,6 @@ function A:OpenOptionsSections(target)
             section, subsection = self.optionGroupSection[target][1], self.optionGroupSection[target][2]
         end
     end
-
-    if section == "classic" and self:GetOption("optionsAdvanced") ~= true then self:SetOptionsMode(true) end
     if ui.search and ui.search:GetText() ~= "" and section then ui.search:SetText("") end
     local changed = section and section ~= ui.current
     ui.current = section or ui.current or "look"
@@ -1511,7 +1897,15 @@ function A:OpenOptionsSections(target)
             end
         end
         if not find() then
-            if self:GetOption("optionsAdvanced") ~= true then self:SetOptionsMode(true) end
+            if self:GetOption("optionsAdvanced") ~= true then
+                self:SetOptionsMode(true)
+
+                local at = self.advancedSections and self.advancedGroupHome[target]
+                if at then
+                    ui.current = at[1]
+                    if at[2] then ui.tabs = ui.tabs or {}; ui.tabs[at[1]] = at[2] end
+                end
+            end
             if not find() then ui.showInapplicable = true; find() end
         end
     end

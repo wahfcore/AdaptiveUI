@@ -3,6 +3,12 @@
 A console-RPG / action-combat HUD for WoW Classic "Forever". Controller first, mouse and keyboard supported.
 I built it to change how the game looks and nothing else, and every piece below can be switched off on its own.
 
+## Three looks
+- **AUI Oakborn** (the default): my oak and brass art on every piece.
+- **AUI Dusk**: the darker painted look the addon grew up with.
+- **Blizzard**: Blizzard's own frames, with nothing of mine drawn over them.
+- One choice at the top of the settings window switches all of it; every colour scheme works on both painted looks.
+
 ## Unit plates
 - You and your target get your own painted plates, big and calm, readable from across the room.
 - Health always shows as a percent first, with the number after it if you want it. Never colour alone: a dead, ghosted or
@@ -33,14 +39,14 @@ I built it to change how the game looks and nothing else, and every piece below 
 - When you play on a controller, Blizzard's controller bars become a compass: four arms around the centre, with the
   button glyphs on each slot.
 - Painted tiles behind every button, with a notch pointing the way each button is pressed.
-- LB and RB sit on my painted plaques and glow while you hold them.
+- LB and RB glow while you hold them.
 - A divider under the arms lights from the trigger you are holding (LT or RT), so you always know which set you are on.
 - Empty slots recede, so the bound arm is the only thing that draws your eye.
 - Button prompts sit next to their arm, and the glyphs match your controller.
 - You can drive the whole HUD with the pad, including the settings window and the colour picker.
 
 ## Map, chat, quest tracker and settings
-- The minimap sits on my painted plaque, with the zone and coordinates set into it, kept clear of the quest tracker.
+- The minimap sits on my painted shelf, with the zone and coordinates set into it, kept clear of the quest tracker.
 - Chat gets the same quiet style, and the input box only shows its frame while you are typing.
 - The quest tracker is tidied: less clutter, same information.
 - Blizzard's Settings window can wear the painted look too.

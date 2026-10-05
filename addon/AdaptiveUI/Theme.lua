@@ -342,82 +342,9 @@ A.themes = {
 
 A.artSlots = A.artSlots or {}
 A.artFallback = {
-    obsidian = "plate", banner = "fade", crest = "crest",
+    obsidian = "plate", crest = "crest",
     brassCorner = "bar-chamfer", parchment = "plate", minimapRim = "minimap-mask",
 }
-
-
-
-
-A.sigilGlyphs = { "moon", "leaf", "sun", "drop", "diamond", "spark", "seed", "spiral" }
-
-
-
-
-
-
-A.artFallback["sigil-moon"] = "sigil-moon"
-A.artFallback["sigil-leaf"] = "sigil-leaf"
-A.artFallback["sigil-sun"] = "sigil-sun"
-A.artFallback["sigil-drop"] = "sigil-drop"
-A.artFallback["sigil-spark"] = "sigil-spark"
-A.artFallback["sigil-spiral"] = "sigil-spiral"
-A.artFallback["sigil-diamond"] = "diamond-mask"
-A.artFallback["sigil-seed"] = "diamond-mask"
-
-
-
-
-
-
-
-
-
-
-
-
-A.sigilLine = { leaf = true, sun = true, spiral = true, seed = true }
-A.sigilDetailSize = 24
-function A:SigilFile(glyph, size)
-    glyph = glyph or "diamond"
-    if self.sigilLine[glyph] and (tonumber(size) or 0) < self.sigilDetailSize then
-        return self.artFallback["sigil-" .. glyph] or "diamond-mask"
-    end
-    return self:SlotFile("sigil-" .. glyph)
-end
-
-
-
-
-
-
-
-
-
-
-
-
-function A:SigilBadge(host, store, key, size, glyph, layer, sublevel)
-    store, key = store or host, key or "sigil"
-    if not host or type(host.CreateTexture) ~= "function" then return end
-    layer, sublevel = layer or "ARTWORK", sublevel or 0
-    if not store[key .. "Disc"] then
-        local disc = self:Own(host:CreateTexture(nil, layer, nil, sublevel))
-        disc:SetTexture(self.artPath .. "sigil-disc.tga", "CLAMP", "CLAMP")
-        self:Tint(disc, "inkDeep", "vertex", 0.95)
-        local mark = self:Own(host:CreateTexture(nil, layer, nil, sublevel + 1))
-        self:Tint(mark, "accent", "vertex", 0.92)
-        store[key .. "Disc"], store[key .. "Glyph"] = disc, mark
-    end
-    local disc, mark = store[key .. "Disc"], store[key .. "Glyph"]
-    local inner = math.max(6, math.floor(size * 0.62 + 0.5))
-    disc:SetSize(size, size)
-    mark:SetTexture(self.artPath .. self:SigilFile(glyph, inner) .. ".tga", "CLAMP", "CLAMP")
-    mark:SetSize(inner, inner)
-    mark:ClearAllPoints()
-    mark:SetPoint("CENTER", disc, "CENTER", 0, 0)
-    return disc, mark
-end
 
 
 function A:SlotFile(slot)
@@ -461,7 +388,7 @@ end
 A.crestSeatPixels = 64
 function A:ChromeCrest(where)
     if self.db and self.optionIndex then
-        if self:GetOption("chromeSkin") ~= "authored" then return false end
+
         local want = self:GetOption("chromeCrest")
         if want == "off" or (want ~= "both" and want ~= where) then return false end
     end
@@ -564,7 +491,11 @@ function A:PaintedTexture(host, layer, sublevel, name)
     local entry = { name = name, alpha = 1 }
     self.painted[region] = entry
     local layers = self.artLayers and self.artLayers[name]
-    if layers and layers.acc then
+
+
+    local oak = self.oakSwap and self.oakSwap[name]
+    local oakLayers = oak and self.artLayers and self.artLayers[oak]
+    if (layers and layers.acc) or (oakLayers and oakLayers.acc) then
         local twin = self:Own(host:CreateTexture(nil, layer, nil, math.min(7, sublevel + 1)))
         twin:SetAllPoints(region)
         twin:Hide()
@@ -629,20 +560,20 @@ function A:DressPaintedRegion(region, name, alpha)
         self.themed[twin] = nil
         return
     end
-    local accFile = self.artPath .. layers.acc .. ".tga"
+
+    local accFile, r, g, b, accPiece = self:PaintedAcc(self:LookName(name), layers)
     if twin:GetTexture() ~= accFile then twin:SetTexture(accFile, "CLAMP", "CLAMP") end
     local c = { region:GetTexCoord() }
     local sig = table.concat(c, ",")
     if twin.auiCoord ~= sig then twin.auiCoord = sig; twin:SetTexCoord(unpack(c)) end
     local role = self:MarkRole()
-    local r, g, b = self:Color(role)
     local a = alpha or 1
     local cr, cg, cb, ca = twin:GetVertexColor()
     if math.abs((cr or 1) - r) > 1e-4 or math.abs((cg or 1) - g) > 1e-4 or math.abs((cb or 1) - b) > 1e-4
         or math.abs((ca or 1) - a) > 1e-4 then
         twin:SetVertexColor(r, g, b, a)
     end
-    self.themed[twin] = { role = role, kind = "vertex", alpha = a }
+    self.themed[twin] = { role = role, kind = "vertex", alpha = a, acc = accPiece }
     if not twin:IsShown() then twin:Show() end
 end
 
@@ -657,7 +588,12 @@ end
 
 
 
+
+
+function A:LookName(name) return name end
+
 function A:PaintedPath(name)
+    name = self:LookName(name)
     local layers = self.artLayers and self.artLayers[name]
     local on = self:ArtRecolourOn() and (layers ~= nil or self:ArtFollowsScheme())
 
@@ -687,13 +623,17 @@ end
 
 
 
-A.paintedMinLight = { bar04 = 0.92, slab02 = 0.95, ["tile-notch-cap"] = 0.95, ["tile-pipnotchr-cap"] = 0.94 }
+
+A.paintedMinLight = { bar04 = 0.92, ["tile-notch-cap"] = 0.95, ["tile-pipnotchr-cap"] = 0.94 }
 
 local function luma(r, g, b) return 0.2126 * r + 0.7152 * g + 0.0722 * b end
 
 
 
 function A:PaintedMaterial(name)
+    name = self:LookName(name)
+
+    if self.IsOakWood and self:IsOakWood(name) then return self:OakMaterial(name) end
     local r, g, b = self:Color("material")
     local floor = name and self.paintedMinLight[name]
     if floor then
@@ -725,8 +665,8 @@ function A:SetPainted(region, name)
     entry.on = on
     if region:GetTexture() ~= file then region:SetTexture(file, "CLAMP", "CLAMP") end
     local twin = entry.twin
-    if twin and on and layers.acc then
-        local accFile = self.artPath .. layers.acc .. ".tga"
+    if twin and on and layers and layers.acc then
+        local accFile = self:PaintedAcc(self:LookName(name), layers)
         if twin:GetTexture() ~= accFile then twin:SetTexture(accFile, "CLAMP", "CLAMP") end
     end
     self:PaintedAlpha(region, entry.alpha)
@@ -759,7 +699,7 @@ end
 
 
 
-A.paintedMarkOnly = { plate02 = true, slab02 = true, ["plate02-plain"] = true }
+A.paintedMarkOnly = { ["plate02-plain"] = true }
 
 
 
@@ -792,6 +732,8 @@ function A:GlazeOn()
 end
 
 function A:GlazeColour(name)
+    local look = name and self:LookName(name)
+    if self.IsOakWood and self:IsOakWood(look) then return self:OakGlaze(look) end
     local r, g, b = self:Color("accent")
     local top = math.max(r, g, b, 1e-6)
     r, g, b = r / top, g / top, b / top
@@ -873,6 +815,7 @@ end
 
 
 function A:PaintedBodyTint(name)
+    name = self:LookName(name)
 
     if self:ArtFollowsScheme() then
         local r, g, b = self:PaintedMaterial(name)
@@ -888,6 +831,7 @@ end
 
 
 function A:PaintedBodyThemed(name)
+    name = self:LookName(name)
     if self:ArtFollowsScheme() then return true end
     if self.paintedMarkOnly[name] then return false end
     local layers = self.artLayers and self.artLayers[name]
@@ -917,8 +861,12 @@ function A:PaintedAlpha(region, alpha)
         if twin then
             local role = self:MarkRole()
             local ar, ag, ab = self:Color(role)
+            local look = self:LookName(entry.name)
+            local layers = self.artLayers and self.artLayers[look]
+            local accPiece
+            if layers and layers.acc then _, ar, ag, ab, accPiece = self:PaintedAcc(look, layers) end
             if vertexDiffers(twin, ar, ag, ab, alpha) then twin:SetVertexColor(ar, ag, ab, alpha) end
-            self.themed[twin] = { role = role, kind = "vertex", alpha = alpha }
+            self.themed[twin] = { role = role, kind = "vertex", alpha = alpha, acc = accPiece }
         end
     else
         self.themed[region] = nil
@@ -937,7 +885,7 @@ function A:SyncPainted(region)
     if not twin then return end
 
 
-    local layers = self.artLayers and self.artLayers[entry.name]
+    local layers = self.artLayers and self.artLayers[self:LookName(entry.name)]
     local want = entry.on and layers ~= nil and layers.acc ~= nil and region:IsShown() and true or false
     if twin:IsShown() ~= want then twin:SetShown(want) end
     if not want then return end
@@ -1360,6 +1308,17 @@ A.schemes = {
       tint = { 0.74, 0.62, 0.42 },
       shadow = { 0.02, 0.015, 0.010 }, hi = { 1.0, 0.90, 0.70, 0.14 }, lo = { 0.02, 0.01, 0.0, 0.58 },
       textShadow = { 0.02, 0.01, 0.0, 0.80 } },
+
+
+
+    { id = "oakborn", name = "Oakwood", light = false,
+      ink = { 0.071, 0.098, 0.114 }, nativeInk = { 0.071, 0.098, 0.114 }, well = { 0.035, 0.050, 0.060 },
+      edge = { 0.500, 0.400, 0.240, 0.85 }, accent = { 0.914, 0.745, 0.451, 0.85 },
+      text = { 0.957, 0.922, 0.843 }, muted = { 0.700, 0.690, 0.640 },
+      good = { 0.42, 0.80, 0.49 }, warn = { 0.94, 0.77, 0.26 }, bad = { 0.93, 0.42, 0.32 }, info = { 0.44, 0.70, 0.96 },
+      tint = { 0.72, 0.62, 0.44 },
+      shadow = { 0.010, 0.015, 0.020 }, hi = { 0.95, 0.90, 0.75, 0.14 }, lo = { 0.0, 0.01, 0.02, 0.58 },
+      textShadow = { 0.0, 0.01, 0.02, 0.80 } },
     { id = "indigo", name = "Deep indigo", light = false,
       ink = { 0.055, 0.055, 0.105 }, nativeInk = { 0.055, 0.055, 0.105 }, well = { 0.03, 0.03, 0.06 },
       edge = { 0.16, 0.15, 0.26, 0.7 }, accent = { 0.56, 0.60, 0.98, 0.7 },
@@ -1507,7 +1466,7 @@ A.schemes = {
 
 
 A.schemeShort = {
-    dusk = "Dusk", indigo = "Indigo", graphite = "Graphite", ember = "Ember", verdant = "Verdant",
+    dusk = "Dusk", oakborn = "Oakwood", indigo = "Indigo", graphite = "Graphite", ember = "Ember", verdant = "Verdant",
     arctic = "Arctic", porcelain = "Porcelain", obsidian = "Obsidian", bloodmoon = "Bloodmoon",
     void = "Void", frost = "Frost", sandstone = "Sandstone", mossveil = "Mossveil", mono = "Mono",
     beacon = "Beacon", parchment = "Parchment", custom = "Custom",
@@ -1678,6 +1637,7 @@ A.materialK = {
 
 
     bloodmoon = 0.99, void = 0.86, sandstone = 0.73, parchment = 0.93,
+    oakborn = 0.79,
 }
 
 
@@ -2203,6 +2163,7 @@ end
 
 
 function A:RefreshTheme(force)
+    if self.SyncLookArt then self:SyncLookArt() end
     local signature = self:ThemeSignature()
     if not force and signature == self.themeSignature then return false end
     self.themeSignature = signature
@@ -2211,6 +2172,11 @@ function A:RefreshTheme(force)
         local r, g, b, a
         if entry.glaze then r, g, b, a = self:GlazeColour(entry.piece)
         elseif entry.piece then r, g, b, a = self:PaintedMaterial(entry.piece)
+        elseif entry.acc then
+            local layers = self.artLayers and self.artLayers[entry.acc] or { acc = entry.acc }
+
+            local ok, _, pr, pg, pb = pcall(self.PaintedAcc, self, entry.acc, layers)
+            if ok and pr then r, g, b = pr, pg, pb else r, g, b, a = self:Color(self:MarkRole()) end
         else r, g, b, a = self:Color(entry.role) end
         pcall(paint, region, entry.kind, r, g, b, entry.alpha or a)
     end
@@ -2620,12 +2586,6 @@ end
 
 
 
-
-
-
-
-
-
 function A:Masthead(frame, width, height, store, key, margin)
     store, key = store or frame, key or "mast"
     if not frame or type(frame.CreateTexture) ~= "function" then return end
@@ -2633,7 +2593,6 @@ function A:Masthead(frame, width, height, store, key, margin)
     self:Grain(frame, store, key .. "Grain", width, full)
     if not store[key .. "Banner"] then
         store[key .. "Banner"] = self:Own(frame:CreateTexture(nil, "BACKGROUND", nil, -5))
-        store[key .. "Scrim"] = self:Own(frame:CreateTexture(nil, "BACKGROUND", nil, -4))
         store[key .. "Foot"] = self:Own(frame:CreateTexture(nil, "BORDER", nil, 1))
 
 
@@ -2646,11 +2605,8 @@ function A:Masthead(frame, width, height, store, key, margin)
         store[key .. "Wedge"]:SetTexCoord(1, 0, 0, 1)
         store[key .. "Tail"] = self:Own(frame:CreateTexture(nil, "BACKGROUND", nil, -5))
     end
-    local banner, scrim, foot = store[key .. "Banner"], store[key .. "Scrim"], store[key .. "Foot"]
+    local banner, foot = store[key .. "Banner"], store[key .. "Foot"]
     local wedge, tail = store[key .. "Wedge"], store[key .. "Tail"]
-
-
-
     local cut = 0
     if (not (self.db and self.optionIndex)) or self:GetOption("plusCorner") then
         cut = math.max(0, math.min(16, math.floor(height * 0.35)))
@@ -2662,40 +2618,11 @@ function A:Masthead(frame, width, height, store, key, margin)
 
 
 
+    banner:SetTexture(self.artPath .. "plate.tga", "CLAMP", "CLAMP")
+    banner:SetTexCoord(0, 1, 0, 1)
+    self:Tint(banner, "inkStep", "vertex", 1)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    local painted = self:HasArt("banner") and not self:Scheme().light
-        and (not (self.db and self.optionIndex) or self:GetOption("windowBanner"))
-    banner:SetTexture(self.artPath .. (painted and self:SlotFile("banner") or "plate") .. ".tga", "CLAMP", "CLAMP")
-    if painted then
-
-
-
-        banner:SetTexCoord(0.02, 0.98, 0.18, 0.86)
-        banner:SetVertexColor(1, 1, 1, 0.92)
-        self.themed[banner] = nil
-    else
-
-
-
-        banner:SetTexCoord(0, 1, 0, 1)
-        self:Tint(banner, "inkStep", "vertex", 1)
-    end
-
-
-    local cutting = cut > 0 and not painted
+    local cutting = cut > 0
     wedge:ClearAllPoints()
     wedge:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, -height)
     wedge:SetSize(math.max(1, cut), math.max(1, cut))
@@ -2706,15 +2633,6 @@ function A:Masthead(frame, width, height, store, key, margin)
     tail:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, -(height - cut))
     tail:SetShown(cutting and height > cut)
     self:Tint(tail, "inkStep", "color", 1)
-    if painted then
-        banner:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
-    end
-
-
-    scrim:SetTexture(self.artPath .. "fade.tga", "CLAMP", "CLAMP")
-    scrim:SetAllPoints(banner)
-    self:Tint(scrim, "ink", "vertex", 0.97)
-    scrim:SetShown(painted)
     foot:ClearAllPoints()
     foot:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -height)
 
@@ -2724,18 +2642,10 @@ function A:Masthead(frame, width, height, store, key, margin)
     foot:SetPoint("TOPRIGHT", frame, "TOPRIGHT", cutting and -cut or 0, -height)
     foot:SetHeight(self:PhysicalPixel(frame))
     self:Tint(foot, "accent", "color", 0.45)
-    if not store[key .. "Crest"] then
-        store[key .. "Crest"] = self:ArtTexture(frame, self:CrestFile(48),
-            width - self.tokens.margin - 48 - 8, -(height - 48) / 2, 48, 48)
-    end
-    self:Tint(store[key .. "Crest"], "accent", "vertex", 1)
 
 
 
 
-
-    local classic = self.db and self.optionIndex and self:GetOption("chromeSkin") ~= "authored"
-    store[key .. "Crest"]:SetShown(classic and true or false)
     if self:ChromeCrest("windows") then
         margin = margin or self.tokens.margin
         local size = self:CrestSeatSize(frame)
@@ -3002,16 +2912,19 @@ function A:ApplyBarFinish(store, key)
 
 
     local material = flat and self:BarTextureOn()
+
+
+    local chipped = store[key .. "chip"] == true
     local sheen, shade = store[key .. "M2"], store[key .. "M3"]
     if sheen then
 
 
 
 
-        local sig = scheme.id .. tostring(material)
+        local sig = scheme.id .. tostring(material) .. tostring(chipped)
         if store[key .. "Msig"] ~= sig then
             store[key .. "Msig"] = sig
-            if material then
+            if material and not chipped then
                 local hi, lo = scheme.hi, scheme.lo
                 sheen:SetVertexColor(hi[1], hi[2], hi[3], self.barSheenAlpha)
                 shade:SetVertexColor(lo[1], lo[2], lo[3], self.barShadeAlpha)
@@ -3055,7 +2968,8 @@ function A:ApplyBarFinish(store, key)
 
 
 
-    local on = (not lit) and (not flat) and ((not (self.db and self.optionIndex)) or self:GetOption("themeBezel"))
+    local on = (not lit) and (not flat) and (not chipped)
+        and ((not (self.db and self.optionIndex)) or self:GetOption("themeBezel"))
     local glowRole = store[key .. "glowRole"]
     if glowRole and store[key .. "B6"] then
         self:PaintBarGlow(store[key .. "bar"] or { auiGlow = store[key .. "B6"], auiSpark = tip }, self:Color(glowRole))
