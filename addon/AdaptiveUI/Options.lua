@@ -211,6 +211,13 @@ A.options = {
 
 
 
+    { key = "plusExecute", group = "gauges", label = "Execute range on the target", type = "bool", default = true },
+
+
+    { key = "plusRankStud", group = "gauges", label = "Elite and boss diamond", type = "bool", default = true },
+
+
+
 
 
 
@@ -434,6 +441,10 @@ A.options = {
 
     { key = "plusPartyMax", group = "plusparty", label = "Members shown (max 4)", type = "number", default = 4, min = 1, max = 4, step = 1, format = "%.0f" },
     { key = "plusPartyDirection", group = "plusparty", label = "Stack direction", type = "enum", default = "down", values = choice("down", "Downward", "up", "Upward") },
+
+
+    { key = "plusPartySize", group = "plusparty", label = "Party plate size", type = "enum", default = "tall",
+      values = choice("tall", "Half as tall", "narrow", "Half as wide", "small", "Half of each way", "full", "Full size") },
     { key = "plusPartySpacing", group = "plusparty", label = "Spacing between plates", type = "number", default = 8, min = 4, max = 24, step = 4, format = "%.0f" },
     { key = "plusPartyBar", group = "plusparty", label = "Health bar height", type = "number", default = 8, min = 6, max = 20, step = 2, format = "%.0f" },
     { key = "plusPartyStatus", group = "plusparty", label = "Dead / offline styling", type = "bool", default = true },
@@ -2201,6 +2212,7 @@ A.optionRequireKeys = {
     plusBarTexture = "plates", gaugeTicks = "plates", plusUnified = "plates", plusRim = "plates", plusGlow = "plates",
     plusCorner = "plates", plusKeyline = "plates",
     plusPixelSnap = "plates", plusLossTrail = "plates", plusHealGhost = "plates", plusDanger = "plates",
+    plusExecute = "plates", plusRankStud = "plates",
     keyboardSkin = "keyboard", keyboardBackdrop = "keyboard", keyboardSlotSkin = "keyboard",
     keyboardEmptyHotkey = "keyboard", keyboardMicroSkin = "keyboard", xpLane = "keyboard",
     actionDiamond = "controller", compassIconShape = "controller", compassBumperGlow = "controller",
@@ -2281,6 +2293,8 @@ A.optionKeywords = {
     castTargetMode = "cast bar target",
     dpsStripOn = "damage dps meter",
     plusDanger = "low health warning danger",
+    plusExecute = "execute range low health target twenty",
+    plusRankStud = "elite boss rare diamond stud classification",
     plusColorPlayer = "health bar colour class reaction",
     plusColorTarget = "health bar colour class reaction",
     moverSnap = "move grid snap",
@@ -2330,6 +2344,8 @@ A.optionDesc = {
     plusLossTrail = "A hit leaves a fading trail behind the fill.",
     plusHealGhost = "Incoming heals show ahead of the fill.",
     plusDanger = "Low health is a bracket and a pulse, never colour alone.",
+    plusExecute = "Lights the lowest fifth of your target's health bar: execute range.",
+    plusRankStud = "The plate's diamond turns gold for elites, silver for rares, red for bosses, and glows.",
     borders = "One-pixel outlines on panels and slots.",
     plusPixelSnap = "Round every plate edge to a whole screen pixel.",
     opacity = "Lower lets the world through.",
@@ -2408,6 +2424,7 @@ A.optionDesc = {
     moverStep = "How far a nudge moves, and the grid pitch.",
     plusPartyMax = "How many party plates to draw.",
     plusPartyDirection = "Stack the party up or down from the first plate.",
+    plusPartySize = "Half as tall puts each name beside its bar.",
     plusTotPlacement = "Under the target, or beside it.",
     optionsAdvanced = "Show every option, or the Basic set.",
 }

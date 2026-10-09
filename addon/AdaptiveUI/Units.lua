@@ -150,9 +150,11 @@ end
 function A:FitPlateName(plate, compact, text)
     if not plate or not plate.name then return end
     local scale = self.UnitScale and self:UnitScale() or 1
+
+
     self:SetFittedText(plate.name, text,
         self:PixelSize(compact and "body" or "hero", scale),
-        self:PixelSize("body", scale), not compact)
+        self:PixelSize(plate.isParty and "caption" or "body", scale), not compact)
 end
 
 
@@ -365,6 +367,111 @@ function A:StandGauge(compact, which)
     local top = self:PlusSnap(g.art * lane[1])
     local bot = self:PlusSnap(g.art * lane[2])
     return top, math.max(self:PlatePixel(), bot - top)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A.partySizes = { tall = true, narrow = true, small = true, full = true }
+A.partySizeScale = { narrow = 0.5, small = 0.7, full = 1 }
+
+
+A.partyManaShare = 0.38
+
+A.partyNameShare = 0.40
+local PARTY_ROWS = 4
+function A:PartySize()
+    local v = (self.db and self.optionIndex) and self:GetOption("plusPartySize") or nil
+    return A.partySizes[v] and v or "tall"
+end
+
+function A:PartyGeometry()
+    local size = self:PartySize()
+    local art = self:PlateArt()
+    local sw = self:PlusPlateWidth(true)
+    local px = self:PlatePixel()
+    local fullArt = self:MantleGeometry(true).total
+
+
+    local air = math.max(self:PlusSnap(2), px)
+        + math.max(0, self:PlusSnap(self:GetOption("plusPartySpacing")) - self:PlusSnap(8))
+    local above = self:PlusAbove(true)
+
+
+
+    local fullBlock = above + PARTY_ROWS * fullArt + (PARTY_ROWS - 1) * (above + air)
+    local g = { size = size, float = true, air = air, rowW = sw, plateX = 0, lead = above }
+    if size == "tall" then
+        local gap = self:PlusGaugeGap()
+        local row = (fullBlock / 2 - (PARTY_ROWS - 1) * air) / PARTY_ROWS
+
+        row = self:PlusSnap(math.max(row, self:PixelSize("body", self:UnitScale()) + 2 * px))
+        local numW = self:PlusNumberSlot(true)
+        local nameW = self:PlusSnap(sw * A.partyNameShare)
+
+        local minPlate = self:PlusSnap(row * (art.capLA + art.capRA + 0.5))
+        local plateW = self:PlusSnap(math.max(minPlate, sw - nameW - numW - 2 * gap))
+        g.float, g.art, g.plateW, g.spacing, g.lead = false, row, plateW, air, 0
+        g.nameW, g.numW, g.gap, g.plateX = nameW, numW, gap, nameW + gap
+        g.rowW = math.max(sw, nameW + gap + plateW + gap + numW)
+    else
+        local k = A.partySizeScale[size] or 1
+        local plateW = (k == 1) and sw or self:PlusSnap(sw * k)
+        local artH = (k == 1) and fullArt or math.max(10, self:PlusSnap(plateW / art.ratio))
+        g.art, g.plateW, g.spacing, g.rowW = artH, plateW, above + air, plateW
+    end
+    g.inset = self:PlusSnap(g.art * art.winL)
+    g.tail = self:PlusSnap(g.art * art.winR)
+    g.h = g.lead + PARTY_ROWS * g.art + (PARTY_ROWS - 1) * g.spacing
+    g.fullH, g.fullW = fullBlock, sw
+    return g
+end
+
+
+
+
+
+function A:PartyLanes()
+    local lanes = self:PlateArt().lanes
+    local top, bot = lanes.power[1], lanes.health[2]
+    local split = top + (bot - top) * A.partyManaShare
+    return { top, split }, { split, bot }
+end
+
+
+
+
+
+function A:PartyGauges(artH)
+    local mana = self:PartyLanes()
+    local lanes = self:PlateArt().lanes
+    local top = self:PlusSnap(artH * mana[1])
+    local bot = self:PlusSnap(artH * lanes.health[2])
+    local px = self:PixelSnapOn() and self:PlatePixel() or nil
+    local total = math.max(0, bot - top)
+    local manaH
+    if px and px > 0.05 then
+        local steps = math.floor(total / px + 0.5)
+        manaH = math.max(1, math.floor(steps * A.partyManaShare + 0.5)) * px
+    else
+        manaH = total * A.partyManaShare
+    end
+    local minH = px or 1
+    return top, math.max(minH, manaH), top + manaH, math.max(minH, total - manaH)
 end
 
 
@@ -903,7 +1010,8 @@ function A:InlayLight(widget, lane, on, chip)
     if widget.inlayLum:GetTexture() ~= lumPath then widget.inlayLum:SetTexture(lumPath, "CLAMP", "CLAMP") end
     local mirror = self:GetOption("plusMirror") and type(plate) == "table" and plate.mirror == true
         and not plate.isParty or false
-    local rows = art.lanes[lane] or art.lanes.health
+
+    local rows = widget.laneRows or art.lanes[lane] or art.lanes.health
     local span = art.winBot - art.winTop
     local v0, v1 = (rows[1] - art.winTop) / span, (rows[2] - art.winTop) / span
     local key = string.format("%s|%.4f|%.4f|%s", lane, v0, v1, tostring(mirror))
@@ -2408,7 +2516,8 @@ function A:PlusSkin(plate, width, rowTop, mirror, compact, isParty, px)
         return 0, -height
     end
     local alpha = plate.hero and self:Surface("panel") or self:Surface("base")
-    local artH = self:MantleGeometry(compact).art
+
+    local artH = isParty and height or self:MantleGeometry(compact).art
     self:PlaceBarFrame(plate.barFrame, plate, width, artH, mirror, alpha, true, 0)
     self:PlateShade(plate, true, width, artH, mirror, false, 0)
     if plate.flashFx then
@@ -2439,6 +2548,10 @@ function A:CreatePlusUnits()
 
 
     plus.target.health.redline = true
+
+
+    plus.target.health.redlineAt = A.plusExecuteAt
+    plus.target.health.execute = true
     plus.target.marker = newMarker(self, plus.target)
 
 
@@ -2472,6 +2585,12 @@ function A:CreatePlusUnits()
         local member = newPlate(self, "AdaptiveUIPlusParty" .. i, PARTY_ROW_H, sw, plus.party, true)
         member.unit = "party" .. i
         member.health = newBar(self, member, -(sp.xs + 20), 8, sw, true)
+
+
+        member.power = newBar(self, member, -(sp.xs + 12), 6, sw, true)
+        member.power.lane, member.power.noChip = "power", true
+        member.power.text:SetText("")
+        member.isParty = true
         member.role = member:CreateTexture(nil, "OVERLAY")
         member.role:SetSize(14, 14)
         member.role:SetPoint("TOPRIGHT", member, "TOPRIGHT", -sp.sm, -(sp.xs + 3))
@@ -2555,7 +2674,9 @@ function A:PlusBase(id, m)
         return m.unitX - dx - (pw + self:PlusSmallWidth("pet")) / 2 * m.unitScale - self.tokens.space.sm, m.unitY
     end
     if id == "plusParty" then
-        return -(m.width / 2) + self.tokens.margin + swp * m.unitScale / 2, m.height * 0.6
+
+        local bw = self.PartyGeometry and self:PartyGeometry().rowW or swp
+        return -(m.width / 2) + self.tokens.margin + bw * m.unitScale / 2, m.height * 0.6
     end
 end
 
@@ -2929,9 +3050,12 @@ function A:LayoutPlus()
 
         local barPlate = bar.plate or (bar.value and type(bar.value.GetParent) == "function" and bar.value:GetParent())
         local tileVariant = type(barPlate) == "table" and self:SmallTile(barPlate.plusId) or nil
-        local lane = bar == player.power and "power" or "health"
+        local lane = bar.lane or (bar == player.power and "power" or "health")
 
-        local chip = self:PlusChipFor(tileVariant)
+
+
+
+        local chip = self:PlusChipFor(tileVariant) and not bar.noChip
 
         if bar.cut then bar.cut:Hide() end
 
@@ -2983,7 +3107,8 @@ function A:LayoutPlus()
             local art, on = bar.redlineArt, bar.redline == true and self:GetOption("plusDanger") and height >= 8
                 and not chip
             if on then
-                local x, notch = barW * TICKS[1], math.max(3, math.floor(height / 3))
+                local at = (bar.redlineAt and self:GetOption("plusExecute")) and bar.redlineAt or TICKS[1]
+                local x, notch = barW * at, math.max(3, math.floor(height / 3))
                 art.stem:ClearAllPoints()
                 art.stem:SetPoint("TOP", bar.value, "TOPLEFT", x, 0)
                 art.stem:SetPoint("BOTTOM", bar.value, "BOTTOMLEFT", x, 0)
@@ -2995,6 +3120,42 @@ function A:LayoutPlus()
                 art.bottom:SetSize(notch, notch)
             end
             art.stem:SetShown(on); art.top:SetShown(on); art.bottom:SetShown(on)
+        end
+
+
+
+
+
+
+
+
+        if bar.execute then
+            local on = self:GetOption("plusExecute") and height >= 4
+            if on and not bar.executeBand then
+                bar.executeBand = self:Own(bar.value:CreateTexture(nil, "OVERLAY", nil, 5))
+
+
+                self:Tint(bar.executeBand, "text", "color", 1)
+                bar.executeBand:SetBlendMode("ADD")
+                bar.executeEdge = self:Own(bar.value:CreateTexture(nil, "OVERLAY", nil, 5))
+                self:Tint(bar.executeEdge, "danger", "color", 0.95)
+            end
+            if bar.executeBand then
+                if on then
+                    local x = math.max(1, self:PlusSnap(barW * A.plusExecuteAt))
+                    local edge = math.max(1, self:PlatePixel()) * (chip and 2 or 1)
+                    bar.executeBand:ClearAllPoints()
+                    bar.executeBand:SetPoint("TOPLEFT", bar.value, "TOPLEFT", 0, 0)
+                    bar.executeBand:SetSize(x, height)
+                    bar.executeBand:SetAlpha(A.plusExecuteLight)
+                    bar.executeEdge:ClearAllPoints()
+                    bar.executeEdge:SetPoint("TOPLEFT", bar.value, "TOPLEFT", x - edge, 0)
+                    bar.executeEdge:SetSize(edge, height)
+                end
+
+
+                bar.executeBand:SetShown(on and not chip); bar.executeEdge:SetShown(on)
+            end
         end
 
 
@@ -3148,49 +3309,104 @@ function A:LayoutPlus()
 
 
 
-    local rowH = self:MantleGeometry(true).total
-    local partyTop, bar = self:StandGauge(true, "health")
-    local partyTail = self:BarTailInset(true)
-    local spacing = self:PlusSnap(self:GetOption("plusPartySpacing"))
+
+    local pg = self:PartyGeometry()
+    local rowH, plateW = pg.art, pg.plateW
+    local partyTail, memberLeft = pg.tail, pg.inset
+
+
+    local manaRows, healthRows = self:PartyLanes()
+    local manaTop, manaH, partyTop, bar = self:PartyGauges(rowH)
 
 
 
 
 
 
-    spacing = self:PlusAbove(true) + math.max(self:PlusSnap(2), self:PlatePixel())
-        + math.max(0, spacing - self:PlusSnap(8))
+    local spacing = pg.spacing
     local direction = self:GetOption("plusPartyDirection")
-    party:SetSize(sw, PARTY_MAX * rowH + (PARTY_MAX - 1) * spacing)
+    local slot = numberSlot(self, true)
+    local narrowSlot = math.ceil(34 * self:PlusTypeLift())
+    party:SetSize(pg.rowW, pg.h)
     for i, member in ipairs(party.members) do
-        member:SetSize(sw, rowH)
-        local memberLeft = self:PlusGaugeInset(true)
-        member.health.value:SetSize(math.max(8, sw - memberLeft - partyTail), bar)
+        member:SetSize(plateW, rowH)
+        local gaugeW = math.max(8, plateW - memberLeft - partyTail)
+        member.health.laneRows, member.power.laneRows = healthRows, manaRows
+        member.health.value:SetSize(gaugeW, bar)
         member.health.value:ClearAllPoints()
         member.health.value:SetPoint("TOPLEFT", member, "TOPLEFT", memberLeft, -partyTop)
         cutTo(member.health, bar)
         self:StandFill(member.health, false)
-        textLayout(member, sw, true, true)
-        self:SetPixelNumberFont(member.health.text, "caption", uscale,
-            inHeader and self:PlusFloatType() or nil)
 
-
-        if inHeader then
-            member.health.text:ClearAllPoints()
-            member.health.text:SetPoint("BOTTOMRIGHT", member, "TOPRIGHT",
-                -(partyTail + 36), self:PlusGaugeGap())
-            member.health.text:SetHeight(self:PlusCompactRow())
+        member.power.value:SetSize(gaugeW, manaH)
+        member.power.value:ClearAllPoints()
+        member.power.value:SetPoint("TOPLEFT", member, "TOPLEFT", memberLeft, -manaTop)
+        member.power.value:Show()
+        if member.power.finish.barfinishB6 then
+            member.power.finish.barfinishB6:SetShown(not self:FlatBars())
         end
-        member.name:SetWidth(math.max(24, sw - sp.sm * 2 - 36 - (inHeader and 46 or 0)))
+        cutTo(member.power, manaH)
+        self:StandFill(member.power, false, true)
+        textLayout(member, plateW, true, true)
+        member.health.text:SetWordWrap(false)
+        if not pg.float then
+
+
+            self:SetPixelNumberFont(member.health.text, "caption", uscale, self:PlusFloatType())
+            member.name:ClearAllPoints()
+            member.name:SetPoint("RIGHT", member, "LEFT", -pg.gap, 0)
+            member.name:SetWidth(pg.nameW); member.name:SetHeight(rowH)
+            member.name:SetJustifyH("LEFT")
+            member.health.text:ClearAllPoints()
+            member.health.text:SetPoint("LEFT", member, "RIGHT", pg.gap, 0)
+            member.health.text:SetWidth(pg.numW); member.health.text:SetHeight(rowH)
+            member.health.text:SetJustifyH("RIGHT")
+        else
+            self:SetPixelNumberFont(member.health.text, "caption", uscale,
+                inHeader and self:PlusFloatType() or nil)
+
+
+
+            local full = pg.size == "full"
+            if inHeader then
+                member.health.text:ClearAllPoints()
+                member.health.text:SetPoint("BOTTOMRIGHT", member, "TOPRIGHT",
+                    full and -(partyTail + 36) or 0, self:PlusGaugeGap())
+                member.health.text:SetHeight(self:PlusCompactRow())
+            end
+            if full then
+                member.name:SetWidth(math.max(24, plateW - sp.sm * 2 - 36 - (inHeader and 46 or 0)))
+            elseif pg.size == "narrow" then
+
+
+                member.name:SetWidth(math.max(24, plateW - (inHeader and (narrowSlot + 4) or 0)))
+            else
+                member.name:SetWidth(math.max(24, plateW - (inHeader and (slot + 6) or 0)))
+            end
+        end
+        self:FitPlateName(member, true)
+
+        member.role:ClearAllPoints()
+        if pg.size == "full" then
+            member.role:SetSize(14, 14)
+            member.role:SetPoint("TOPRIGHT", member, "TOPRIGHT", -sp.sm, -(sp.xs + 3))
+        else
+            local icon = math.min(14, self:PlusSnap(rowH * 0.55))
+            member.role:SetSize(icon, icon)
+            member.role:SetPoint("RIGHT", member, "RIGHT", -self:PlusSnap(rowH * 0.28), 0)
+        end
+        member.leader:SetSize(member.role:GetWidth(), member.role:GetHeight())
         member:ClearAllPoints()
         if direction == "up" then
-            member:SetPoint("BOTTOMLEFT", party, "BOTTOMLEFT", 0, (i - 1) * (rowH + spacing))
+            member:SetPoint("BOTTOMLEFT", party, "BOTTOMLEFT", pg.plateX, (i - 1) * (rowH + spacing))
         else
-            member:SetPoint("TOPLEFT", party, "TOPLEFT", 0, -(i - 1) * (rowH + spacing))
+            member:SetPoint("TOPLEFT", party, "TOPLEFT", pg.plateX, -(pg.lead + (i - 1) * (rowH + spacing)))
         end
 
 
-        member.auiRel = { dy = (i - 1) * (rowH + spacing), w = sw, h = rowH, fromTop = direction ~= "up" }
+
+        member.auiRel = { dy = (direction ~= "up" and pg.lead or 0) + (i - 1) * (rowH + spacing), w = pg.rowW, h = rowH,
+            fromTop = direction ~= "up" }
     end
 end
 
@@ -4068,6 +4284,9 @@ end
 
 
 A.plusDangerAt = 0.25
+
+A.plusExecuteAt = 0.20
+A.plusExecuteLight = 0.16
 function A:PlusDangerPulse(plate, unit)
     local widget = plate and plate.health
     local fx = widget and widget.danger
@@ -4076,7 +4295,8 @@ function A:PlusDangerPulse(plate, unit)
     if widget.redline and self:GetOption("plusDanger") and self:Read(plate.IsShown, 1, plate) == true then
         local current = self:Number(UnitHealth, 1, unit)
         local maximum = self:Number(UnitHealthMax, 1, unit)
-        if current and maximum and maximum > 0 then low = current <= maximum * self.plusDangerAt end
+        local at = (widget.redlineAt and self:GetOption("plusExecute")) and widget.redlineAt or self.plusDangerAt
+        if current and maximum and maximum > 0 then low = current <= maximum * at end
     end
     if not low then
         plate.auiLow = false
@@ -4494,6 +4714,90 @@ function A:PetMoodBadge()
 end
 
 
+
+
+
+
+
+
+
+
+A.plateRanks = {
+    elite     = { color = { 1.00, 0.78, 0.26 }, glow = { 1.00, 0.70, 0.20 }, scale = 1.25, glowA = 0.75 },
+    rare      = { color = { 0.82, 0.88, 1.00 }, glow = { 0.70, 0.82, 1.00 }, scale = 1.12, glowA = 0.70 },
+    rareelite = { color = { 0.86, 0.92, 1.00 }, glow = { 1.00, 0.74, 0.24 }, scale = 1.30, glowA = 0.80 },
+    boss      = { color = { 1.00, 0.30, 0.24 }, glow = { 1.00, 0.18, 0.12 }, scale = 1.45, glowA = 0.90 },
+}
+
+
+
+
+function A:PlateRankOf(unit)
+    local class, status = self:Read(UnitClassification, 1, unit)
+    if status == "restricted" then return nil, true end
+    if type(class) ~= "string" then class = nil end
+    local level = self:Number(UnitLevel, 1, unit)
+    if class == "worldboss" then return "boss" end
+    if level and level < 0 and (class == "elite" or class == "rareelite") then return "boss" end
+    if class == "elite" or class == "rare" or class == "rareelite" then return class end
+    return nil
+end
+
+function A:PlateRank(plate, unit, id)
+    if not plate or not self.PlateDiamond then return end
+
+    local onTile = plate.hero ~= true and id and self.SmallTile and self:SmallTile(id)
+
+    if self.rankFresh and id and self.rankFresh[id] then
+        self.rankFresh[id] = nil
+        plate.rankHeld = nil
+    end
+    local rank
+    if self:GetOption("plusRankStud") and not onTile and self:Read(UnitExists, 1, unit) == true then
+        local withheld
+        rank, withheld = self:PlateRankOf(unit)
+
+
+
+        if withheld then rank = plate.rankHeld else plate.rankHeld = rank end
+    else
+        plate.rankHeld = nil
+    end
+    local spec = rank and A.plateRanks[rank]
+    if not spec then
+        if plate.rankStud then plate.rankStud:Hide(); plate.rankGlow:Hide() end
+        plate.rankKeyParts = nil
+        return
+    end
+    if not plate.rankStud then
+        plate.rankGlow = self:Own(plate:CreateTexture(nil, "OVERLAY", nil, 6))
+        plate.rankGlow:SetTexture(self.artPath .. "diamond-glow.tga", "CLAMP", "CLAMP")
+        plate.rankGlow:SetBlendMode("ADD")
+        plate.rankStud = self:Own(plate:CreateTexture(nil, "OVERLAY", nil, 7))
+        plate.rankStud:SetTexture(self.artPath .. "oak-stud-mark.tga", "CLAMP", "CLAMP")
+    end
+    local compact = plate.hero ~= true
+    local mirror = self:GetOption("plusMirror") and plate.mirror == true and not plate.isParty or false
+    local fromTail, y, size = self:PlateDiamond(compact)
+    local k = plate.rankKeyParts
+    if not (k and k[1] == rank and k[2] == fromTail and k[3] == y and k[4] == size and k[5] == mirror) then
+        plate.rankKeyParts = { rank, fromTail, y, size, mirror }
+        local side = mirror and "LEFT" or "RIGHT"
+        local x = (mirror and 1 or -1) * fromTail
+        local s = self:PlusSnap(size * spec.scale)
+        plate.rankStud:ClearAllPoints()
+        plate.rankStud:SetPoint("CENTER", plate, "TOP" .. side, x, -y)
+        plate.rankStud:SetSize(s, s)
+        plate.rankStud:SetVertexColor(spec.color[1], spec.color[2], spec.color[3], 1)
+        plate.rankGlow:ClearAllPoints()
+        plate.rankGlow:SetPoint("CENTER", plate, "TOP" .. side, x, -y)
+        plate.rankGlow:SetSize(s * 2.8, s * 2.8)
+        plate.rankGlow:SetVertexColor(spec.glow[1], spec.glow[2], spec.glow[3], spec.glowA)
+    end
+    plate.rankStud:Show(); plate.rankGlow:Show()
+end
+
+
 local function updateUnitPlate(self, plate, unit, def, optionKey)
     self:FitPlateName(plate, not plate.hero,
         self:FormatPlusName(self:Text(UnitName, 1, unit) or (def and def.id == "pet" and "Pet") or "Unit"))
@@ -4503,6 +4807,7 @@ local function updateUnitPlate(self, plate, unit, def, optionKey)
         tag = ({ elite = "+", rareelite = "+", worldboss = "B", rare = "R" })[self:Text(UnitClassification, 1, unit) or ""] or ""
     end
     plate.level:SetText(level and ((level < 0 and "??" or tostring(level)) .. tag) or "")
+    if def and (def.id == "target" or def.id == "focus") then self:PlateRank(plate, unit, def.id) end
     if def and def.id == "pet" then
         self:PlateBadge(plate, self:PetMoodBadge())
     else
@@ -4533,6 +4838,32 @@ local function updateUnitPlate(self, plate, unit, def, optionKey)
     end
     plate:Show()
     if def and def.id == "target" and self.PlaceTargetAuras then self:PlaceTargetAuras() end
+end
+
+
+
+
+
+
+function A:UpdatePartyPower(member, unit)
+    local widget = member and member.power
+    if not widget then return end
+    local token = self:Text(UnitPowerType, 2, unit)
+    local powerType = self:Number(UnitPowerType, 1, unit)
+    local power = token and PowerBarColor and PowerBarColor[token]
+    if type(power) == "table" and type(power.r) == "number" then
+        setColor(widget, lift(power.r, power.g, power.b, 0.38))
+    else
+        setColor(widget, self:Color(token == "ENERGY" and "warn" or (token == "RAGE" and "bad" or "info")))
+    end
+    widget.text:SetText("")
+    if type(powerType) == "number" and not member.auiState then
+        self:UpdateBar(widget, "POWER", UnitPower, UnitPowerMax, unit, powerType)
+        widget.text:SetText("")
+    else
+        widget.value:SetMinMaxValues(0, 1)
+        widget.value:SetValue(0)
+    end
 end
 
 function A:UpdatePlusUnits()
@@ -4612,6 +4943,7 @@ function A:UpdatePlusUnits()
                 and self:Read(UnitExists, 1, unit) == true then
                 updateUnitPlate(self, member, unit, nil, "plusColorParty")
                 member.level:Hide()
+                self:UpdatePartyPower(member, unit)
                 local role = self:GetOption("plusPartyRole") and self:Text(UnitGroupRolesAssigned, 1, unit) or nil
                 local atlas = role and ROLE_ATLAS[role]
                 if atlas then
@@ -4628,7 +4960,8 @@ function A:UpdatePlusUnits()
                     local dead = self:Read(UnitIsDeadOrGhost, 1, unit)
                     if connected == false then
                         alpha = 0.4
-                        member.health.text:SetText("Offline")
+
+                        member.health.text:SetText(self:PartySize() == "full" and "Offline" or "Off")
                     elseif dead == true then
                         alpha = 0.55
                         member.health.text:SetText("Dead")

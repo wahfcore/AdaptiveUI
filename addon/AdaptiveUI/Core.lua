@@ -648,6 +648,9 @@ events:SetScript("OnEvent", function(_, event, ...)
     end
     if event == "PLAYER_TARGET_CHANGED" or event == "PLAYER_FOCUS_CHANGED" then
         if event == "PLAYER_TARGET_CHANGED" then A.targetAurasStale = true end
+
+        A.rankFresh = A.rankFresh or {}
+        A.rankFresh[event == "PLAYER_TARGET_CHANGED" and "target" or "focus"] = true
         A.sweepPending = A.sweepPending or {}
         if event == "PLAYER_FOCUS_CHANGED" then
             A.sweepPending.focus = true

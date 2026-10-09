@@ -2,7 +2,7 @@
 ## Title: AdaptiveUI
 ## Notes: A WoW dad's answer to off-night couch gaming. A controller-first HUD that only restyles; your keybinds and controls are never touched.
 ## Author: Wahf
-## Version: 0.71.6-beta
+## Version: 0.72.0-beta
 ## SavedVariables: AdaptiveUIDB
 ## SavedVariablesPerCharacter: AdaptiveUICharDB, AdaptiveUIInspectDB
 ## IconTexture: Interface\AddOns\AdaptiveUI\Art\crest
