@@ -8,6 +8,7 @@ local _, A = ...
 
 
 A.artSlots = {
+    bar03 = "bar03",
     bar04 = "bar04",
     compassDivider = "compass-divider",
     compassTileCut = "compass-tile-cut",
@@ -91,6 +92,7 @@ A.artSlots = {
 
 
 A.artLayers = {
+    ["bar03"] = { body = "bar03-body", acc = "bar03-acc" },
     ["bar04"] = { body = "bar04-body", acc = "bar04-acc" },
     ["chrome-seat"] = { mat = "chrome-seat-mat" },
     ["compass-divider"] = { mat = "compass-divider-mat", acc = "compass-divider-acc" },

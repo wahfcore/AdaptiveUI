@@ -24,11 +24,13 @@ A.advancedSections = {
         { "scheme", "Colours" }, { "art", "Art" }, { "surfaces", "Surfaces" }, { "text", "Text & motion" } } },
     { key = "units", label = "Unit frames", tabs = {
         { "general", "All plates" }, { "player", "Player" }, { "target", "Target" }, { "tot", "Target of target" },
-        { "focus", "Focus" }, { "pet", "Pet" }, { "party", "Party" }, { "raid", "Raid frames" } } },
+        { "focus", "Focus" }, { "pet", "Pet" }, { "party", "Party" }, { "raid", "Raid frames" },
+        { "nameplates", "Nameplates" } } },
     { key = "casts", label = "Cast bars", tabs = {
         { "player", "Player" }, { "target", "Target" }, { "focus", "Focus" }, { "look", "Look" } } },
     { key = "actionbars", label = "Action bars", tabs = {
-        { "bar", "Bar" }, { "buttons", "Buttons" }, { "menu", "Bags & menu" }, { "xp", "XP bar" } } },
+        { "bar", "Bar" }, { "buttons", "Buttons" }, { "menu", "Bags & menu" }, { "xp", "XP bar" },
+        { "forms", "Forms & specs" } } },
     { key = "compass", label = "Compass / gamepad", tabs = {
         { "layout", "Layout" }, { "buttons", "Buttons" }, { "ground", "Ground & effects" }, { "sizes", "Group sizes" } } },
     { key = "mapchat", label = "Map, chat & windows", tabs = {
@@ -48,6 +50,8 @@ A.advancedGroupHome = {
     theme = { "look", "scheme" }, general = { "look", "surfaces" },
     plus = { "units", "general" }, plustext = { "units", "general" }, pluscolor = { "units", "general" },
     gauges = { "units", "general" }, plusparty = { "units", "party" }, damage = { "units", "player" },
+    nameplates = { "units", "nameplates" },
+    forms = { "actionbars", "forms" },
     casts = { "casts", "look" },
     keyboard = { "actionbars", "bar" },
     actions = { "compass", "buttons" }, compass = { "compass", "layout" },
@@ -70,7 +74,7 @@ put("look", "text", "textScale", "themeHeadingFont", "motionLevel")
 put("units", "general", "barEffect", "flatBars", "plusBarTexture", "gaugeTicks", "plusPixelSnap", "plusShowPvp",
     "plateFillStyle", "oakPlate", "plateSmallSkin", "scale")
 put("units", "player", "plusPlayerOn", "plusColorPlayer", "plusPowerText")
-put("units", "target", "plusTargetOn", "plusColorTarget", "plusTargetAuras", "plusMirror")
+put("units", "target", "plusTargetOn", "plusColorTarget", "plusTargetAuras", "plusMirror", "plusExecute")
 put("units", "tot", "plusTotOn", "plusColorTot", "plusTotPlacement")
 put("units", "focus", "plusFocusOn", "plusColorFocus", "plusFocusTargetOn", "plusFocusTargetTargetOn")
 put("units", "pet", "plusPetOn", "plusColorPet", "plusShowPetMood")
@@ -79,7 +83,7 @@ put("units", "raid", "raidSkin")
 put("casts", "player", "castPlayerMode", "castPlayerAnchor")
 put("casts", "target", "castTargetMode", "castTargetAnchor")
 put("casts", "focus", "castFocusMode")
-put("casts", "look", "plateMantleCast", "castRestrictedStrip")
+put("casts", "look", "plateMantleCast", "castRestrictedStrip", "casts")
 put("actionbars", "bar", "keyboardSkin", "keyboardBackdrop", "keyboardCentre", "keyboardLift")
 put("actionbars", "buttons", "keyboardSlotSkin", "keyboardSlotInset", "keyboardHotkeyAbbrev",
     "keyboardEmptyHotkey", "emptyRecede", "iconCrop")
@@ -102,6 +106,56 @@ A.advancedKeyHome = home
 
 
 
+
+
+
+
+
+
+
+local also = {}
+local function alsoOn(key, ...)
+    local list = also[key] or {}
+    for i = 1, select("#", ...) do
+        local section, tab = (select(i, ...)):match("^([^/]+)/(.+)$")
+        list[#list + 1] = { section, tab }
+    end
+    also[key] = list
+end
+
+alsoOn("plateSmallSkin", "units/tot", "units/focus", "units/pet")
+alsoOn("plusSmallWidth", "units/tot", "units/focus", "units/pet", "units/party")
+
+alsoOn("plusWidth", "units/player", "units/target")
+alsoOn("plusDanger", "units/player", "units/target")
+alsoOn("plusHealthHeight", "units/player", "units/target")
+alsoOn("plusPowerHeight", "units/player", "units/target")
+alsoOn("playerRule", "units/player", "units/target")
+
+alsoOn("plusShowTag", "units/target", "units/focus")
+alsoOn("plusShowMarker", "units/target", "units/focus")
+alsoOn("plusRankStud", "units/target", "units/focus")
+
+alsoOn("plusColor", "units/player", "units/target", "units/tot", "units/focus", "units/pet", "units/party")
+alsoOn("unitVeil", "units/general")
+
+alsoOn("emptyRecede", "compass/buttons")
+alsoOn("iconCrop", "compass/buttons")
+alsoOn("keyboardSlotSkin", "actionbars/menu")
+alsoOn("actionGlyphs", "compass/buttons")
+alsoOn("dockScale", "actionbars/bar")
+
+alsoOn("compassBumperGlow", "compass/buttons")
+
+alsoOn("plusTargetAuras", "info/buffs")
+
+alsoOn("elevBase", "mapchat/minimap", "mapchat/chat", "mapchat/tracker")
+alsoOn("elevRaised", "mapchat/tooltips")
+alsoOn("chromeCrest", "mapchat/windows")
+A.advancedAlsoOn = also
+
+
+
 A.advancedSectionAlias = { combat = "units", general = "look", vetoes = "look", classic = "look", advanced = "help" }
 A.simpleSectionAlias = { units = "look", casts = "combat", actionbars = "layout", compass = "layout",
     mapchat = "look", info = "layout" }
@@ -117,6 +171,26 @@ function A:AdvancedHome(option)
     if not at and option.group then at = self.advancedGroupHome[option.group] end
     if not at then return simpleSection, nil, heading end
     return at[1], at[2], heading
+end
+
+
+
+function A:AdvancedHomes(option)
+    local s, t = self:AdvancedHome(option)
+    if not s then return {} end
+    local out = { { s, t } }
+    for _, at in ipairs(self.advancedAlsoOn[option.key] or {}) do
+        if not (at[1] == s and at[2] == t) then out[#out + 1] = { at[1], at[2] } end
+    end
+    return out
+end
+
+
+function A:AdvancedListedOn(option, section, tab)
+    for _, at in ipairs(self:AdvancedHomes(option)) do
+        if at[1] == section and (tab == nil or at[2] == tab) then return true end
+    end
+    return false
 end
 
 function A:AdvancedSection(key)
@@ -135,20 +209,49 @@ function A:AdvancedTab(ui, section)
 end
 
 
+A.advancedTabLead = {
+    ["units/player"] = "plusPlayerOn", ["units/target"] = "plusTargetOn", ["units/tot"] = "plusTotOn",
+    ["units/focus"] = "plusFocusOn", ["units/pet"] = "plusPetOn", ["units/party"] = "plusPartyOn",
+    ["units/raid"] = "raidSkin",
+}
+
+
+
 
 function A:AdvancedTabOptions(section, tab, filter)
     local order, buckets = {}, {}
-    for _, option in ipairs(self.options) do
-        local s, t, heading = self:AdvancedHome(option)
-        if s == section and (t == tab or tab == nil) and not option.inline and (not filter or filter(option)) then
-            heading = heading or "Settings"
-            if not buckets[heading] then buckets[heading] = {}; order[#order + 1] = heading end
-            local list = buckets[heading]
-            list[#list + 1] = option
+
+
+    local candidates = self.options
+    local lead = tab and self.advancedTabLead[section .. "/" .. tab]
+    lead = lead and self.optionIndex and self.optionIndex[lead]
+    if lead then
+        candidates = { lead }
+        for _, option in ipairs(self.options) do if option ~= lead then candidates[#candidates + 1] = option end end
+    end
+    for pass = 1, 2 do
+        for _, option in ipairs(candidates) do
+            local s, t, heading = self:AdvancedHome(option)
+            local own = s == section and (tab == nil or t == tab)
+
+            if not option.inline
+                and ((pass == 1 and own) or (pass == 2 and not own and self:AdvancedListedOn(option, section, tab)))
+                and (not filter or filter(option)) then
+                heading = heading or "Settings"
+                local shown = self:AdvancedHeading(heading) or heading
+                if not buckets[shown] then buckets[shown] = { name = heading }; order[#order + 1] = shown end
+                local list = buckets[shown]
+                list[#list + 1] = option
+            end
         end
     end
     local out = {}
-    for _, h in ipairs(order) do out[#out + 1] = { subsection = h, options = buckets[h] } end
+    for _, h in ipairs(order) do
+        local list = buckets[h]
+        local name = list.name
+        list.name = nil
+        out[#out + 1] = { subsection = name, options = list }
+    end
     return out
 end
 

@@ -3,6 +3,7 @@ local _, A = ...
 
 
 A.oakWood = {
+    ["bar03"] = { 0.0528, 0.1047, 0.1301 },
     ["oak-bumper"] = { 0.1194, 0.1374, 0.1569 },
     ["oak-compass-tile"] = { 0.1260, 0.1484, 0.1693 },
     ["oak-divider"] = { 0.1057, 0.1455, 0.1623 },
@@ -24,6 +25,7 @@ A.oakWood = {
     ["oak-window-branch"] = { 0.1015, 0.1394, 0.1475 },
 }
 A.oakMark = {
+    ["bar03"] = { file = "bar03-mark", hi = 0.8568 },
     ["oak-bumper"] = { file = "oak-bumper-mark", hi = 0.9213 },
     ["oak-compass-tile"] = { file = "oak-compass-tile-mark", hi = 1.0000 },
     ["oak-divider"] = { file = "oak-divider-mark", hi = 0.9495 },
@@ -43,4 +45,22 @@ A.oakMark = {
     ["oak-tile"] = { file = "oak-tile-mark", hi = 1.0000 },
     ["oak-tile-pip"] = { file = "oak-tile-pip-mark", hi = 0.7246 },
     ["oak-window-branch"] = { file = "oak-window-branch-mark", hi = 0.9706 },
+}
+
+
+A.paintedTone = {
+    ["bar03"] = "bar03-tone",
+    ["bar04"] = "bar04-tone",
+    ["map-min"] = "map-min-tone",
+    ["options-bg"] = "options-bg-tone",
+    ["plate02-inlay-cap"] = "plate02-inlay-cap-tone",
+    ["rblb"] = "rblb-tone",
+    ["socket-glyph"] = "socket-glyph-tone",
+    ["socket-glyph-face"] = "socket-glyph-face-tone",
+    ["tile-notch-cap"] = "tile-notch-cap-tone",
+    ["tile-pip-cap"] = "tile-pip-cap-tone",
+    ["tile-pipnotch-cap"] = "tile-pipnotch-cap-tone",
+    ["tile-pipnotchr-cap"] = "tile-pipnotchr-cap-tone",
+    ["tile-plain"] = "tile-plain-tone",
+    ["tile-plain-cap"] = "tile-plain-cap-tone",
 }

@@ -598,6 +598,15 @@ function A:PaintedPath(name)
     local on = self:ArtRecolourOn() and (layers ~= nil or self:ArtFollowsScheme())
 
 
+
+
+
+    local tone = on and self.paintedTone and self.paintedTone[name]
+    if tone and self:ArtFollowsScheme() then
+        return self.artPath .. tone .. ".tga", on, layers
+    end
+
+
     return self.artPath .. (on and layers and (layers.body or layers.mat) or name) .. ".tga", on, layers
 end
 
@@ -624,7 +633,10 @@ end
 
 
 
-A.paintedMinLight = { bar04 = 0.92, ["tile-notch-cap"] = 0.95, ["tile-pipnotchr-cap"] = 0.94 }
+
+
+
+A.paintedMinLight = { ["tile-pipnotchr-cap"] = 0.94 }
 
 local function luma(r, g, b) return 0.2126 * r + 0.7152 * g + 0.0722 * b end
 

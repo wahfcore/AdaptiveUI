@@ -1754,6 +1754,20 @@ function A:InspectNativeFrames()
         end
     end
 
+    if type(self.NameplateProbeLines) == "function" then
+        local ok, probe = pcall(self.NameplateProbeLines, self)
+        if ok and type(probe) == "table" then
+            for _, text in ipairs(probe) do report[#report + 1] = text end
+        end
+    end
+
+    if type(self.FormProbeLines) == "function" then
+        local ok, probe = pcall(self.FormProbeLines, self)
+        if ok and type(probe) == "table" then
+            for _, text in ipairs(probe) do report[#report + 1] = text end
+        end
+    end
+
 
     line("-- inspect: measure --")
     self:MeasureReport(line)

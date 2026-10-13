@@ -1648,8 +1648,7 @@ function A:KeyboardStackTop()
         local box = not held and self:BoxOf(_G[name])
         if box and (not top or box.t > top) then top = box.t end
     end
-    local skin = self.KeyboardSkin and self:KeyboardSkin()
-    if skin == "bar04" and self.KeyboardBoxes then
+    if self.KeyboardBase and self:KeyboardBase() and self.KeyboardBoxes then
         for _, box in ipairs(self:KeyboardBoxes()) do
             if box.id == "MainActionBar" and box.kind == "bar" and (not top or box.t > top) then top = box.t end
         end

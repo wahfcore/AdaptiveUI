@@ -90,6 +90,43 @@ A.bar04Art = {
     margin  = 6,
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+A.bar03Art = {
+    ratio   = 14.118421,
+    seatV0  = 0.072368,
+    ledgeV0 = 0.5,
+    ledgeV1 = 0.651316,
+    objV1   = 0.651316,
+    topU0   = 0.055452,
+    topU1   = 0.944548,
+    ledgeU0 = 0.029823,
+    ledgeU1 = 0.970177,
+    studU0  = 0.480429, studU1 = 0.520503, studV0 = 0.013158, studV1 = 0.585526,
+    slate   = true,
+
+
+
+    fitSpan = 1008 / 1024,
+}
+
+
+
+A.bar03Base = { air = 0, studPx = 1, fadeOver = 44, back = false, fadeAlpha = 0.55, backPx = 2, laneInset = 1 }
+
+A.kbSlateXp = { fill = 0.85, rested = 0.55 }
+
+
 A.kbEmptyHotkeyAlpha = 0.45
 
 
@@ -171,13 +208,25 @@ end
 
 function A:KeyboardSkin()
     if not (self.db and self.optionIndex and self.optionIndex.keyboardSkin) then return "classic" end
-    if self:GetOption("keyboardSkin") == "base" and (self.artSlots or {}).bar04 then return "bar04" end
+    local skin = self:GetOption("keyboardSkin")
+    if skin == "base" and (self.artSlots or {}).bar04 then return "bar04" end
+
+    if skin == "slate" and (self.artSlots or {}).bar03 then return "bar03" end
+    if skin == "slate" and (self.artSlots or {}).bar04 then return "bar04" end
     return "classic"
 end
 
 
 function A:KeyboardBase()
-    return self:KeyboardSkin() == "bar04"
+    local skin = self:KeyboardSkin()
+    return skin == "bar04" or skin == "bar03"
+end
+
+
+
+function A:KeyboardPlank()
+    if self:KeyboardSkin() == "bar03" then return A.bar03Art, A.bar03Base, "bar03" end
+    return A.bar04Art, A.bar04Base, "bar04"
 end
 
 function A:KeyboardSkinOn()
@@ -192,7 +241,7 @@ end
 A.kbEmptyAlpha = { bar04 = 0.60 }
 function A:KeyboardEmptyAlpha()
     if self:KeyboardSlotStyle() ~= "tile" then return nil end
-    if self:KeyboardSkin() == "bar04" then return A.kbEmptyAlpha.bar04 end
+    if self:KeyboardBase() then return A.kbEmptyAlpha.bar04 end
     return nil
 end
 
@@ -433,20 +482,26 @@ function A:Bar04Rise(def, hostCy, h)
 end
 
 function A:Bar04BaseRect(def, cx, cy, rowW, rowH, rows, source)
-    local a, px = A.bar04Art, self:KeyboardPixel(_G[def.frame])
+    local px = self:KeyboardPixel(_G[def.frame])
+    local a, b = self:KeyboardPlank()
 
 
 
 
-    local w = self:KeyboardSnap(rowW * A.bar04Base.baseF / (a.topU1 - a.topU0), px)
+    local w = self:KeyboardSnap(rowW * (b.baseF or 1) / (a.fitSpan or (a.topU1 - a.topU0)), px)
     local h = self:KeyboardSnap(w / a.ratio, px)
-    local air = self:KeyboardSnap(A.bar04Base.air, px)
+    local air = self:KeyboardSnap(b.air, px)
+
+    if a.studV0 and b.studPx then
+        air = math.max(air, self:KeyboardSnap(h * (a.seatV0 - a.studV0), px) + b.studPx * px)
+    end
     local hostCy = (cy - rowH / 2) - air + h * a.seatV0 - h / 2
-    local rise = self:Bar04Rise(def, hostCy, h)
+
+    local rise = self:Bar04Rise(def, hostCy + h * (1 - (a.objV1 or 1)), h)
     hostCy = hostCy + rise
 
 
-    return { bar04 = true, base = true, air = air - rise, rise = rise, left = 0, right = 0, leftCap = "base", rightCap = "base",
+    return { bar04 = true, base = true, slate = a.slate == true, air = air - rise, rise = rise, left = 0, right = 0, leftCap = "base", rightCap = "base",
              well = rowW, rows = rows, source = source,
              cx = cx, cy = hostCy, w = w, h = h, rowW = rowW, rowH = rowH,
              boss = 0, pageY = cy - hostCy }
@@ -1128,7 +1183,7 @@ local function keyboardBar(self, state, def, on)
     end
 
 
-    local file = "bar04"
+    local _, _, file = self:KeyboardPlank()
     local rect = self:KeyboardSlabRect(def)
     if not rect then
         hideRail(state, bar, "kbSlab")
@@ -1150,6 +1205,9 @@ local function keyboardBar(self, state, def, on)
         host:ClearAllPoints()
         host:SetPoint("CENTER", bar, "CENTER", rect.cx, rect.cy)
         host:SetSize(rect.w, rect.h)
+
+        local entry = self.painted[data.art.mid]
+        if entry and entry.name ~= file then self:SetPainted(data.art.mid, file) end
         placeSlices(self, data.art, host, rect.w, rect.h)
     end
     if not host:IsShown() then host:Show() end
@@ -1277,7 +1335,7 @@ A.xpBarIndex = 4
 A.xpLaneTick = 0.25
 function A:XpLaneHost()
     if not (self.KeyboardSkinOn and self:KeyboardSkinOn()) then return nil end
-    if self:KeyboardSkin() ~= "bar04" then return nil end
+    if not self:KeyboardBase() then return nil end
     local state = self.nativeSkins and self.nativeSkins.actions
     local bar = _G["MainActionBar"]
     local rect = state and bar and book(state, bar).rect
@@ -1310,6 +1368,16 @@ end
 
 A.kbXpTop = { gap = 1, height = 4, trough = 0.35, fill = 0.85, rested = 0.55 }
 function A:XpLaneRect(rect)
+
+
+    if rect.slate then
+        local a, b = A.bar03Art, A.bar03Base
+        local px = self:KeyboardPixel(_G["MainActionBar"])
+        local top = self:KeyboardSnap(rect.h * a.ledgeV0, px) + b.laneInset * px
+        local bot = self:KeyboardSnap(rect.h * a.ledgeV1, px) - b.laneInset * px
+        local w = self:KeyboardSnap(rect.w * (a.ledgeU1 - a.ledgeU0), px) - 2 * b.laneInset * px
+        return rect.w * ((a.ledgeU0 + a.ledgeU1) / 2 - 0.5), top, w, math.max(px, bot - top)
+    end
     if rect.bar04 and A.bar04Art.laneTop then
         local px = self:KeyboardPixel(_G["MainActionBar"])
         local t = A.kbXpTop
@@ -1357,6 +1425,51 @@ function A:TickXpLane(elapsed)
     self:UpdateXpLane()
 end
 
+
+
+
+
+
+
+
+function A:KeyboardSlateStud(lane, host, rect)
+    local stud = lane.auiStud
+    if not (rect and rect.slate) then
+        if stud and stud:IsShown() then stud:Hide() end
+        if stud then self.themed[stud] = nil end
+        return nil
+    end
+    if not stud then
+        stud = self:Own(lane:CreateTexture(nil, "OVERLAY", nil, 7))
+        lane.auiStud = stud
+    end
+    local a = A.bar03Art
+    local layers = self.artLayers and self.artLayers.bar03
+    local file, r, g, b, piece = self.artPath .. "bar03-acc.tga", 1, 1, 1, nil
+    if self:ArtRecolourOn() and layers and layers.acc then file, r, g, b, piece = self:PaintedAcc("bar03", layers) end
+    if stud:GetTexture() ~= file then stud:SetTexture(file, "CLAMP", "CLAMP") end
+    local v0 = a.ledgeV0
+    local sig = string.format("%.3f|%.3f", rect.w, rect.h)
+    if stud.sig ~= sig then
+        stud.sig = sig
+        stud:ClearAllPoints()
+        stud:SetPoint("TOPLEFT", host, "TOPLEFT", rect.w * a.studU0, -rect.h * v0)
+        stud:SetSize(rect.w * (a.studU1 - a.studU0), rect.h * (a.studV1 - v0))
+        stud:SetTexCoord(a.studU0, a.studU1, v0, a.studV1)
+    end
+    local cr, cg, cb = stud:GetVertexColor()
+    if math.abs((cr or 1) - r) > 1e-4 or math.abs((cg or 1) - g) > 1e-4 or math.abs((cb or 1) - b) > 1e-4 then
+        stud:SetVertexColor(r, g, b, 1)
+    end
+    if piece or r ~= 1 or g ~= 1 or b ~= 1 then
+        self.themed[stud] = { role = self:MarkRole(), kind = "vertex", alpha = 1, acc = piece }
+    else
+        self.themed[stud] = nil
+    end
+    if not stud:IsShown() then stud:Show() end
+    return stud
+end
+
 local function xpInlay(self, state, on)
     local container = _G["MainStatusTrackingBarContainer"]
     local host, rect = self:XpLaneHost()
@@ -1391,9 +1504,13 @@ local function xpInlay(self, state, on)
     end
 
 
-    local top = rect.bar04 and A.bar04Art.laneTop
-    self:Tint(lane:GetStatusBarTexture(), "xp", "vertex", top and A.kbXpTop.fill or 0.95)
-    self:Tint(lane.rested:GetStatusBarTexture(), "xpRested", "vertex", top and A.kbXpTop.rested or 0.6)
+    local top = rect.bar04 and not rect.slate and A.bar04Art.laneTop
+    local fill, rested = 0.95, 0.6
+    if top then fill, rested = A.kbXpTop.fill, A.kbXpTop.rested
+    elseif rect.slate then fill, rested = A.kbSlateXp.fill, A.kbSlateXp.rested end
+    self:Tint(lane:GetStatusBarTexture(), "xp", "vertex", fill)
+    self:Tint(lane.rested:GetStatusBarTexture(), "xpRested", "vertex", rested)
+    self:KeyboardSlateStud(lane, host, rect)
     if top and not lane.trough then
         pcall(function()
             lane.trough = self:Own(lane.rested:CreateTexture(nil, "BACKGROUND"))
@@ -1495,7 +1612,9 @@ local function fadeBackdrop(self, state, on)
         fade:SetTexture(self.artPath .. "kb-fade.tga", "CLAMP", "CLAMP")
         entries.kbFade = fade
     end
-    local f, b = A.kbFade, A.bar04Base
+
+    local plankArt, b = self:KeyboardPlank()
+    local f = A.kbFade
 
     local plank = rect.base and b.back == false
     local over = plank and self:KeyboardStackOver() or 0
@@ -1512,7 +1631,7 @@ local function fadeBackdrop(self, state, on)
 
 
 
-            local a, px = A.bar04Art, self:KeyboardPixel(bar)
+            local a, px = plankArt, self:KeyboardPixel(bar)
             fade:SetPoint("BOTTOM", host, "TOP", rect.w * ((a.topU0 + a.topU1) / 2 - 0.5), -rect.h * a.seatV0)
             fade:SetSize(rect.w * (a.topU1 - a.topU0) + 2 * b.backPx * px,
                 math.max(px, (rect.air or 0) + rect.rowH + over + b.fadeOver))
@@ -1529,14 +1648,14 @@ local function fadeBackdrop(self, state, on)
 
 
     local back = entries.kbBack
-    if rect.base and A.bar04Base.back ~= false then
+    if rect.base and b.back ~= false then
         if not back then
             back = self:Own(host:CreateTexture(nil, "BACKGROUND", nil, -7))
             entries.kbBack = back
         end
         local px = self:KeyboardPixel(bar)
         local d = b.backPx * px
-        local rim = rect.h * A.bar04Art.seatV0
+        local rim = rect.h * plankArt.seatV0
         local bsig = string.format("%.3f|%.3f|%.3f|%.3f|%.4f|%.3f", rect.w, rect.h, rect.rowW or 0, rect.rowH or 0, d,
             rect.air or 0)
         if back.sig ~= bsig then

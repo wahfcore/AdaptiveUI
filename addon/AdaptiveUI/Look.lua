@@ -260,7 +260,7 @@ A.lookPresets = {
         compassGround = "divider", compassButtonSkin = "tiles", compassBumperSkin = "arm",
         mapSkin = "shelf", windowSkin = "branch", chromeCrest = "off",
         trackerStyle = "tidy", chatStyle = "tidy",
-        castPlayerMode = "custom",
+        castPlayerMode = "custom", formLabel = "flash",
         ["skins.actions"] = true, ["skins.units"] = true, ["skins.party"] = true, ["skins.auras"] = true,
         ["skins.minimap"] = true, ["skins.objectives"] = true, ["skins.chat"] = true, ["skins.tooltips"] = true,
     },
@@ -268,9 +268,9 @@ A.lookPresets = {
         unitMode = "plus", plateSkin = "inlay", plateSmallSkin = "tile", raidSkin = "tile",
         keyboardSkin = "base", keyboardSlotSkin = "tile", keyboardBackdrop = "fade", xpLane = "inlay",
         compassGround = "divider", compassButtonSkin = "tiles", compassBumperSkin = "arm",
-        mapSkin = "base", windowSkin = "painted", chromeCrest = "windows",
+        mapSkin = "base", windowSkin = "slate", chromeCrest = "windows",
         trackerStyle = "tidy", chatStyle = "tidy",
-        castPlayerMode = "custom",
+        castPlayerMode = "custom", formLabel = "flash",
         ["skins.actions"] = true, ["skins.units"] = true, ["skins.party"] = true, ["skins.auras"] = true,
         ["skins.minimap"] = true, ["skins.objectives"] = true, ["skins.chat"] = true, ["skins.tooltips"] = true,
     },
@@ -281,7 +281,7 @@ A.lookPresets = {
         keyboardSkin = "classic", keyboardSlotSkin = "classic", keyboardBackdrop = "off", xpLane = "blizzard",
         compassGround = "none", compassBumperSkin = "native",
         mapSkin = "card", windowSkin = "flat", chromeCrest = "off",
-        castPlayerMode = "native",
+        castPlayerMode = "native", formLabel = "off",
         ["skins.actions"] = false, ["skins.units"] = false, ["skins.party"] = false, ["skins.auras"] = false,
         ["skins.minimap"] = false, ["skins.objectives"] = false, ["skins.chat"] = false, ["skins.tooltips"] = false,
     },
@@ -349,6 +349,27 @@ function A:SettleLook(profile)
     end
     self.pendingNotes = self.pendingNotes or {}
     self.pendingNotes[#self.pendingNotes + 1] = A.lookNote
+    return true
+end
+
+
+
+
+
+
+
+
+A.duskWindowNote = "AUI Dusk's Settings window now stands on your slate plank. "
+    .. "/aui set windowSkin painted brings the painted window back."
+function A:SettleDuskWindow(profile)
+    if profile.duskWindowSettled == true then return false end
+    profile.duskWindowSettled = true
+    if profile.look ~= "dusk" or profile.windowSkin ~= "painted" then return false end
+    local option = self.optionIndex and self.optionIndex.windowSkin
+    if not (option and self:ValidateOption(option, "slate") ~= nil) then return false end
+    profile.windowSkin = "slate"
+    self.pendingNotes = self.pendingNotes or {}
+    self.pendingNotes[#self.pendingNotes + 1] = A.duskWindowNote
     return true
 end
 

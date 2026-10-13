@@ -85,10 +85,13 @@ end
 
 
 
+
+
 function A:WindowSkinMode()
     local skin = opt(self, "windowSkin", "painted")
     if skin == "branch" and self:HasArt("oakWindowBranch") then return "branch" end
-    if skin == "branch" then skin = "painted" end
+    if skin == "slate" and self:HasArt("bar03") then return "slate" end
+    if skin == "branch" or skin == "slate" then skin = "painted" end
     if skin == "painted" and self:HasArt("optionsBg") then return "painted" end
     return "flat"
 end
@@ -586,6 +589,68 @@ A.oakBranches = { window = { file = "oak-window-branch", ratio = 12.129, wide = 
 
 
 
+
+
+
+
+
+
+
+
+
+
+A.slateFoot = { file = "bar03", ratio = 14.118421, wide = 1024 / 1008, seatV0 = 0.072368,
+    studU0 = 0.480429, studU1 = 0.520503, studV0 = 0.013158, footV1 = 0.651316, over = 1, legendLift = 0 }
+
+
+
+function A:WindowFootSpec(mode)
+    if mode == "branch" then return self.oakBranches.window end
+    if mode == "slate" then return self.slateFoot end
+    return nil
+end
+
+function A:WindowFootGeometry(spec, w)
+    local bw = w * spec.wide
+    local bh = bw / spec.ratio
+    local dy
+    if spec.drop then dy = -bh * spec.drop
+    else dy = spec.over - bh * (0.5 - spec.seatV0) end
+    return bw, bh, dy
+end
+
+
+
+
+function A:SeatWindowFeet(frame, mode, w)
+    local shown
+    for key, foot in pairs({ auiBranch = "branch", auiSlate = "slate" }) do
+        local spec = self:WindowFootSpec(foot)
+        local on = mode == foot
+        if not frame[key] and on then
+            frame[key] = self:PaintedTexture(frame, "BORDER", 2, spec.file)
+            frame[key .. "Acc"] = self:PaintedTwin(frame[key])
+        end
+        local t = frame[key]
+        if t then
+            local bw, bh, dy = self:WindowFootGeometry(spec, w)
+            t:ClearAllPoints()
+            t:SetPoint("CENTER", frame, "BOTTOM", 0, dy)
+            t:SetSize(bw, bh)
+            if on then t:Show() else self:HidePainted(t) end
+            self:SyncPainted(t)
+            if on then shown = { spec = spec, bw = bw, bh = bh, dy = dy } end
+        end
+    end
+    return shown
+end
+
+
+
+
+
+
+
 function A:MapShelfSources()
     local container = MinimapCluster and MinimapCluster.MinimapContainer
     local coords = container and container.PlayerCoords
@@ -860,7 +925,8 @@ local function placeFooter(self, frame)
     if f.legend then
         f.legend:ClearAllPoints()
         self:SetThemedFont(f.legend, self.tokens.type.body, false)
-        local lift = self:WindowSkinMode() == "branch" and self.oakBranches.window.legendLift or 0
+        local foot = self:WindowFootSpec(self:WindowSkinMode())
+        local lift = foot and foot.legendLift or 0
         f.legend:SetPoint("TOPLEFT", frame, "TOPLEFT", f.home.legend[1], f.home.legend[2] + lift)
         f.legend:SetWidth(f.home.legend[3])
     end
@@ -868,26 +934,16 @@ end
 
 
 
+
 function A:WindowBranchFoot(frame)
     if not frame or type(frame.CreateTexture) ~= "function" then return end
-    local on = self:WindowSkinMode() == "branch"
-    if not frame.auiBranch then
-        if not on then return end
-        frame.auiBranch = self:PaintedTexture(frame, "BORDER", 2, self.oakBranches.window.file)
-        frame.auiBranchAcc = self:PaintedTwin(frame.auiBranch)
-    end
+    local mode = self:WindowSkinMode()
+    if not self:WindowFootSpec(mode) and not frame.auiBranch and not frame.auiSlate then return end
     local w = self:Number(frame.GetWidth, 1, frame) or 520
-    local ba = self.oakBranches.window
-    local bw = w * ba.wide
-    local bh = bw / ba.ratio
-    frame.auiBranch:ClearAllPoints()
-    frame.auiBranch:SetPoint("CENTER", frame, "BOTTOM", 0, -bh * ba.drop)
-    frame.auiBranch:SetSize(bw, bh)
-    if on then frame.auiBranch:Show() else self:HidePainted(frame.auiBranch) end
-    self:SyncPainted(frame.auiBranch)
-    if frame.depth and self.SuppressDepth then self:SuppressDepth(frame.depth, "panel~", on) end
+    local foot = self:SeatWindowFeet(frame, mode, w)
+    if frame.depth and self.SuppressDepth then self:SuppressDepth(frame.depth, "panel~", foot ~= nil) end
     if type(frame.SetClampRectInsets) == "function" then
-        if on then frame:SetClampRectInsets(-(bw - w) / 2, (bw - w) / 2, 0, -(bh * (0.5 + ba.drop)))
+        if foot then frame:SetClampRectInsets(-(foot.bw - w) / 2, (foot.bw - w) / 2, 0, foot.dy - foot.bh / 2)
         else frame:SetClampRectInsets(0, 0, 0, 0) end
     end
 end
@@ -914,6 +970,7 @@ function A:DressOptionsWindow(frame)
     if frame.auiPainted == mode then
         self:SyncPainted(frame.auiPaint)
         self:SyncPainted(frame.auiBranch)
+        if frame.auiSlate then self:SyncPainted(frame.auiSlate) end
 
         if frame.auiFooter and frame.auiFooterMode ~= mode then
             frame.auiFooterMode = mode
@@ -930,15 +987,9 @@ function A:DressOptionsWindow(frame)
     frame.auiPaint:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", g.side, -g.bottom)
     if painted then frame.auiPaint:Show() else self:HidePainted(frame.auiPaint) end
     self:SyncPainted(frame.auiPaint)
-    local branch = mode == "branch"
-    local ba = self.oakBranches.window
-    local bw = w * ba.wide
-    local bh = bw / ba.ratio
-    frame.auiBranch:ClearAllPoints()
-    frame.auiBranch:SetPoint("CENTER", frame, "BOTTOM", 0, -bh * ba.drop)
-    frame.auiBranch:SetSize(bw, bh)
-    if branch then frame.auiBranch:Show() else self:HidePainted(frame.auiBranch) end
-    self:SyncPainted(frame.auiBranch)
+
+    local foot = self:SeatWindowFeet(frame, mode, w)
+    local footed = foot ~= nil
     placeFooter(self, frame)
     if frame.auiFooter then frame.auiFooterMode = mode end
     if frame.bg then
@@ -948,11 +999,11 @@ function A:DressOptionsWindow(frame)
         frame.bg:SetPoint("BOTTOMRIGHT", frame, "TOPRIGHT", 0, -h)
     end
 
-    if frame.rule then frame.rule:SetShown(not painted and not branch) end
-    if frame.depth and self.SuppressDepth then self:SuppressDepth(frame.depth, "d", painted or branch) end
+    if frame.rule then frame.rule:SetShown(not painted and not footed) end
+    if frame.depth and self.SuppressDepth then self:SuppressDepth(frame.depth, "d", painted or footed) end
     if type(frame.SetClampRectInsets) == "function" then
         if painted then frame:SetClampRectInsets(-g.side, g.side, g.top, -g.bottom)
-        elseif branch then frame:SetClampRectInsets(-(bw - w) / 2, (bw - w) / 2, 0, -(bh * (0.5 + ba.drop)))
+        elseif foot then frame:SetClampRectInsets(-(foot.bw - w) / 2, (foot.bw - w) / 2, 0, foot.dy - foot.bh / 2)
         else frame:SetClampRectInsets(0, 0, 0, 0) end
     end
 end

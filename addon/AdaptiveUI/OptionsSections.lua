@@ -1322,6 +1322,243 @@ function A:PageOptions(direction)
 end
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+local function setDesc(row, desc, width)
+    row.desc:SetText(desc)
+    row.desc:SetWordWrap(false)
+    row.desc:SetHeight(18)
+    row.height0 = nil
+    row:SetHeight(ROW)
+    local measured = select(2, pcall(row.desc.GetStringWidth, row.desc))
+    if type(measured) == "number" and measured > width - 2 then
+        row.desc:SetWordWrap(true)
+        row.desc:SetHeight(36)
+        row.height0 = ROW2
+        row:SetHeight(ROW2)
+    end
+end
+
+local FORM_TEXT_W = TEXT_W - 38
+local ARM_LEGEND = { left = "LT", right = "RT", bottom = "LT + RT", top = "the top arm" }
+
+local function formRow(page)
+    local row = rowFrame(page)
+    row.kind = "form"
+    describe(row, "", "", FORM_TEXT_W)
+    row.label:ClearAllPoints(); row.label:SetPoint("TOPLEFT", row, "TOPLEFT", 48, -6)
+    row.desc:ClearAllPoints(); row.desc:SetPoint("TOPLEFT", row, "TOPLEFT", 48, -27)
+    row.well = row:CreateTexture(nil, "ARTWORK")
+    row.well:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -11)
+    row.well:SetSize(30, 30)
+    A:Tint(row.well, "control", "color", 1)
+    row.icon = row:CreateTexture(nil, "OVERLAY")
+    row.icon:SetPoint("TOPLEFT", row, "TOPLEFT", 10, -11)
+    row.icon:SetSize(30, 30)
+    row.letter = K.text(row, LABEL, true, 10, -17, 30, "CENTER")
+    row.now = row:CreateTexture(nil, "OVERLAY")
+    row.now:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    row.now:SetSize(3, ROW)
+    A:Tint(row.now, "accent", "color", 1)
+    row.now:Hide()
+    row.control = K.uiButton(row, "", PAGE_W - CONTROL_W, 8, CONTROL_W, ROW - 16, function()
+        A:PreviewFormLabel(row.entry)
+    end)
+    row.refresh = function() end
+    return row
+end
+
+
+local function infoRow(page)
+    local row = rowFrame(page)
+    row.kind = "info"
+    describe(row, "", "", PAGE_W - 40)
+    row.stripe = row:CreateTexture(nil, "OVERLAY")
+    row.stripe:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+    row.stripe:SetSize(3, ROW)
+    A:Tint(row.stripe, "warn", "color", 1)
+    row.stripe:Hide()
+    row.refresh = function() end
+    return row
+end
+
+
+
+function A:FormRowWords(f, s, pad, padArm)
+    local name = f.name or "Unknown form"
+    local bars = f.spellID and self:FormSeenBars(f.spellID) or {}
+    local usual = f.spellID and A.formUsualBar[f.spellID] or nil
+    local bar = bars[1]
+    local desc
+    if bar ~= nil then
+        desc = bar == 0 and "Bar learned: this form keeps your bar." or "Bar learned."
+        if #bars > 1 then
+            local more = {}
+            for i = 2, #bars do more[#more + 1] = "bar " .. bars[i] end
+            desc = "Bar learned. Also seen on " .. table.concat(more, ", ") .. " (in Prowl or Stealth)."
+        end
+    elseif usual ~= nil then
+        desc = usual == 0 and "Not learned yet: Blizzard usually keeps your bar." or
+            ("Not learned yet: Blizzard usually uses bar " .. usual .. ".")
+        bar = usual
+    else
+        desc = "Not learned yet: change into it once and this fills in."
+    end
+    local now = f.active == true
+    local right
+    if pad then
+
+        right = padArm and ("Takes " .. padArm) or "No arm"
+        if now then right = "Now: " .. right end
+        desc = padArm and ("Takes " .. padArm .. " while you are in it.")
+            or "Changes no arm on the controller: see the row above."
+        if f.spellID and A.formUsualBar[f.spellID] == 0 then desc = "Blizzard pages nothing for this form." end
+        if now and s and s.padEmpty then desc = "Empty. Shift into " .. name .. " and drag your spells onto the arm." end
+    elseif bar and bar > 0 then
+        local n = self:BarFill(bar)
+        right = "Bar " .. bar .. (n and string.format(": %d of 12 set", n) or "")
+        if now then right = "Now: " .. right end
+        if n == 0 then desc = "Empty. Shift into " .. name .. " and drag your spells onto the bar." end
+    else
+        right = now and "Now: your bar" or "Your bar"
+    end
+    return name, desc, right, now
+end
+
+local function fillIcon(self, row, icon, name)
+    if icon ~= nil and self:IsPublic(icon) then
+        row.icon:SetTexture(icon); row.icon:Show(); row.letter:SetText("")
+    else
+        row.icon:Hide(); row.letter:SetText(string.upper(string.sub(name, 1, 1)))
+    end
+end
+
+
+function A:FormsPageItems(ui)
+    local page = ui.page
+    ui.formRows = ui.formRows or {}
+    local s = self:FormState()
+    local items = {}
+    local controller = s.family == "controller" or (s.family == nil and self:EffectiveInput() == "controller")
+    local padArm
+
+    if controller and #s.forms > 0 then
+        local st = s.stance or {}
+        ui.formArmRow = ui.formArmRow or infoRow(page)
+        local row = ui.formArmRow
+        if st.none then
+            row.label:SetText("Your forms change no arm: Not set")
+            setDesc(row, "To give them one: Esc > Options > Gamepad > Stance bar. AdaptiveUI never changes it.", PAGE_W - 40)
+            row.stripe:Show()
+            padArm = false
+        elseif st.arm then
+            row.label:SetText("The arm your forms take: " .. self:StanceArmWords(st))
+            setDesc(row, "Blizzard's setting: Esc > Options > Gamepad > Stance bar.", PAGE_W - 40)
+            row.stripe:Hide()
+            padArm = ARM_LEGEND[st.arm] or st.arm
+        else
+            row.label:SetText("The arm your forms take: not readable here")
+            setDesc(row, "Blizzard's setting: Esc > Options > Gamepad > Stance bar. /aui formprobe shows what is read.", PAGE_W - 40)
+            row.stripe:Hide()
+            padArm = false
+        end
+        row.stripe:SetHeight(row.height0 or ROW)
+        items[#items + 1] = { row = row }
+        if s.active and s.bonus == true then
+            local gp = rawget(_G, "C_GamepadUI")
+            local first = type(gp) == "table"
+                and self:Number(gp.GetFirstGamepadActionBarStorageSlotIndexForActiveStance, 1) or nil
+
+            s.padEmpty = first and self:PadEmptyKnown(first, A.formPadSlots) == true or false
+        end
+    end
+
+    local shared, sharedNow = {}, false
+    local n = 0
+    for _, f in ipairs(s.forms) do
+        local name, desc, right, now = self:FormRowWords(f, s, controller, padArm)
+        local bars = f.spellID and self:FormSeenBars(f.spellID) or {}
+        local pagesNothing = bars[1] == 0 or (bars[1] == nil and f.spellID ~= nil and A.formUsualBar[f.spellID] == 0)
+        if pagesNothing and not controller then
+            shared[#shared + 1] = f
+            if now then sharedNow = true end
+        else
+            n = n + 1
+            local row = ui.formRows[n] or formRow(page)
+            ui.formRows[n] = row
+            row.entry = f
+            row.label:SetText(name)
+            setDesc(row, desc, FORM_TEXT_W)
+            row.control.label:SetText(right)
+            row.now:SetShown(now)
+            row.now:SetHeight(row.height0 or ROW)
+            fillIcon(self, row, f.icon, name)
+            items[#items + 1] = { row = row }
+        end
+    end
+    if #shared > 0 then
+        n = n + 1
+        local row = ui.formRows[n] or formRow(page)
+        ui.formRows[n] = row
+        row.entry = shared[1]
+        local names = {}
+        for _, f in ipairs(shared) do names[#names + 1] = f.name or "Unknown form" end
+        row.label:SetText(table.concat(names, ", "))
+        setDesc(row, "These keep your bar: Blizzard pages nothing for them.", FORM_TEXT_W)
+        row.control.label:SetText(sharedNow and "Now: your bar" or "Your bar")
+        row.now:SetShown(sharedNow)
+        row.now:SetHeight(row.height0 or ROW)
+        fillIcon(self, row, shared[1].icon, names[1])
+        items[#items + 1] = { row = row }
+    end
+    if #s.forms == 0 then
+        ui.formNoneRow = ui.formNoneRow or infoRow(page)
+        ui.formNoneRow.label:SetText("No forms or stances on this character")
+        setDesc(ui.formNoneRow, "A druid, warrior or rogue sees each form and the bar it shows here.", PAGE_W - 40)
+        items[#items + 1] = { row = ui.formNoneRow }
+    end
+    return items
+end
+
+
+function A:FormsSpecItem(ui)
+    if not self:SpecRowWanted() then return nil end
+    if not ui.formSpecRow then
+        local row = rowFrame(ui.page)
+        row.kind = "specs"
+        describe(row, "Bars per spec", "", TEXT_W)
+        row.control = K.uiButton(row, "Profiles per spec", PAGE_W - CONTROL_W, 8, CONTROL_W, ROW - 16, function()
+            A:OpenOptionsSections("profiles")
+        end)
+        row.control.label:SetJustifyH("CENTER")
+        row.refresh = function() end
+        ui.formSpecRow = row
+    end
+    setDesc(ui.formSpecRow, self:SpecSentence(), TEXT_W)
+    return { row = ui.formSpecRow }
+end
+
+
+local function formsRowsAll(ui)
+    local out = {}
+    for _, row in ipairs(ui.formRows or {}) do out[#out + 1] = row end
+    for _, key in ipairs({ "formArmRow", "formNoneRow", "formSpecRow" }) do
+        if ui[key] then out[#out + 1] = ui[key] end
+    end
+    return out
+end
+
+
 local function rowChanged(row)
     if row.option then return A:OptionChanged(row.option.key) end
     if row.kind == "mover" then
@@ -1411,6 +1648,13 @@ function A:AdvancedPageItems(ui, section)
         for _, row in ipairs(ui.elementRows or {}) do add(row) end
     else
         if section == "look" and tab == "scheme" then add(ui.presetRow) end
+
+        local forms = section == "actionbars" and tab == "forms"
+        if forms then
+            items[#items + 1] = { heading = "Your forms" }
+            for _, item in ipairs(self:FormsPageItems(ui)) do items[#items + 1] = item end
+            items[#items + 1] = { heading = "Form label" }
+        end
         if section == "units" and tab == "general" and self.db.unitMode == "plus" then add(ui.healthRow) end
         if section == "layout" and tab == "move" then
             add(ui.moverLock)
@@ -1438,6 +1682,11 @@ function A:AdvancedPageItems(ui, section)
                 last = block.heading
             end
             for _, row in ipairs(block.rows) do add(row) end
+        end
+        local spec = forms and self:FormsSpecItem(ui) or nil
+        if spec then
+            items[#items + 1] = { heading = "Specs" }
+            items[#items + 1] = spec
         end
     end
     if hidden > 0 or ui.showInapplicable then
@@ -1727,6 +1976,7 @@ function A:RefreshOptionsSections()
         for _, row in ipairs(list) do row:Hide() end
     end
     if ui.extraBarsRow then ui.extraBarsRow:Hide() end
+    for _, row in ipairs(formsRowsAll(ui)) do row:Hide() end
     for _, row in pairs(ui.resetRows) do row:Hide() end
     if ui.schemeSixRow then ui.schemeSixRow:Hide() end
     ui.presetRow:Hide(); ui.healthRow:Hide(); ui.banner:Hide(); ui.inapplicableRow:Hide()

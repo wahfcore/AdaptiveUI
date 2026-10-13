@@ -151,6 +151,10 @@ function A:SafeRefresh()
 
 
     pcall(self.UpdatePlusUnits, self)
+
+    if self.NameplatesApply then pcall(self.NameplatesApply, self) end
+
+    if self.FormBarsRefresh then pcall(self.FormBarsRefresh, self) end
     if self.sessionDisabled then return end
     local ok = pcall(self.UpdateHUD, self)
     if not ok then
@@ -417,6 +421,11 @@ function A:Slash(message)
     elseif command == "chiptest" then self:ChipTestCommand(argument)
     elseif command == "castprobe" then self:CastProbeCommand()
 
+    elseif command == "npprobe" then self:NameplateProbeCommand()
+
+    elseif command == "formprobe" then self:FormProbeCommand()
+    elseif command == "forms" then self:FormsCommand()
+
 
     elseif command == "compasstest" then self:CompassTestCommand(argument)
 
@@ -564,6 +573,19 @@ for _, event in ipairs({
 
     "PLAYER_TOTEM_UPDATE", "BAG_UPDATE_DELAYED", "UNIT_PET", "UNIT_HAPPINESS", "PET_UI_UPDATE",
     "PLAYER_FLAGS_CHANGED", "UNIT_FACTION",
+
+    "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED", "FORBIDDEN_NAME_PLATE_UNIT_ADDED",
+    "FORBIDDEN_NAME_PLATE_UNIT_REMOVED", "UNIT_CLASSIFICATION_CHANGED",
+
+
+
+    "UNIT_LEVEL", "UNIT_SPELLCAST_START", "UNIT_SPELLCAST_STOP", "UNIT_SPELLCAST_FAILED",
+    "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_DELAYED", "UNIT_SPELLCAST_CHANNEL_START",
+    "UNIT_SPELLCAST_CHANNEL_UPDATE", "UNIT_SPELLCAST_CHANNEL_STOP", "UNIT_SPELLCAST_INTERRUPTIBLE",
+    "UNIT_SPELLCAST_NOT_INTERRUPTIBLE",
+
+    "UPDATE_POSSESS_BAR", "UPDATE_TEMP_SHAPESHIFT_ACTIONBAR", "PET_BATTLE_OPENING_START", "PET_BATTLE_CLOSE",
+    "ACTIVE_TALENT_GROUP_CHANGED", "GAMEPAD_STANCE_BAR_OVERRIDE_CHANGED",
 }) do A:RegisterOptionalEvent(events, event) end
 events:SetScript("OnEvent", function(_, event, ...)
 
@@ -572,6 +594,14 @@ events:SetScript("OnEvent", function(_, event, ...)
     if event == "ADDON_ACTION_BLOCKED" or event == "ADDON_ACTION_FORBIDDEN" then
         A:OnActionBlocked(event, ...)
         return
+    end
+
+    if A.OnFormEvent then pcall(A.OnFormEvent, A, event, ...) end
+
+
+    if A.OnNameplateEvent then
+        local ok, mine = pcall(A.OnNameplateEvent, A, event, ...)
+        if ok and mine then return end
     end
     if event == "PLAYER_SPECIALIZATION_CHANGED" then
 
@@ -721,6 +751,7 @@ events:SetScript("OnUpdate", function(_, elapsed)
     if A.TickInputSwitch then A:TickInputSwitch(elapsed) end
     if A.TickClassBar then A:TickClassBar(elapsed) end
     if A.TickMapShelf then A:TickMapShelf(elapsed) end
+    if A.TickFormBars then A:TickFormBars(elapsed) end
     elapsedTime = elapsedTime + elapsed
     if elapsedTime < 0.10 then return end
     elapsedTime = 0

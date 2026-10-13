@@ -964,6 +964,32 @@ end
 
 
 A.inlaySeamTone = { 0.02, 0.03, 0.035, 0.85 }
+
+
+
+
+
+
+
+
+function A:InlayTrough(t)
+    if not (self:ArtRecolourOn() and self:ArtFollowsScheme()) then return t end
+    local plate = self:LookName(self:PlateFile())
+    local out
+    if self.IsOakWood and self:IsOakWood(plate) then
+        local r, g, b = self:OakGain(plate)
+        out = { t[1] * r, t[2] * g, t[3] * b }
+    else
+        local mr, mg, mb = self:PaintedMaterial(plate)
+        local gr, gg, gb = 0, 0, 0
+        if self:GlazeOn() then gr, gg, gb = self:GlazeColour(plate) end
+        local l = 0.2126 * t[1] + 0.7152 * t[2] + 0.0722 * t[3]
+        out = { l * (mr + gr), l * (mg + gg), l * (mb + gb) }
+    end
+    for i = 1, 3 do out[i] = math.max(0, math.min(1, out[i])) end
+    return out
+end
+
 function A:InlayLight(widget, lane, on, chip)
     local bar = widget and widget.value
     if not bar or type(bar.CreateTexture) ~= "function" then return end
@@ -984,7 +1010,7 @@ function A:InlayLight(widget, lane, on, chip)
         widget.inlayBase = self:Own(plate:CreateTexture(nil, "BACKGROUND", nil, 7))
     end
     if widget.inlayBase then
-        local t = art.base[lane] or art.base.health
+        local t = self:InlayTrough(art.base[lane] or art.base.health)
         local baseKey = string.format("%.4f|%.4f|%.4f", t[1], t[2], t[3])
         if widget.inlayBaseKey ~= baseKey then
             widget.inlayBaseKey = baseKey
@@ -3455,6 +3481,8 @@ local function healthColor(self, unit, optionKey)
     return autoColor(self, unit, isPlayer)
 end
 
+A.PlusHealthColor = healthColor
+
 
 
 
@@ -4732,6 +4760,10 @@ A.plateRanks = {
 
 
 
+
+
+A.plateRankLift = 10
+
 function A:PlateRankOf(unit)
     local class, status = self:Read(UnitClassification, 1, unit)
     if status == "restricted" then return nil, true end
@@ -4769,11 +4801,22 @@ function A:PlateRank(plate, unit, id)
         plate.rankKeyParts = nil
         return
     end
+
+
+
+
+    if not plate.rankFrame then
+        plate.rankFrame = self:Own(CreateFrame("Frame", nil, plate))
+        plate.rankFrame:SetAllPoints(plate)
+        plate.rankFrame:EnableMouse(false)
+    end
+    local level = (self:Number(plate.GetFrameLevel, 1, plate) or 1) + A.plateRankLift
+    if plate.rankFrame:GetFrameLevel() ~= level then plate.rankFrame:SetFrameLevel(level) end
     if not plate.rankStud then
-        plate.rankGlow = self:Own(plate:CreateTexture(nil, "OVERLAY", nil, 6))
+        plate.rankGlow = self:Own(plate.rankFrame:CreateTexture(nil, "OVERLAY", nil, 6))
         plate.rankGlow:SetTexture(self.artPath .. "diamond-glow.tga", "CLAMP", "CLAMP")
         plate.rankGlow:SetBlendMode("ADD")
-        plate.rankStud = self:Own(plate:CreateTexture(nil, "OVERLAY", nil, 7))
+        plate.rankStud = self:Own(plate.rankFrame:CreateTexture(nil, "OVERLAY", nil, 7))
         plate.rankStud:SetTexture(self.artPath .. "oak-stud-mark.tga", "CLAMP", "CLAMP")
     end
     local compact = plate.hero ~= true

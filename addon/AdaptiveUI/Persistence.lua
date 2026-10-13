@@ -289,6 +289,9 @@ function A:SnapshotMirror()
         active = self.profileName,
         profiles = profiles,
         specMap = type(specs) == "table" and plainCopy(specs, 0) or nil,
+
+
+        formBars = type(old) == "table" and type(old.formBars) == "table" and plainCopy(old.formBars, 0) or nil,
     }
     return true
 end

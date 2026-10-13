@@ -220,6 +220,33 @@ A.options = {
 
 
 
+    { key = "formLabel", group = "forms", label = "Form label", type = "enum", default = "flash", values = {
+          { value = "flash", label = "On change" },
+          { value = "static", label = "Stays up" },
+          { value = "off", label = "Off" },
+      } },
+    { key = "nameplateSkin", group = "nameplates", label = "Skin Blizzard's nameplates", type = "bool", default = false },
+
+
+    { key = "nameplateWidth", group = "nameplates", label = "Nameplate width", type = "number", default = 1.1, min = 0.6, max = 1.3, step = 0.05, format = "%.0f%%", scale = 100 },
+    { key = "nameplateFriendly", group = "nameplates", label = "Skin friendly nameplates too", type = "bool", default = true },
+
+
+    { key = "nameplateFill", group = "nameplates", label = "Nameplate fill", type = "enum", default = "color", values = {
+          { value = "color", label = "Colour in the channel" },
+          { value = "follow", label = "The look's own" },
+      } },
+
+
+    { key = "nameplateCast", group = "nameplates", label = "Nameplate cast bar", type = "enum", default = "ours", values = {
+          { value = "ours", label = "Thicker, on the plate" },
+          { value = "blizzard", label = "Blizzard's" },
+      } },
+
+
+
+
+
 
 
 
@@ -945,6 +972,10 @@ A.options = {
           { value = "base", label = "Bar 04 under the buttons" },
 
 
+
+          { value = "slate", label = "Slate plank under the buttons, XP in its ledge" },
+
+
           { value = "classic", label = "Classic (0.44)" },
       } },
 
@@ -1126,6 +1157,8 @@ A.options = {
 
 
           { value = "branch", label = "Flat, your oak branch as its foot" },
+
+          { value = "slate", label = "Flat, your slate plank as its foot" },
           { value = "painted", label = "Painted (your options panel)" },
           { value = "flat", label = "Flat (0.47-0.52)" },
       } },
@@ -1357,6 +1390,8 @@ A.options[#A.options + 1] = { key = "artGlaze", label = "Painted art: colour gla
     min = 0, max = 1, step = 0.1, format = "%.0f%%", scale = 100 }
 
 A.options[#A.options + 1] = { key = "lookSettled", type = "bool", default = false }
+
+A.options[#A.options + 1] = { key = "duskWindowSettled", type = "bool", default = false }
 
 
 
@@ -1664,6 +1699,7 @@ function A:NormalizeProfile(profile)
     self:MigrateActionBars(profile)
     self:SeedCompassHero(profile)
     if self.SettleLook then self:SettleLook(profile) end
+    if self.SettleDuskWindow then self:SettleDuskWindow(profile) end
 
 
 
@@ -2090,6 +2126,8 @@ A.optionGroupSection = {
     infobar = { "layout", "Info strips" },
     tooltip = { "controls", "Tooltips" },
     profiles = { "profiles", "Profiles" },
+    nameplates = { "look", "Nameplates" },
+    forms = { "layout", "Forms and specs" },
 }
 
 
@@ -2189,7 +2227,7 @@ A.optionAdvancedKeys = {}
 
 
 A.optionBasic = {
-    look = { "look", "themeScheme", "unitMode", "motionLevel", "textScale", "opacity", "style" },
+    look = { "look", "themeScheme", "unitMode", "motionLevel", "textScale", "opacity", "style", "nameplateSkin" },
     layout = { "safeZone" },
     combat = { "castPlayerMode", "castTargetMode", "dpsStripOn", "plusDanger" },
     controls = { "mode", "autoSwitchInput", "actionGlyphs", "actionCamera", "tooltipScale" },
@@ -2270,6 +2308,8 @@ A.optionTags = {
     infobar = "info bar edge strip",
     tooltip = "tooltip mouseover anchor",
     profiles = "profile export import spec character copy reset",
+    nameplates = "nameplate nameplates name plate enemy mob over head world",
+    forms = "form forms stance stances shapeshift cat bear moonkin druid warrior rogue stealth spec specs bar page",
 }
 
 A.optionKeywords = {
@@ -2295,6 +2335,10 @@ A.optionKeywords = {
     plusDanger = "low health warning danger",
     plusExecute = "execute range low health target twenty",
     plusRankStud = "elite boss rare diamond stud classification",
+    nameplateSkin = "nameplates name plates enemy mob over head skin blizzard",
+    formLabel = "form forms stance shapeshift cat bear moonkin bar page switch label flash",
+    nameplateWidth = "nameplate size width bigger smaller",
+    nameplateCast = "nameplate cast bar casting spell interrupt thicker",
     plusColorPlayer = "health bar colour class reaction",
     plusColorTarget = "health bar colour class reaction",
     moverSnap = "move grid snap",
@@ -2324,6 +2368,7 @@ A.searchSynonyms = {
 
 
 A.optionDesc = {
+    formLabel = "Names the form and the bar it shows when a form changes your bar.",
     compassDividerLight = "Holding LT or RT lights your compass divider from that trigger's end. Off: the divider stays as painted.",
     xpLane = "Blizzard's own experience bar. An XP lane inside your painted bar waits on /aui xpprobe from your client.",
     themeScheme = "Sixteen materials for the same design, and a custom one. The tile is the preview.",
@@ -2346,6 +2391,11 @@ A.optionDesc = {
     plusDanger = "Low health is a bracket and a pulse, never colour alone.",
     plusExecute = "Lights the lowest fifth of your target's health bar: execute range.",
     plusRankStud = "The plate's diamond turns gold for elites, silver for rares, red for bosses, and glows.",
+    nameplateSkin = "Blizzard's nameplates wear your unit plate, smaller. Blizzard still places them and keeps their debuffs, cast bar and clicks.",
+    nameplateWidth = "As a share of Blizzard's own bar, never past the nameplate's edges. Height follows: the painting keeps its shape.",
+    nameplateFriendly = "Guards and friendly players get the plate too.",
+    nameplateFill = "Colour in the channel tells friend from foe at full health.",
+    nameplateCast = "A thicker cast bar of ours under the plate, with the spell's name; or Blizzard's own.",
     borders = "One-pixel outlines on panels and slots.",
     plusPixelSnap = "Round every plate edge to a whole screen pixel.",
     opacity = "Lower lets the world through.",
@@ -2359,7 +2409,7 @@ A.optionDesc = {
     plateSkin = "Inlay: the health and mana are your painting.",
     plateMantleCast = "The cast as light in the painting's seam, or a plank above the name.",
     mapSkin = "Oak shelf: the map stands on your oak shelf, its name and clock inside it. Base: the map standing on your panel. Card: Blizzard's map in a plain card.",
-    windowSkin = "Flat, oak foot: a flat window, your oak branch along its foot. Painted: your options panel is this window.",
+    windowSkin = "Flat, oak foot: a flat window, your oak branch along its foot. Flat, slate foot: your slate plank along its foot. Painted: your options panel is this window.",
     trackerStyle = "Tidy: no header boxes, one soft backing. Bare: no backing.",
     chatStyle = "Tidy: the input shows only while you type. Bare: no backing.",
     plateSmallSkin = "Tile: target of target, focus, its targets and pet wear the raid tile. Inlay: the plate painting (0.52).",
@@ -2402,7 +2452,7 @@ A.optionDesc = {
     compassPreset = "Writes the eight group sizes as a starting point. The sizes stay yours afterwards.",
     compassAutoSpread = "Big groups push the side arms out. Off keeps the width and caps the sizes.",
     actionCamera = "Over-the-shoulder action camera. Changes the game camera; off by default.",
-    keyboardSkin = "Inlay: the buttons sit in your painted bar. Edge: they float over it. Footer: the 0.52 rail. Bare, slabs, or Blizzard's frame.",
+    keyboardSkin = "Painted: the buttons stand on your painted bar. Slate plank: they stand over your slate plank, the XP bar in its ledge. Or Blizzard's frame.",
     keyboardCentre = "Centre the keyboard bar cluster on the screen.",
     keyboardSlotSkin = "The painted tile or Blizzard's frame on every action slot, bag slot and menu button.",
     keyboardHotkeyAbbrev = "S-1 instead of Shift-1.",

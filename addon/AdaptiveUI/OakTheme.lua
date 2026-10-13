@@ -40,6 +40,24 @@ local _, A = ...
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 A.oakAsPaintedScheme = "oakborn"
 A.oakHueRef = 0.6
 A.oakHueChroma = 1.8
@@ -58,35 +76,60 @@ function A:OakAsPainted()
 end
 
 
+
 function A:IsOakWood(name)
-    return name ~= nil and self.oakWood ~= nil and self.oakWood[name] ~= nil
+    if name == nil then return false end
+    if self.paintedTone and self.paintedTone[name] then return self.lookArtFor == "oakborn" end
+    return self.oakWood ~= nil and self.oakWood[name] ~= nil
+end
+
+
+
+function A:OakPlateCast()
+    local wood = self.oakWood
+    local plate = self.LookName and self:LookName(self.PlateFile and self:PlateFile() or "plate02-plain")
+    return (plate and wood[plate]) or wood["oak-plate-plain"]
 end
 
 
 function A:OakGain(name)
-    local w = self.oakWood and self.oakWood[name]
-    if not w or self:OakAsPainted() then return 1, 1, 1 end
-    local s = self:GlazeStrength() / self.oakHueRef
+    local tone = self.paintedTone and self.paintedTone[name]
+
+    local w = tone and { 1, 1, 1 } or (self.oakWood and self.oakWood[name])
+    if not w then return 1, 1, 1 end
+
+
+
+
+    local asPainted = self:OakAsPainted()
+    if asPainted and not tone then return 1, 1, 1 end
+    local s = asPainted and 1 or self:GlazeStrength() / self.oakHueRef
     if s <= 0 then return 1, 1, 1 end
     local Lw = luma(w[1], w[2], w[3])
     if Lw <= 1e-4 then return 1, 1, 1 end
-    local dw = { w[1] / Lw - 1, w[2] / Lw - 1, w[3] / Lw - 1 }
+
+    local p = self:OakPlateCast() or w
+    local Lp = math.max(1e-4, luma(p[1], p[2], p[3]))
+    local dw = { p[1] / Lp - 1, p[2] / Lp - 1, p[3] / Lp - 1 }
     local cw = norm(dw)
-    local r, g, b = self:Color("accent")
-    local La = luma(r, g, b)
-    local dh = { 0, 0, 0 }
-    if La > 1e-4 then dh = { r / La - 1, g / La - 1, b / La - 1 } end
-    local ch = norm(dh)
-    local sat = math.min(1, ch / self.oakHueC0)
+    local sat, dh, ch = 0, { 0, 0, 0 }, 0
+    if not asPainted then
+        local r, g, b = self:Color("accent")
+        local La = luma(r, g, b)
+        if La > 1e-4 then dh = { r / La - 1, g / La - 1, b / La - 1 } end
+        ch = norm(dh)
+        sat = math.min(1, ch / self.oakHueC0)
+    end
     local dir = { 0, 0, 0 }
     for i = 1, 3 do
         dir[i] = (ch > 1e-6 and sat * dh[i] / ch or 0) + (cw > 1e-6 and (1 - sat) * dw[i] / cw or 0)
     end
     local cd = norm(dir)
     if cd <= 1e-6 then return 1, 1, 1 end
+    local k = asPainted and 1 or self.oakHueChroma
     local f = {}
     for i = 1, 3 do
-        local t = Lw * (1 + dir[i] * cw * self.oakHueChroma / cd)
+        local t = Lw * (1 + dir[i] * cw * k / cd)
         local gain = w[i] > 1e-4 and t / w[i] or 1
         gain = 1 + (gain - 1) * s
         f[i] = math.max(0, math.min(self.oakGainMax, gain))

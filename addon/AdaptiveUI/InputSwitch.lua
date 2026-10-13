@@ -60,6 +60,23 @@ local _, A = ...
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A.inputSwitchMacro = { pad = "/console InputDeviceInterfaceStyle 1", kb = "/console InputDeviceInterfaceStyle 0" }
+
 local CVAR = "InputDeviceInterfaceStyle"
 local OFFER_TIMEOUT, GRACE = 25, 1.5
 local DECLINE_COOLDOWN, SWITCH_COOLDOWN = 600, 60
@@ -277,6 +294,12 @@ function A:ConsiderInputOffer(direction, why)
 
     if direction == "pad" and style ~= false then return false end
     if direction == "kb" and style ~= true then return false end
+
+
+    if direction == "kb" and type(GetCurrentKeyBoardFocus) == "function" then
+        local okFocus, focus = pcall(GetCurrentKeyBoardFocus)
+        if okFocus and focus ~= nil then return false end
+    end
     if self:InputStyleWritable() == "absent" then return false end
     local memory = self:InputOfferMemory()
     if memory[direction .. "NeverAsk"] then return false end
@@ -292,6 +315,7 @@ end
 function A:TickInputSwitch(elapsed)
     IS.clock = IS.clock + (tonumber(elapsed) or 0)
     local now = IS.clock
+    if IS.verifyAt and now >= IS.verifyAt then self:VerifyInputSwitch() end
 
     if IS.loginCheckAt and now >= IS.loginCheckAt and self.db then
         local memory = self:InputOfferMemory()
@@ -363,6 +387,27 @@ function A:CreateInputOffer()
     ui.decline = K.uiButton(frame, "", 142, -(H - 44), 118, 30, function() A:DeclineInputOffer() end)
     ui.never = K.uiButton(frame, "", 266, -(H - 44), 156, 30, function() A:NeverInputOffer() end)
     for _, bt in ipairs({ ui.accept, ui.decline, ui.never }) do bt.label:SetJustifyH("CENTER") end
+
+
+
+
+
+
+
+    local okSecure, switch = pcall(CreateFrame, "Button", "AdaptiveUIInputSwitch", UIParent,
+        "SecureActionButtonTemplate, SecureHandlerStateTemplate")
+    if okSecure and switch then
+        pcall(switch.SetFrameStrata, switch, "FULLSCREEN_DIALOG")
+        pcall(switch.RegisterForClicks, switch, "AnyDown")
+        switch:SetAttribute("type", "macro")
+        switch:SetAttribute("_onstate-combat", [[ if newstate == "1" then self:ClearBindings() self:Hide() end ]])
+        pcall(RegisterStateDriver, switch, "combat", "[combat] 1; 0")
+        switch:HookScript("PostClick", function() A:InputSwitchPressed() end)
+        switch:HookScript("OnEnter", function() A:HoverTint(ui.accept.bg, true) end)
+        switch:HookScript("OnLeave", function() A:HoverTint(ui.accept.bg, false) end)
+        switch:Hide()
+        ui.switch = switch
+    end
     self:AttachSettingsNavigation(frame, function()
         if IS.state == "offer" then IS.state = "idle" end
     end)
@@ -398,7 +443,9 @@ function A:InputOfferButton(button)
     elseif button == "PAD1" then
         local nav = self.gamepadNav and self.gamepadNav[ui.frame]
         local focused = nav and nav.current
-        if focused and focused ~= ui.accept and type(focused.Click) == "function" then focused:Click()
+        if ui.armed and (not focused or focused == ui.accept) then
+            consumed = false
+        elseif focused and focused ~= ui.accept and type(focused.Click) == "function" then focused:Click()
         elseif focused == ui.accept or IS.direction == "pad" then self:AcceptInputOffer()
         else consumed = false end
     elseif IS.direction == "pad" then
@@ -414,7 +461,9 @@ end
 function A:InputOfferKey(key)
     local ui = self.inputOffer
     if not ui or self:IsCombat() then return end
-    if IS.state == "offer" and (key == "ENTER" or key == "NUMPADENTER") then
+    if IS.state == "offer" and (key == "ENTER" or key == "NUMPADENTER") and ui.armed then
+        propagate(ui.frame, true)
+    elseif IS.state == "offer" and (key == "ENTER" or key == "NUMPADENTER") then
         self:AcceptInputOffer(); propagate(ui.frame, false)
     elseif IS.state == "offer" and key == "ESCAPE" then
         self:DeclineInputOffer()
@@ -438,6 +487,11 @@ end
 A.inputOfferWords = {
     pad = { "Gamepad detected", "Press Esc > Options > Gamepad > Gamepad Mode to switch to the controller bars.",
         "OK", "Not now", "Don't ask again" },
+
+    padSwitch = { "Gamepad detected", "Switch to the controller compass? Press A or click Switch. You can switch back"
+        .. " any time.", "Switch", "Not now", "Don't ask again" },
+    kbSwitch = { "Keyboard and mouse in use", "Switch back to the keyboard bars? Click Switch. Edit Mode"
+        .. " goes back to Blizzard's default layout when you leave Gamepad Mode.", "Switch", "Not now", "Don't ask again" },
     kb = { "Keyboard and mouse in use", "Press Esc > Options > Gamepad and turn off Gamepad Mode for the keyboard"
         .. " bars. Edit Mode goes back to Blizzard's default layout when you leave Gamepad Mode.",
         "OK", "Not now", "Don't ask again" },
@@ -446,7 +500,9 @@ A.inputOfferWords = {
 function A:ShowInputOffer(direction)
     if self:IsCombat() then return end
     local ui = self:CreateInputOffer()
-    local words = self.inputOfferWords[direction] or self.inputOfferWords.pad
+    local armed = self:ArmInputSwitch(ui, direction)
+    local words = armed and self.inputOfferWords[direction .. "Switch"]
+        or self.inputOfferWords[direction] or self.inputOfferWords.pad
     ui.title:SetText(words[1]); ui.body:SetText(words[2])
 
 
@@ -465,7 +521,94 @@ end
 
 function A:HideInputOffer()
     IS.state = "idle"
-    if self.inputOffer then self.inputOffer.frame:Hide() end
+    if self.inputOffer then
+        self:DisarmInputSwitch(self.inputOffer)
+        self.inputOffer.frame:Hide()
+    end
+end
+
+
+
+
+
+function A:ArmInputSwitch(ui, direction)
+    local switch = ui and ui.switch
+    local macro = A.inputSwitchMacro[direction]
+
+    local info = (type(C_CVar) == "table" and C_CVar.GetCVarInfo) or _G.GetCVarInfo
+    local okInfo, value, _, _, _, locked, secure, readOnly = pcall(info, CVAR)
+    local closed = not okInfo or value == nil or locked == true or secure == true or readOnly == true
+    if closed or not switch or not macro or self:IsCombat() or not self:CanWrite("inputclick") then
+        self:DisarmInputSwitch(ui)
+        return false
+    end
+    local ok = pcall(function()
+        switch:SetAttribute("macrotext", macro)
+        self:PlaceInputSwitch(ui)
+        switch:Show()
+        ClearOverrideBindings(switch)
+        SetOverrideBindingClick(switch, true, "PAD1", "AdaptiveUIInputSwitch", "LeftButton")
+
+
+
+    end)
+    ui.armed = ok and direction or nil
+    IS.switchWant = nil
+    if ui.armed then IS.switchWant = direction == "pad" end
+    if not ok then self:DisarmInputSwitch(ui) end
+    return ui.armed ~= nil
+end
+
+
+
+function A:DisarmInputSwitch(ui)
+    if not ui then return end
+    ui.armed = nil
+    if ui.switch and not InCombatLockdown() then
+        pcall(ClearOverrideBindings, ui.switch)
+        pcall(ui.switch.Hide, ui.switch)
+    end
+end
+
+
+function A:PlaceInputSwitch(ui)
+    local switch, accept = ui.switch, ui.accept
+    local okRect, l, bottom, w, h = pcall(function() return accept:GetRect() end)
+    if not okRect then l = nil end
+    local s = (self:Number(accept.GetEffectiveScale, 1, accept) or 1) / (self:Number(UIParent.GetEffectiveScale, 1, UIParent) or 1)
+    if not (l and bottom and w and h) then
+        switch:ClearAllPoints(); switch:SetPoint("CENTER", UIParent, "CENTER", 0, 0); switch:SetSize(118, 30)
+        return
+    end
+    switch:ClearAllPoints()
+    switch:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", l * s, bottom * s)
+    switch:SetSize(w * s, h * s)
+end
+
+
+
+
+
+function A:InputSwitchPressed()
+    local want = IS.switchWant
+    if want == nil then return end
+    IS.switchWant = nil
+    IS.cooldown[want and "pad" or "kb"] = IS.clock + SWITCH_COOLDOWN
+    IS.verifyAt, IS.verifyWant = IS.clock + VERIFY_AFTER, want
+    IS.writes = (IS.writes or 0) + 1
+    self:HideInputOffer()
+end
+
+function A:VerifyInputSwitch()
+    local want = IS.verifyWant
+    IS.verifyAt, IS.verifyWant = nil, nil
+    local now = self:GamepadStyleOn()
+    if want == nil or now == nil then return end
+    if now == want then
+        self:Print(want and "Controller compass on." or "Keyboard bars on.")
+    else
+        self:Print("The switch did not take. Esc > Options > Gamepad (Alpha) > Enable Gamepad UI (Alpha) does it by hand.")
+    end
 end
 
 
