@@ -38,7 +38,7 @@ end
 function A:SavedFilePath()
     local realm = type(GetRealmName) == "function" and self:Text(GetRealmName, 1) or nil
     local name = self:Text(UnitName, 1, "player")
-    return string.format("World of Warcraft > _classic_beta_ > WTF > Account > (the folder named after your account) > %s > %s"
+    return string.format("World of Warcraft > _forever_ > WTF > Account > (the folder named after your account) > %s > %s"
         .. " > SavedVariables > AdaptiveUI.lua", realm or "(your realm)", name or "(this character)")
 end
 

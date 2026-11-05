@@ -100,7 +100,7 @@ A.elements = {
     { id = "plusParty", label = "Party plates", own = true, frames = plate("party"), look = "smallPlates", mover = "plusParty" },
     { id = "raid", label = "Raid frames", look = "raid" },
     { id = "damageStrip", label = "Damage strip", own = true, frames = function(self) return list(self.damageStrip) end },
-    { id = "compact", label = "Resource strip", own = true, frames = function(self) return list(self.compactHUD) end,
+    { id = "compact", label = "Resource tray", own = true, frames = function(self) return list(self.compactHUD) end,
       mover = "compact" },
     { id = "castPlayer", label = "Player cast bar", own = true, look = "castPlayer", mover = "castPlayer",
       frames = function(self) return list(self.castBars and self.castBars.player) end },

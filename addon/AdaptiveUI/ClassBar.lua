@@ -26,7 +26,7 @@ local _, A = ...
 
 
 
-A.classBar = { dot = 20, dotGap = 5, manaW = 130, manaH = 6, totem = 24, totemGap = 6, rowGap = 5,
+A.classBar = { dot = 20, dotGap = 5, manaW = 130, manaH = 6, swingH = 6, totem = 24, totemGap = 6, rowGap = 5,
     comboColour = { 0.86, 0.13, 0.10 }, shardItem = 6265 }
 
 local MAX_DOTS = 8
@@ -92,6 +92,39 @@ local function build(self)
     frame.shardIcon:SetSize(c.totem, c.totem)
     frame.shardIcon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     frame.shardCount = self:Label(frame.shards, self.tokens.type.body, 0, 0, 60, "LEFT")
+
+    frame.vital = {}
+    for _, kind in ipairs({ "health", "power" }) do
+        local bar = CreateFrame("StatusBar", nil, frame)
+        bar:SetSize(c.manaW, c.manaH)
+        bar:SetStatusBarTexture(self.artPath .. "meter.tga")
+        bar:SetMinMaxValues(0, 1)
+        bar:SetValue(0)
+        bar:EnableMouse(false)
+        local back = bar:CreateTexture(nil, "BACKGROUND")
+        back:SetAllPoints()
+        self:Tint(back, "well", "color")
+        local label = self:Label(frame, self.tokens.type.caption, 0, 0, 70, "RIGHT")
+        local value = self:Label(frame, self.tokens.type.caption, 0, 0, 48, "LEFT")
+        frame.vital[kind] = { bar = bar, label = label, value = value }
+    end
+
+    frame.swing = {}
+    for kind = 0, 2 do
+        local bar = CreateFrame("StatusBar", nil, frame)
+        bar:SetSize(c.manaW, c.swingH)
+        bar:SetStatusBarTexture(self.artPath .. "meter.tga")
+        bar:SetMinMaxValues(0, 1)
+        bar:SetValue(0)
+        bar:EnableMouse(false)
+        local back = bar:CreateTexture(nil, "BACKGROUND")
+        back:SetAllPoints()
+        self:Tint(back, "well", "color")
+        local label = self:Label(frame, self.tokens.type.caption, 0, 0, 70, "RIGHT")
+        label:SetText(A.swingNames[kind])
+        local time = self:Label(frame, self.tokens.type.caption, 0, 0, 40, "LEFT")
+        frame.swing[kind] = { bar = bar, label = label, time = time }
+    end
     return frame
 end
 
@@ -106,6 +139,9 @@ function A:ClassBarRows(identity)
     if class == "DRUID" and power ~= nil and power ~= "MANA" then rows.mana = true end
     if class == "SHAMAN" and type(GetTotemInfo) == "function" then rows.totems = true end
     if class == "WARLOCK" then rows.shards = true end
+    local swing = self:SwingRows()
+    if swing then rows.swing = swing end
+    if self:VitalsShown() then rows.vitals = true end
     return rows
 end
 
@@ -136,6 +172,7 @@ end
 
 local function lay(self, frame, rows)
     local c = A.classBar
+    local barH = self:TrayBarHeight()
     local y, width = 0, 0
     local function place(region, w, h)
         region:ClearAllPoints()
@@ -160,7 +197,7 @@ local function lay(self, frame, rows)
         frame.dots:Hide()
     end
     if rows.mana then
-        place(frame.mana, c.manaW, c.manaH)
+        place(frame.mana, c.manaW, barH)
         frame.manaLabel:ClearAllPoints()
         frame.manaLabel:SetPoint("RIGHT", frame.mana, "LEFT", -self.tokens.space.sm, 0)
         frame.mana:Show(); frame.manaLabel:Show()
@@ -191,6 +228,32 @@ local function lay(self, frame, rows)
     else
         frame.shards:Hide()
     end
+    for _, kind in ipairs({ "health", "power" }) do
+        local v = frame.vital[kind]
+        if rows.vitals then
+            place(v.bar, c.manaW, barH)
+            v.label:ClearAllPoints()
+            v.label:SetPoint("RIGHT", v.bar, "LEFT", -self.tokens.space.sm, 0)
+            v.value:ClearAllPoints()
+            v.value:SetPoint("LEFT", v.bar, "RIGHT", self.tokens.space.sm, 0)
+            v.bar:Show(); v.label:Show(); v.value:Show()
+        else
+            v.bar:Hide(); v.label:Hide(); v.value:Hide()
+        end
+    end
+    for kind = 0, 2 do
+        local s = frame.swing[kind]
+        if rows.swing and rows.swing[kind] then
+            place(s.bar, c.manaW, barH)
+            s.label:ClearAllPoints()
+            s.label:SetPoint("RIGHT", s.bar, "LEFT", -self.tokens.space.sm, 0)
+            s.time:ClearAllPoints()
+            s.time:SetPoint("LEFT", s.bar, "RIGHT", self.tokens.space.sm, 0)
+            s.bar:Show(); s.label:Show(); s.time:Show()
+        else
+            s.bar:Hide(); s.label:Hide(); s.time:Hide()
+        end
+    end
     frame:SetSize(math.max(1, width), math.max(1, y - c.rowGap))
     return y > 0
 end
@@ -202,7 +265,7 @@ local function fillDots(self, frame)
     local fillFile = self.artPath .. self:LookName("dot-fill") .. ".tga"
     local oak = fillFile:find("oak%-stud") ~= nil
     local r, g, b = 1, 1, 1
-    if not oak then r, g, b = unpack(A.classBar.comboColour) end
+    if not oak then r, g, b = self:TrayColor("trayColorCombo", A.classBar.comboColour) end
 
 
     if oak and self.OakStudFill then fillFile, r, g, b = self:OakStudFill() end
@@ -244,8 +307,7 @@ end
 
 local function fillMana(self, frame)
     local mana = Enum and Enum.PowerType and Enum.PowerType.Mana or 0
-    local colour = (PowerBarColor and PowerBarColor.MANA) or { r = 0.25, g = 0.45, b = 1 }
-    frame.mana:SetStatusBarColor(colour.r, colour.g, colour.b)
+    frame.mana:SetStatusBarColor(self:TrayColor("trayColorMana", { 0.25, 0.45, 1 }))
     if self.auditedSink then
         if pcall(sinkPower, frame.mana, "player", mana) then return end
     end
@@ -300,7 +362,12 @@ function A:SyncClassBar()
     frame:SetScale(unitScale)
     frame:ClearAllPoints()
     local ox, oy = self:MoverOffset("compact")
-    if self.plusActive and self.plus then
+    if self:TrayFree() then
+
+
+        local x, top = self:TrayFreeTop()
+        frame:SetPoint("TOP", UIParent, "BOTTOM", (x + ox) / unitScale, (top + oy) / unitScale)
+    elseif self.plusActive and self.plus then
 
 
         local below = self:PlusBelow() + self.tokens.space.sm
@@ -322,15 +389,19 @@ function A:UpdateCompactHUD(identity)
     local rows = self:ClassBarRows(identity)
     local key = (rows.dots and "d" or "") .. (rows.mana and "m" or "") .. (rows.totems and "t" or "")
         .. (rows.shards and "s" or "") .. (rows.dots and self:ClassBarDotCount() or "")
+        .. "h" .. self:TrayBarHeight() .. (rows.vitals and "v" or "") .. (rows.swing and ("w" .. (rows.swing[0] and 0 or "") .. (rows.swing[1] and 1 or "") .. (rows.swing[2] and 2 or "")) or "")
     if frame.layoutKey ~= key then
         frame.layoutKey = key
         frame.any = lay(self, frame, rows)
     end
+    frame.rows = rows
     if not frame.any then frame:Hide(); return end
     if rows.dots then fillDots(self, frame) end
     if rows.mana then fillMana(self, frame) end
     if rows.totems then fillTotems(self, frame) end
     if rows.shards then fillShards(self, frame) end
+    if rows.vitals then self:FillVitals(frame) end
+    if rows.swing then self:FillSwing(frame) end
     frame.rows = rows
     frame:Show()
 end

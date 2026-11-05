@@ -5,7 +5,7 @@ offline test suite; the list below is what only the live client can confirm.
 
 ## Player-facing
 
-This is a beta on a beta client. Things I have tested a lot, and things I have not:
+This is a beta of the addon on the live WoW Forever client. Things I have tested a lot, and things I have not:
 
 **Not yet confirmed in the live game**
 - The painted minimap shelf and Settings window at real size, and how the map clears the quest tracker at other

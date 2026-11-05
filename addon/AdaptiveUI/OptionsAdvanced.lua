@@ -26,6 +26,7 @@ A.advancedSections = {
         { "general", "All plates" }, { "player", "Player" }, { "target", "Target" }, { "tot", "Target of target" },
         { "focus", "Focus" }, { "pet", "Pet" }, { "party", "Party" }, { "raid", "Raid frames" },
         { "nameplates", "Nameplates" } } },
+    { key = "tray", label = "Resource tray", tabs = { { "bars", "Bars" }, { "colours", "Colours" } } },
     { key = "casts", label = "Cast bars", tabs = {
         { "player", "Player" }, { "target", "Target" }, { "focus", "Focus" }, { "look", "Look" } } },
     { key = "actionbars", label = "Action bars", tabs = {
@@ -49,7 +50,7 @@ A.advancedSections = {
 A.advancedGroupHome = {
     theme = { "look", "scheme" }, general = { "look", "surfaces" },
     plus = { "units", "general" }, plustext = { "units", "general" }, pluscolor = { "units", "general" },
-    gauges = { "units", "general" }, plusparty = { "units", "party" }, damage = { "units", "player" },
+    gauges = { "units", "general" }, plusparty = { "units", "party" }, damage = { "units", "player" }, swing = { "tray", "bars" }, traycolor = { "tray", "colours" },
     nameplates = { "units", "nameplates" },
     forms = { "actionbars", "forms" },
     casts = { "casts", "look" },
@@ -71,7 +72,7 @@ put("look", "art", "artRecolour", "artMaterial", "artGlaze")
 put("look", "surfaces", "themeShadow", "themeBezel", "themeTextShadow", "unitVeil", "borders", "opacity",
     "elevBase", "elevPanel", "elevRaised", "accentRule", "style")
 put("look", "text", "textScale", "themeHeadingFont", "motionLevel")
-put("units", "general", "barEffect", "flatBars", "plusBarTexture", "gaugeTicks", "plusPixelSnap", "plusShowPvp",
+put("units", "general", "unitTextScale", "barEffect", "flatBars", "plusBarTexture", "gaugeTicks", "plusPixelSnap", "plusShowPvp",
     "plateFillStyle", "oakPlate", "plateSmallSkin", "scale")
 put("units", "player", "plusPlayerOn", "plusColorPlayer", "plusPowerText")
 put("units", "target", "plusTargetOn", "plusColorTarget", "plusTargetAuras", "plusMirror", "plusExecute")
@@ -85,7 +86,7 @@ put("casts", "target", "castTargetMode", "castTargetAnchor")
 put("casts", "focus", "castFocusMode")
 put("casts", "look", "plateMantleCast", "castRestrictedStrip", "casts")
 put("actionbars", "bar", "keyboardSkin", "keyboardBackdrop", "keyboardCentre", "keyboardLift")
-put("actionbars", "buttons", "keyboardSlotSkin", "keyboardSlotInset", "keyboardHotkeyAbbrev",
+put("actionbars", "buttons", "actionTextScale", "keyboardSlotSkin", "keyboardSlotInset", "keyboardHotkeyAbbrev",
     "keyboardEmptyHotkey", "emptyRecede", "iconCrop")
 put("actionbars", "menu", "keyboardMicroRow", "keyboardMicroSkin", "keyboardMicroScale")
 put("actionbars", "xp", "xpLane", "keyboardStatusLane")
@@ -124,7 +125,7 @@ local function alsoOn(key, ...)
 end
 
 alsoOn("plateSmallSkin", "units/tot", "units/focus", "units/pet")
-alsoOn("plusSmallWidth", "units/tot", "units/focus", "units/pet", "units/party")
+alsoOn("plusSmallWidth", "units/tot", "units/focus", "units/pet")
 
 alsoOn("plusWidth", "units/player", "units/target")
 alsoOn("plusDanger", "units/player", "units/target")

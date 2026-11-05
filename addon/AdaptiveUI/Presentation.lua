@@ -1173,7 +1173,10 @@ function A:StyleNativeModule(key, state)
 
 
 
-                            font(self, state, region, self:Type("caption"), false, false)
+
+
+                            font(self, state, region, self:PixelSize("caption", 1, self:ActionFontScale())
+                                / ((self.db and tonumber(self.db.textScale)) or 1), false, false)
                         end
                     end
                 end)
@@ -1352,6 +1355,12 @@ function A:StyleNativeModule(key, state)
 
 
                 self.NativeStripOwn(self, state, top)
+            end
+
+
+            local zoneButton = MinimapCluster.ZoneTextButton
+            if not top and map and zoneButton then
+                self.NativeStrip(self, state, zoneButton.StateTexture, zoneButton.AddTexture)
             end
             local tracking = MinimapCluster.Tracking
             if tracking then self.NativeStrip(self, state, tracking.Background) end

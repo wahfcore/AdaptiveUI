@@ -136,7 +136,7 @@ A.plusNameRow, A.plusCompactRow = NAME_ROW, COMPACT_ROW
 
 
 function A:PlusTypeLift()
-    local lift = self:TypeLift(self.UnitScale and self:UnitScale() or 1) * self:TextScale()
+    local lift = self:TypeLift(self.UnitScale and self:UnitScale() or 1) * self:TextScale() * self:UnitFontScale()
     if lift ~= lift or lift < 1 then return 1 end
     return math.min(2, lift)
 end
@@ -153,8 +153,8 @@ function A:FitPlateName(plate, compact, text)
 
 
     self:SetFittedText(plate.name, text,
-        self:PixelSize(compact and "body" or "hero", scale),
-        self:PixelSize(plate.isParty and "caption" or "body", scale), not compact)
+        self:UnitPixelSize(compact and "body" or "hero", scale),
+        self:UnitPixelSize(plate.isParty and "caption" or "body", scale), not compact)
 end
 
 
@@ -399,12 +399,19 @@ function A:PartySize()
     return A.partySizes[v] and v or "tall"
 end
 
+
+function A:PlusPartyWidth()
+    local w = (self.db and self.optionIndex) and tonumber(self:GetOption("plusPartyWidth")) or 216
+    return self:PlusSnap(math.ceil(w * self:PlusTypeLift()))
+end
+
 function A:PartyGeometry()
     local size = self:PartySize()
     local art = self:PlateArt()
-    local sw = self:PlusPlateWidth(true)
+    local sw = self:PlusPartyWidth()
     local px = self:PlatePixel()
-    local fullArt = self:MantleGeometry(true).total
+
+    local fullArt = math.max(10, self:PlusSnap(sw / art.ratio))
 
 
     local air = math.max(self:PlusSnap(2), px)
@@ -419,7 +426,7 @@ function A:PartyGeometry()
         local gap = self:PlusGaugeGap()
         local row = (fullBlock / 2 - (PARTY_ROWS - 1) * air) / PARTY_ROWS
 
-        row = self:PlusSnap(math.max(row, self:PixelSize("body", self:UnitScale()) + 2 * px))
+        row = self:PlusSnap(math.max(row, self:UnitPixelSize("body", self:UnitScale()) + 2 * px))
         local numW = self:PlusNumberSlot(true)
         local nameW = self:PlusSnap(sw * A.partyNameShare)
 
@@ -1591,7 +1598,7 @@ local function newPlate(self, name, height, width, parent, compact)
 
 
 
-    self:SetPixelFont(plate.name, compact and "body" or "hero", self:UnitScale(), not compact)
+    self:SetUnitPixelFont(plate.name, compact and "body" or "hero", self:UnitScale(), not compact)
     plate.name:SetPoint("TOPLEFT", plate, "TOPLEFT", sp.sm, -sp.sm)
     plate.name:SetWidth((width or PLAYER_W_FALLBACK) - 64)
     plate.name:SetJustifyH("LEFT")
@@ -1599,7 +1606,7 @@ local function newPlate(self, name, height, width, parent, compact)
     self:Tint(plate.name, "text", "text")
 
     plate.level = plate:CreateFontString(nil, "OVERLAY")
-    self:SetPixelFont(plate.level, compact and "caption" or "body", self:UnitScale(), false)
+    self:SetUnitPixelFont(plate.level, compact and "caption" or "body", self:UnitScale(), false)
     plate.level:SetPoint("TOPRIGHT", plate, "TOPRIGHT", -sp.sm, -sp.sm)
     plate.level:SetWidth(compact and 18 or 22)
     plate.level:SetJustifyH("CENTER")
@@ -2864,7 +2871,7 @@ function A:PlusNameFloor(compact)
 
 
 
-    local size = self:PixelSize("body", self:UnitScale())
+    local size = self:UnitPixelSize("body", self:UnitScale())
     return math.ceil(size * (0.55 * (compact and NAME_FLOOR_CHARS_SMALL or NAME_FLOOR_CHARS) + 0.75))
 end
 
@@ -2995,8 +3002,8 @@ function A:LayoutPlus()
 
 
         local floatFlags = self:PlusFloatType()
-        self:SetPixelFont(plate.name, compact and "body" or "hero", uscale, not compact, floatFlags)
-        self:SetPixelFont(plate.level, compact and "caption" or "body", uscale, false, floatFlags)
+        self:SetUnitPixelFont(plate.name, compact and "body" or "hero", uscale, not compact, floatFlags)
+        self:SetUnitPixelFont(plate.level, compact and "caption" or "body", uscale, false, floatFlags)
         local levelW = math.max(compact and 18 or 22,
             math.ceil((compact and 18 or 22) * self:PlusTypeLift()))
         local slot = inHeader and numberSlot(self, compact) or 0
@@ -3303,7 +3310,7 @@ function A:LayoutPlus()
 
 
 
-        self:SetPixelNumberFont(plate.health.text,
+        self:SetUnitPixelNumberFont(plate.health.text,
             (inHeader and not compact) and "value" or "caption", uscale,
 
 
@@ -3378,7 +3385,7 @@ function A:LayoutPlus()
         if not pg.float then
 
 
-            self:SetPixelNumberFont(member.health.text, "caption", uscale, self:PlusFloatType())
+            self:SetUnitPixelNumberFont(member.health.text, "caption", uscale, self:PlusFloatType())
             member.name:ClearAllPoints()
             member.name:SetPoint("RIGHT", member, "LEFT", -pg.gap, 0)
             member.name:SetWidth(pg.nameW); member.name:SetHeight(rowH)
@@ -3388,7 +3395,7 @@ function A:LayoutPlus()
             member.health.text:SetWidth(pg.numW); member.health.text:SetHeight(rowH)
             member.health.text:SetJustifyH("RIGHT")
         else
-            self:SetPixelNumberFont(member.health.text, "caption", uscale,
+            self:SetUnitPixelNumberFont(member.health.text, "caption", uscale,
                 inHeader and self:PlusFloatType() or nil)
 
 
@@ -4585,6 +4592,10 @@ local function abbreviator(self)
                 { breakpoint = 1e9, abbreviation = "B", significandDivisor = 1e8, fractionDivisor = 10, abbreviationIsGlobal = false },
                 { breakpoint = 1e6, abbreviation = "M", significandDivisor = 1e5, fractionDivisor = 10, abbreviationIsGlobal = false },
                 { breakpoint = 1e3, abbreviation = "k", significandDivisor = 1e2, fractionDivisor = 10, abbreviationIsGlobal = false },
+
+
+
+                { breakpoint = 1, abbreviation = "", significandDivisor = 1, fractionDivisor = 1, abbreviationIsGlobal = false },
             })
             sinkState.config = ok and cfg or false
         end
@@ -4710,7 +4721,7 @@ function A:PlateBadge(plate, text, r, g, b)
         badge = plate:CreateFontString(nil, "OVERLAY")
         plate.flagBadge = badge
     end
-    self:SetPixelFont(badge, "caption", self:UnitScale(), false)
+    self:SetUnitPixelFont(badge, "caption", self:UnitScale(), false)
     local lead = plate.leadSide or "LEFT"
     badge:ClearAllPoints()
     badge:SetPoint(lead == "LEFT" and "RIGHT" or "LEFT", plate.level, lead, lead == "LEFT" and -4 or 4, 0)
@@ -5172,18 +5183,18 @@ function A:CreateDamageStrip()
     strip.surface = {}
     self:BlockSurface(strip, strip.surface, "s", 0.12)
     strip.value = strip:CreateFontString(nil, "OVERLAY")
-    self:SetPixelNumberFont(strip.value, "title", self:UnitScale())
+    self:SetUnitPixelNumberFont(strip.value, "title", self:UnitScale())
     strip.value:SetJustifyH("LEFT")
     self:Tint(strip.value, "text", "text")
     strip.unit = strip:CreateFontString(nil, "OVERLAY")
-    self:SetPixelFont(strip.unit, "caption", self:UnitScale(), false)
+    self:SetUnitPixelFont(strip.unit, "caption", self:UnitScale(), false)
     strip.unit:SetJustifyH("LEFT")
     self:Tint(strip.unit, "muted", "text")
     strip.detail = strip:CreateFontString(nil, "OVERLAY")
 
 
 
-    self:SetPixelFont(strip.detail, "caption", self:UnitScale(), false)
+    self:SetUnitPixelFont(strip.detail, "caption", self:UnitScale(), false)
     strip.detail:SetJustifyH("RIGHT")
     self:Tint(strip.detail, "muted", "text")
     strip:Hide()
@@ -5224,9 +5235,9 @@ function A:ApplyDamageStrip()
 
     local sscale = self:Number(strip.GetScale, 1, strip) or 1
     local footFlags = barSkin and self:PlusFloatType() or nil
-    self:SetPixelNumberFont(strip.value, "title", sscale, footFlags)
-    self:SetPixelFont(strip.unit, "caption", sscale, false, footFlags)
-    self:SetPixelFont(strip.detail, "caption", sscale, false, footFlags)
+    self:SetUnitPixelNumberFont(strip.value, "title", sscale, footFlags)
+    self:SetUnitPixelFont(strip.unit, "caption", sscale, false, footFlags)
+    self:SetUnitPixelFont(strip.detail, "caption", sscale, false, footFlags)
 
     local spx = math.max(0.34, math.min(4, self:PhysicalPixel(UIParent) / sscale))
     self:LayoutBlockSurface(strip, strip.surface, "s",

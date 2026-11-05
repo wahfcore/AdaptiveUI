@@ -207,7 +207,7 @@ A.moverList = {
       anchored = function(self) return self:CastAnchored("target") end },
     { id = "castFocus", key = "pos.castFocus", label = "Focus cast bar (custom)",
       frame = function(self) return self.castBars and self.castBars.focus end },
-    { id = "compact", key = "pos.compact", label = "Resource strip",
+    { id = "compact", key = "pos.compact", label = "Resource tray",
       frame = function(self) return self.compactHUD end },
 
 
@@ -333,6 +333,15 @@ end
 
 local function plateBase(self, id, m)
     if id:find("^info") then return self:InfoBase(id, m) end
+    if id == "compact" then
+
+
+        if not self:TrayFree() then return nil end
+        local x, top = self:TrayFreeTop(m)
+        local f = self.compactHUD
+        local h = f and self:Number(f.GetHeight, 1, f) or 0
+        return x, top - h * m.unitScale * self:MoverScale("compact") / 2
+    end
     if id:find("^cast") then return self:CastBase(id, m) end
     return self:PlusBase(id, m)
 end
@@ -385,10 +394,14 @@ function A:ClampMover(id, ox, oy, m)
     local frame = entry and entry.frame(self)
     local bx, by = plateBase(self, id, m)
     if not bx or not frame then
+        if id == "compact" then
+            return math.max(-m.width, math.min(m.width, ox)), math.max(-m.height, math.min(m.height, oy))
+        end
         return math.max(-400, math.min(400, ox)), math.max(-400, math.min(400, oy))
     end
     local margin = self.tokens.margin
     local scale = (id:find("^info") or id:find("^cast")) and 1 or m.unitScale
+    if id == "compact" then scale = m.unitScale * self:MoverScale("compact") end
     local halfW = (self:Number(frame.GetWidth, 1, frame) or 232) * scale / 2
     local halfH = (self:Number(frame.GetHeight, 1, frame) or 54) * scale / 2
     local minX, maxX = -(m.width / 2 - margin - halfW) - bx, (m.width / 2 - margin - halfW) - bx

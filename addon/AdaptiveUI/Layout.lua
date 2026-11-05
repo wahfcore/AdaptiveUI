@@ -1931,6 +1931,23 @@ local MAP_HALF, MAP_TOP, MAP_DX, CARD_TOP = 99, 44, 10, 26
 
 
 
+
+
+
+
+function A:MapZoneAnchor()
+    if not MinimapCluster then return nil end
+    if MinimapCluster.BorderTop then return MinimapCluster.BorderTop, self.mapBase.zoneX, false end
+    local zone = MinimapCluster.ZoneTextButton
+    if not zone then return nil end
+    local inset = 8
+    if MinimapZoneText and type(MinimapZoneText.GetPoint) == "function" then
+        local ok, point, _, _, x = pcall(MinimapZoneText.GetPoint, MinimapZoneText, 1)
+        if ok and point == "LEFT" and type(x) == "number" and x >= 0 and x < 32 then inset = x end
+    end
+    return zone, inset, true
+end
+
 A.mapButtonSeats = { "Tracking", "GameTimeFrame", "InstanceDifficulty", "TimeManagerClockButton" }
 function A:MapButtonFrames()
     return {
@@ -2099,9 +2116,10 @@ function adapters.minimap(self, state, m)
 
 
         local g = self:MapPlaqueGeometry(2 * MAP_HALF, 2 * MAP_HALF)
-        if MinimapCluster.BorderTop then
+        local zoneAnchor, zoneInset, zoneOwn = self:MapZoneAnchor()
+        if zoneAnchor then
 
-            self:PlaceNative(state, MinimapCluster.BorderTop, "LEFT", map, "BOTTOMLEFT", g.textX - self.mapBase.zoneX, g.zoneY)
+            self:PlaceNative(state, zoneAnchor, "LEFT", map, "BOTTOMLEFT", g.textX - zoneInset, g.zoneY)
         end
 
 
@@ -2116,7 +2134,7 @@ function adapters.minimap(self, state, m)
         end
         local ok, err = pcall(function()
             local zone = MinimapCluster.ZoneTextButton
-            if zone then sizeOnce(zone, g.textW, g.zoneH) end
+            if zone then sizeOnce(zone, g.textW + (zoneOwn and zoneInset or 0), g.zoneH) end
             if MinimapZoneText then
                 sizeOnce(MinimapZoneText, g.textW - 4, g.zoneH)
 
@@ -2148,8 +2166,11 @@ function adapters.minimap(self, state, m)
             if MinimapZoneText then state.plaqueSized[MinimapZoneText] = nil end
         end
     end
-    if MinimapCluster.BorderTop and map then
-        self:PlaceNative(state, MinimapCluster.BorderTop, "BOTTOMLEFT", map, "TOPLEFT", 28, 4)
+    local zoneAnchor, zoneInset, zoneOwn = self:MapZoneAnchor()
+    if zoneAnchor and map then
+
+        self:PlaceNative(state, zoneAnchor, "BOTTOMLEFT", map, "TOPLEFT",
+            zoneOwn and (28 + self.mapBase.zoneX - zoneInset) or 28, 4)
     end
     return true
 end

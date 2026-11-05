@@ -1194,7 +1194,7 @@ local function actionButton(self, state, button, family, index, focused)
 
     if button.Count and type(self.NativeFont) == "function" then
         local ds = (self.LayoutMetrics and self:LayoutMetrics().dockScale) or 1
-        pcall(self.NativeFont, self, state, button.Count, self:PixelSize("caption", ds), false, true)
+        pcall(self.NativeFont, self, state, button.Count, self:PixelSize("caption", ds, self:ActionFontScale()), false, true)
     end
 
 

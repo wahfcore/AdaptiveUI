@@ -169,13 +169,32 @@ end
 
 
 
-function A:PixelSize(name, scale)
-    local size = self:Type(name) * self:TextScale() * self:TypeLift(scale)
+function A:PixelSize(name, scale, k)
+    local size = self:Type(name) * self:TextScale() * self:TypeLift(scale) * (tonumber(k) or 1)
 
 
 
     size = math.ceil(size * 2) / 2
     return math.max(8, math.min(64, size))
+end
+
+
+
+
+
+local function fontScale(self, key)
+    local v = (self.db and self.optionIndex) and tonumber(self:GetOption(key)) or 1
+    if type(v) ~= "number" or v ~= v then return 1 end
+    return math.max(0.8, math.min(1.5, v))
+end
+function A:UnitFontScale() return fontScale(self, "unitTextScale") end
+function A:ActionFontScale() return fontScale(self, "actionTextScale") end
+function A:UnitPixelSize(name, scale) return self:PixelSize(name, scale, self:UnitFontScale()) end
+function A:SetUnitPixelFont(region, name, scale, heading, flags)
+    self:SetThemedFont(region, self:UnitPixelSize(name, scale), heading, flags)
+end
+function A:SetUnitPixelNumberFont(region, name, scale, flags)
+    self:SetThemedFont(region, self:UnitPixelSize(name, scale), "numeric", flags)
 end
 
 

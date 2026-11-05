@@ -146,6 +146,7 @@ namespace AdaptiveUISetup
         {
             switch (folder.ToLowerInvariant())
             {
+                case "_forever_": return "WoW Forever";
                 case "_classic_beta_": return "Classic Forever beta";
                 case "_classic_": return "Classic";
                 case "_classic_era_": return "Classic Era";
@@ -170,13 +171,19 @@ namespace AdaptiveUISetup
             }
             found.Sort(delegate (Flavour a, Flavour b)
             {
-                // the Forever beta first
-                bool fa = a.Path.EndsWith("_classic_beta_", StringComparison.OrdinalIgnoreCase);
-                bool fb = b.Path.EndsWith("_classic_beta_", StringComparison.OrdinalIgnoreCase);
-                if (fa != fb) return fa ? -1 : 1;
+                // WoW Forever first, then the old Forever beta
+                int ra = Rank(a.Path), rb = Rank(b.Path);
+                if (ra != rb) return ra - rb;
                 return string.Compare(a.Path, b.Path, StringComparison.OrdinalIgnoreCase);
             });
             return found;
+        }
+
+        static int Rank(string path)
+        {
+            if (path.EndsWith("_forever_", StringComparison.OrdinalIgnoreCase)) return 0;
+            if (path.EndsWith("_classic_beta_", StringComparison.OrdinalIgnoreCase)) return 1;
+            return 2;
         }
 
         public static List<Flavour> FindAllFlavours()
@@ -414,7 +421,7 @@ namespace AdaptiveUISetup
         }
 
         // The command-line mode: used by the test, and by anyone who wants no window.
-        //   AdaptiveUI-Setup.exe --silent --target "<...>\_classic_beta_" [--action install|uninstall|restore|verify]
+        //   AdaptiveUI-Setup.exe --silent --target "<...>\_forever_" [--action install|uninstall|restore|verify]
         //   Exit codes: 0 ok, 1 failed, 2 needs administrator, 3 bad arguments.
         static int RunSilent(string action, string target, string listRoot, string logFile)
         {
@@ -497,7 +504,7 @@ namespace AdaptiveUISetup
             }
             else
             {
-                Say("Could not find World of Warcraft. Use Browse to pick the game folder (the one that contains _classic_beta_).");
+                Say("Could not find World of Warcraft. Use Browse to pick the game folder (the one that contains _forever_).");
                 Refresh_();
             }
         }
@@ -668,13 +675,13 @@ namespace AdaptiveUISetup
         {
             using (FolderBrowserDialog d = new FolderBrowserDialog())
             {
-                d.Description = "Pick your World of Warcraft folder (the one that contains _classic_beta_), or the _classic_beta_ folder itself.";
+                d.Description = "Pick your World of Warcraft folder (the one that contains _forever_), or the _forever_ folder itself.";
                 d.ShowNewFolderButton = false;
                 if (d.ShowDialog(this) != DialogResult.OK) return;
                 List<Flavour> found = Setup.FromPickedFolder(d.SelectedPath);
                 if (found.Count == 0)
                 {
-                    Say("That folder has no _classic_beta_ (or other classic) folder inside it. Pick the folder that contains it.");
+                    Say("That folder has no _forever_ (or other classic) folder inside it. Pick the folder that contains it.");
                     return;
                 }
                 foreach (Flavour f in found) AddFlavour(f);

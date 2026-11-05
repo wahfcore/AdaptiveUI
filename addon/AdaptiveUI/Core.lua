@@ -485,7 +485,7 @@ function A:TaintHelp()
     self:Print("  1. Type  /console taintLog 2  and press Enter.")
     self:Print("  2. /reload, then do what causes the error (a fight, a skill press).")
     self:Print("  3. Type  /console taintLog 0  to stop logging, then /reload or log out.")
-    self:Print("  4. The file is  World of Warcraft\\_classic_beta_\\Logs\\taint.log  -- send it with /aui status.")
+    self:Print("  4. The file is  World of Warcraft\\_forever_\\Logs\\taint.log  -- send it with /aui status.")
 end
 
 function A:Initialize()
@@ -586,6 +586,8 @@ for _, event in ipairs({
 
     "UPDATE_POSSESS_BAR", "UPDATE_TEMP_SHAPESHIFT_ACTIONBAR", "PET_BATTLE_OPENING_START", "PET_BATTLE_CLOSE",
     "ACTIVE_TALENT_GROUP_CHANGED", "GAMEPAD_STANCE_BAR_OVERRIDE_CHANGED",
+
+    "PLAYER_SWING", "PLAYER_SWING_RANGE_UPDATE", "UNIT_ATTACK_SPEED",
 }) do A:RegisterOptionalEvent(events, event) end
 events:SetScript("OnEvent", function(_, event, ...)
 
@@ -602,6 +604,11 @@ events:SetScript("OnEvent", function(_, event, ...)
     if A.OnNameplateEvent then
         local ok, mine = pcall(A.OnNameplateEvent, A, event, ...)
         if ok and mine then return end
+    end
+    if event == "PLAYER_SWING" or event == "PLAYER_SWING_RANGE_UPDATE" then
+
+        if A.OnSwingEvent then pcall(A.OnSwingEvent, A, event, ...) end
+        return
     end
     if event == "PLAYER_SPECIALIZATION_CHANGED" then
 
@@ -750,6 +757,7 @@ events:SetScript("OnUpdate", function(_, elapsed)
     if A.TickXpLane then A:TickXpLane(elapsed) end
     if A.TickInputSwitch then A:TickInputSwitch(elapsed) end
     if A.TickClassBar then A:TickClassBar(elapsed) end
+    if A.TickSwing then A:TickSwing(elapsed) end
     if A.TickMapShelf then A:TickMapShelf(elapsed) end
     if A.TickFormBars then A:TickFormBars(elapsed) end
     elapsedTime = elapsedTime + elapsed

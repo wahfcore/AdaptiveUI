@@ -216,6 +216,23 @@ A.options = {
 
     { key = "plusRankStud", group = "gauges", label = "Elite and boss diamond", type = "bool", default = true },
 
+    { key = "plusSwing", group = "swing", label = "Swing timer", type = "bool", default = true },
+
+
+    { key = "swingVitals", group = "swing", label = "Health and power with the swing timer", type = "bool", default = false },
+
+
+    { key = "trayAnchor", group = "swing", label = "Tray position", type = "enum", default = "plate",
+      values = choice("plate", "Follows the player plate", "free", "Anywhere on screen") },
+    { key = "trayBarHeight", group = "swing", label = "Bar thickness", type = "number", default = 6, min = 4, max = 14, step = 1, format = "%.0f px" },
+    { key = "trayColorHealth", group = "traycolor", label = "Health", type = "color", default = { 0.42, 0.80, 0.49, 1 } },
+    { key = "trayColorMana", group = "traycolor", label = "Mana", type = "color", default = { 0.25, 0.50, 1.00, 1 } },
+    { key = "trayColorRage", group = "traycolor", label = "Rage", type = "color", default = { 0.86, 0.22, 0.16, 1 } },
+    { key = "trayColorEnergy", group = "traycolor", label = "Energy", type = "color", default = { 1.00, 0.84, 0.26, 1 } },
+    { key = "trayColorFocus", group = "traycolor", label = "Focus", type = "color", default = { 1.00, 0.50, 0.25, 1 } },
+    { key = "trayColorCombo", group = "traycolor", label = "Combo points", type = "color", default = { 0.86, 0.13, 0.10, 1 } },
+    { key = "trayColorSwing", group = "traycolor", label = "Swing timer", type = "color", default = { 0.88, 0.76, 0.50, 1 } },
+
 
 
 
@@ -428,7 +445,7 @@ A.options = {
 
 
 
-    { key = "plusSmallWidth", group = "plus", label = "Focus / pet / party plate width", type = "number", default = 216, min = 140, max = 300, step = 4, format = "%.0f" },
+    { key = "plusSmallWidth", group = "plus", label = "Target of target / focus / pet plate width", type = "number", default = 216, min = 140, max = 300, step = 4, format = "%.0f" },
     { key = "plusWidth", group = "plus", label = "Plate width", type = "number", default = 288, min = 180, max = 360, step = 4, format = "%.0f" },
 
 
@@ -472,6 +489,8 @@ A.options = {
 
     { key = "plusPartySize", group = "plusparty", label = "Party plate size", type = "enum", default = "tall",
       values = choice("tall", "Half as tall", "narrow", "Half as wide", "small", "Half of each way", "full", "Full size") },
+
+    { key = "plusPartyWidth", group = "plusparty", label = "Party plate width", type = "number", default = 216, min = 140, max = 300, step = 4, format = "%.0f" },
     { key = "plusPartySpacing", group = "plusparty", label = "Spacing between plates", type = "number", default = 8, min = 4, max = 24, step = 4, format = "%.0f" },
     { key = "plusPartyBar", group = "plusparty", label = "Health bar height", type = "number", default = 8, min = 6, max = 20, step = 2, format = "%.0f" },
     { key = "plusPartyStatus", group = "plusparty", label = "Dead / offline styling", type = "bool", default = true },
@@ -494,6 +513,7 @@ A.options = {
     { key = "scale", group = "plus", label = "Unit frame scale", type = "number", default = 1, min = 0.7, max = 1.8, step = 0.1, format = "%.1f" },
     { key = "casts", group = "general", label = "Cast strips (legacy HUD)", type = "bool", default = true },
 
+    { key = "unitTextScale", group = "plustext", label = "Unit frame text size", type = "number", default = 1, min = 0.8, max = 1.5, step = 0.05, format = "%.0f%%", scale = 100 },
     { key = "plusNameMax", group = "plustext", label = "Name length (40 = full)", type = "number", default = 40, min = 8, max = 40, step = 2, format = "%.0f" },
 
 
@@ -601,7 +621,7 @@ A.options = {
     { key = "scale.castPlayer", tab = "movers", label = "Player cast bar size", type = "number", default = 1, min = 0.6, max = 1.6, step = 0.05, format = "%.2f" },
     { key = "scale.castTarget", tab = "movers", label = "Target cast bar size", type = "number", default = 1, min = 0.6, max = 1.6, step = 0.05, format = "%.2f" },
     { key = "scale.castFocus", tab = "movers", label = "Focus cast bar size", type = "number", default = 1, min = 0.6, max = 1.6, step = 0.05, format = "%.2f" },
-    { key = "scale.compact", tab = "movers", label = "Resource strip size", type = "number", default = 1, min = 0.6, max = 1.6, step = 0.05, format = "%.2f" },
+    { key = "scale.compact", tab = "movers", label = "Resource tray size", type = "number", default = 1, min = 0.6, max = 1.6, step = 0.05, format = "%.2f" },
     { key = "scale.infoBar", tab = "movers", label = "Info bar size", type = "number", default = 1, min = 0.6, max = 1.6, step = 0.05, format = "%.2f" },
     { key = "pos.objectives", tab = "movers", type = "offset", default = { 0, 0 } },
 
@@ -1070,6 +1090,7 @@ A.options = {
 
 
 
+    { key = "actionTextScale", group = "keyboard", label = "Action bar text size", type = "number", default = 1, min = 0.8, max = 1.5, step = 0.05, format = "%.0f%%", scale = 100 },
     { key = "keyboardHotkeyAbbrev", group = "keyboard", label = "Abbreviate keybind labels", type = "bool", default = true },
 
 
@@ -2114,6 +2135,8 @@ A.optionGroupSection = {
     gauges = { "combat", "Gauges and marks" },
     casts = { "combat", "Cast bars" },
     damage = { "combat", "Damage strip" },
+    swing = { "combat", "Resource tray" },
+    traycolor = { "combat", "Resource tray colours" },
     plusparty = { "combat", "Party and target-of-target" },
     actions = { "layout", "Action bars (controller)" },
     compass = { "layout", "Action bars (controller)" },
@@ -2296,6 +2319,8 @@ A.optionTags = {
     gauges = "trail heal ghost low health danger ticks marks",
     casts = "cast bar channel spell timer interrupt",
     damage = "dps damage meter strip recount",
+    swing = "resource tray swing timer auto attack health power mana rage energy",
+    traycolor = "resource tray colour color recolor health mana rage energy combo swing",
     plusparty = "party group raid tot target of target",
     actions = "action bar compass controller socket icon diamond",
     compass = "compass arm group bigger rail row preset hero d-pad face",
@@ -2334,6 +2359,12 @@ A.optionKeywords = {
     dpsStripOn = "damage dps meter",
     plusDanger = "low health warning danger",
     plusExecute = "execute range low health target twenty",
+    plusSwing = "swing timer auto attack melee weapon speed white hit",
+    swingVitals = "health mana rage energy power tray swing timer extra bars combat",
+    trayBarHeight = "thick thicker thin bar height size tray resource",
+    trayAnchor = "tray move unlock detach free anywhere anchor position independent",
+    unitTextScale = "font text size bigger smaller unit frame plate name number",
+    actionTextScale = "font text size bigger smaller action bar hotkey keybind count stack",
     plusRankStud = "elite boss rare diamond stud classification",
     nameplateSkin = "nameplates name plates enemy mob over head skin blizzard",
     formLabel = "form forms stance shapeshift cat bear moonkin bar page switch label flash",
@@ -2421,7 +2452,8 @@ A.optionDesc = {
     plateFillStyle = "The look's own: under AUI Oakborn the wood chips away to reveal your lost health in your colour, red under a fifth.",
     oakPlate = "Which oak plate your unit frames wear under AUI Oakborn.",
     plusWidth = "Height follows: the painting keeps its shape.",
-    plusSmallWidth = "The focus, pet and party plates.",
+    plusSmallWidth = "The target of target, focus and pet plates.",
+    plusPartyWidth = "The party plates; the small plates have their own width.",
     scale = "The whole unit frame cluster.",
     plusHealthFormat = "What the number beside the bar says.",
     plusHealthPos = "Where the health number sits.",
@@ -2433,6 +2465,12 @@ A.optionDesc = {
     plusColorPlayer = "Class colour, reaction colour, a health gradient or your own.",
     plusColor = "Used by any plate set to Custom colour.",
     dpsStripOn = "A small readout of your own damage under your plate.",
+    plusSwing = "A bar under your plate that fills until your next auto attack.",
+    swingVitals = "Health and your rage, energy or mana also shown in the swing timer's tray.",
+    trayBarHeight = "How thick the tray's bars are.",
+    trayAnchor = "Under the player plate, or free to move anywhere (Move & size > Resource tray).",
+    unitTextScale = "Names, levels and numbers on every unit plate.",
+    actionTextScale = "Keybinds, stack counts and the page number on the action bars.",
     dpsStripMetric = "Damage and DPS, or one of them.",
     dpsStripHold = "How long it stays after the fight.",
     castPlayerMode = "Native restyles Blizzard's bar. Custom is AdaptiveUI's own, movable.",

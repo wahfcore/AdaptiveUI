@@ -12,7 +12,7 @@ This is a beta. Things will be rough. Your job is to tell me where, in plain wor
 2. Run `AdaptiveUI-Setup.exe` from the release page. Windows will say "Windows protected your PC" because I haven't
    signed it yet: click More info, then Run anyway. It finds your game folder, backs up any older copy, and installs.
    (Rather not run an exe? Unzip `AdaptiveUI-<version>.zip` and copy the `AdaptiveUI` folder into
-   `World of Warcraft\_classic_beta_\Interface\AddOns\`, so the result is `...\AddOns\AdaptiveUI\AdaptiveUI.toc`.)
+   `World of Warcraft\_forever_\Interface\AddOns\`, so the result is `...\AddOns\AdaptiveUI\AdaptiveUI.toc`.)
 3. Start the game on the Classic beta, pick your character, and on the character screen click AddOns. Make sure AdaptiveUI is ticked
    and, if it says "out of date", tick "Load out of date AddOns".
 4. Log in. You should see one line in chat starting `AdaptiveUI` (two if a controller is plugged in).
@@ -95,10 +95,10 @@ selected. Press Ctrl+C, paste it into your message. It also tells you the exact 
 1. Take a screenshot (PrintScreen key, or the controller's share button). Send it.
 2. Type `/aui status` in chat. It prints about forty lines. Chat text cannot be copied, so take a screenshot of the chat, or, before
    you type it, turn on chat logging with `/chatlog`. The game then saves everything that appears in chat to
-   `World of Warcraft\_classic_beta_\Logs\WoWChatLog.txt`. Send me the last 60 lines of that file. Turn it off again with `/chatlog`.
+   `World of Warcraft\_forever_\Logs\WoWChatLog.txt`. Send me the last 60 lines of that file. Turn it off again with `/chatlog`.
 3. If I ask for more: type `/aui inspect`, wait a few seconds, then type `/reload`. That writes a detailed report to your saved
    settings. Send me the file
-   `World of Warcraft\_classic_beta_\WTF\Account\<YOUR ACCOUNT>\<Realm>\<Character>\SavedVariables\AdaptiveUI.lua`
+   `World of Warcraft\_forever_\WTF\Account\<YOUR ACCOUNT>\<Realm>\<Character>\SavedVariables\AdaptiveUI.lua`
    (the game only writes it when you `/reload` or log out). It contains your settings and character name and nothing else; do
    not edit it.
 

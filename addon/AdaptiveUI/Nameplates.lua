@@ -195,7 +195,15 @@ function A:NameplateHold(uf, on, level, cast)
     if level == nil then level = on end
     if cast == nil then cast = on end
     for _, region in ipairs(levelRegions(uf)) do setHeld(self, region, on and level) end
-    if type(uf) == "table" then setHeld(self, uf.CastBarsContainer, on and cast) end
+    if type(uf) == "table" then
+        setHeld(self, uf.CastBarsContainer, on and cast)
+
+
+
+
+        local pvp = C_PvP and type(C_PvP.IsPVPMap) == "function" and C_PvP.IsPVPMap() == true
+        setHeld(self, uf.ClassificationFrame, on and not pvp)
+    end
 end
 
 

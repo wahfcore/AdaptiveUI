@@ -997,7 +997,7 @@ function A:KeyboardType(px, host)
         local value = self:Number(host.GetEffectiveScale, 1, host)
         if type(value) == "number" and value > 0.05 and value < 20 then scale = value end
     end
-    local size = (tonumber(px) or 12) * self:TextScale() / scale
+    local size = (tonumber(px) or 12) * self:TextScale() * self:ActionFontScale() / scale
     size = math.ceil(size * 2) / 2
     return math.max(8, math.min(64, size))
 end
@@ -1113,7 +1113,7 @@ local function slotType(self, state, button, on, empty)
         if count then
 
 
-            kbFont(self, state, count, self:PixelSize("caption", 1), "OUTLINE")
+            kbFont(self, state, count, self:PixelSize("caption", 1, self:ActionFontScale()), "OUTLINE")
         end
         data.typed = true
     elseif data.typed then
@@ -1285,7 +1285,7 @@ local function pageBlock(self, state, on)
         return false
     end
     book(state, page).released = nil
-    if page.Text then kbFont(self, state, page.Text, self:PixelSize("caption", 1), "OUTLINE") end
+    if page.Text then kbFont(self, state, page.Text, self:PixelSize("caption", 1, self:ActionFontScale()), "OUTLINE") end
     return true
 end
 

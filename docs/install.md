@@ -7,11 +7,11 @@ Your settings live in the game's `WTF` folder and are never touched by installin
 
 Windows, typically: `C:\Program Files (x86)\World of Warcraft\`
 
-Inside it, each version of the game has its own folder. The one for the Forever beta is **`_classic_beta_`**. You may also
+Inside it, each version of the game has its own folder. The one for WoW Forever is **`_forever_`**. You may also
 see `_classic_era_`, `_classic_`, `_retail_` and others. Addons go in the flavour you actually play:
 
 ```
-World of Warcraft\_classic_beta_\Interface\AddOns\AdaptiveUI\AdaptiveUI.toc
+World of Warcraft\_forever_\Interface\AddOns\AdaptiveUI\AdaptiveUI.toc
 ```
 
 If you have no `Interface\AddOns` folder yet, create it. Check the folder name for your client: if Blizzard renames
@@ -65,14 +65,14 @@ would rather not click through it, use the zip (option 2) or CurseForge/Wago (op
 
 1. Download `AdaptiveUI-<version>.zip` from the release page.
 2. Unzip it. It contains one folder, `AdaptiveUI`.
-3. Copy that folder into `World of Warcraft\_classic_beta_\Interface\AddOns\`, so that
+3. Copy that folder into `World of Warcraft\_forever_\Interface\AddOns\`, so that
    `...\AddOns\AdaptiveUI\AdaptiveUI.toc` exists (not `...\AddOns\AdaptiveUI\AdaptiveUI\AdaptiveUI.toc`; the doubled
    folder is the most common mistake).
 4. Updating: close the game, move the old `AdaptiveUI` folder somewhere outside `AddOns` (that is your backup), and copy
    the new one in.
 
 ### macOS
-The steps are the same; the folder is usually `/Applications/World of Warcraft/_classic_beta_/Interface/AddOns/`
+The steps are the same; the folder is usually `/Applications/World of Warcraft/_forever_/Interface/AddOns/`
 (Finder: Go, Go to Folder, paste it). If macOS won't let you write there, drag the folder in with the usual admin
 prompt. The installer is Windows only. I have not been able to test on a Mac yet: if the path is different for you,
 please tell me.
@@ -105,8 +105,8 @@ app like any other addon. It updates itself, and there is no warning to click th
 ## Troubleshooting
 
 - **"AdaptiveUI" isn't in the addon list.** Almost always the doubled folder (see option 2 step 3) or the wrong flavour
-  folder (`_retail_` or `_classic_era_` instead of `_classic_beta_`).
-- **The installer says it can't find the game.** Press Browse and choose the folder that contains `_classic_beta_`.
+  folder (`_retail_` or `_classic_era_` instead of `_forever_`).
+- **The installer says it can't find the game.** Press Browse and choose the folder that contains `_forever_`.
 - **Windows says the file is blocked / Defender scans it for a long time.** The exe is 4 MB and contains the whole addon;
   a first scan can take a moment. If Defender quarantines it, that is a false positive on an unsigned program: use the
   zip and let me know.
