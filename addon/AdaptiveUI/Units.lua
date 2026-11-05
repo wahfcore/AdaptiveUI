@@ -136,7 +136,9 @@ A.plusNameRow, A.plusCompactRow = NAME_ROW, COMPACT_ROW
 
 
 function A:PlusTypeLift()
-    local lift = self:TypeLift(self.UnitScale and self:UnitScale() or 1) * self:TextScale() * self:UnitFontScale()
+
+
+    local lift = self:TypeLift(self.UnitScale and self:UnitScale() or 1) * self:TextScale()
     if lift ~= lift or lift < 1 then return 1 end
     return math.min(2, lift)
 end
@@ -426,7 +428,7 @@ function A:PartyGeometry()
         local gap = self:PlusGaugeGap()
         local row = (fullBlock / 2 - (PARTY_ROWS - 1) * air) / PARTY_ROWS
 
-        row = self:PlusSnap(math.max(row, self:UnitPixelSize("body", self:UnitScale()) + 2 * px))
+        row = self:PlusSnap(math.max(row, self:PixelSize("body", self:UnitScale()) + 2 * px))
         local numW = self:PlusNumberSlot(true)
         local nameW = self:PlusSnap(sw * A.partyNameShare)
 
@@ -2871,7 +2873,7 @@ function A:PlusNameFloor(compact)
 
 
 
-    local size = self:UnitPixelSize("body", self:UnitScale())
+    local size = self:PixelSize("body", self:UnitScale())
     return math.ceil(size * (0.55 * (compact and NAME_FLOOR_CHARS_SMALL or NAME_FLOOR_CHARS) + 0.75))
 end
 
