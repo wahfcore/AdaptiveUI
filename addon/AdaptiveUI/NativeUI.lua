@@ -1203,7 +1203,9 @@ local function actionButton(self, state, button, family, index, focused)
     if self:AuthoredSockets() or (state.decorations[button] and state.decorations[button].countPlinth) then
         local entries = state.decorations[button]
         if not entries then entries = {}; state.decorations[button] = entries end
-        countPlinth(self, entries, button, self:AuthoredSockets(), bound)
+
+        local onTile = self.KeyboardSlotOn and self:KeyboardSlotOn(button)
+        countPlinth(self, entries, button, self:AuthoredSockets() and not onTile, bound)
     end
 
 
@@ -1606,12 +1608,31 @@ function A:RestoreNativeModule(state)
 
 
             if self:FamilyGeometry(object, key) then properties[key] = nil
-            elseif pcall(restore) then properties[key] = nil else ok = false end
+            else
+                local done, err = pcall(restore)
+                if done then properties[key] = nil
+                else
+                    ok = false
+
+
+                    if not state.restoreError then
+                        local name = type(object) == "table" and type(object.GetName) == "function"
+                            and select(2, pcall(object.GetName, object)) or nil
+                        state.restoreError = (tostring(name or "?") .. "." .. tostring(key) .. ": "
+                            .. tostring(err)):gsub("%s+", " "):sub(1, 200)
+                    end
+                end
+            end
         end
         if next(properties) == nil then state.properties[object] = nil end
     end
     for object, record in pairs(state.changes) do
-        if pcall(record.restore) then state.changes[object] = nil else ok = false end
+        local done, err = pcall(record.restore)
+        if done then state.changes[object] = nil
+        else
+            ok = false
+            state.restoreError = state.restoreError or ("change: " .. tostring(err)):gsub("%s+", " "):sub(1, 200)
+        end
     end
     for _, entries in pairs(state.decorations) do
         for _, texture in pairs(entries) do
@@ -1643,7 +1664,8 @@ function A:RefreshNativeUI()
         local state = stateFor(self, key)
         if not self.auditedSink or not self.db.skins[key] or state.failed then
             local restored = self:RestoreNativeModule(state)
-            self:Note("skin " .. key, not restored and "restore rejected: reload required"
+            self:Note("skin " .. key, not restored and ("restore rejected: reload required ("
+                .. tostring(state.restoreError or "no detail") .. (state.lastError and ("; skin error: " .. state.lastError) or "") .. ")")
                 or (state.failed and ("rejected: native fallback until reload (" .. tostring(state.lastError or "no detail") .. ")")
                 or (not self.auditedSink and "unmatched build: native presentation" or "off")))
         else
@@ -1661,7 +1683,8 @@ function A:RefreshNativeUI()
                 state.lastError = tostring(err or "unknown"):gsub("%s+", " "):sub(1, 220)
                 local restored = self:RestoreNativeModule(state)
                 self:Note("skin " .. key, restored and ("rejected: native fallback until reload (" .. state.lastError .. ")")
-                    or "restore rejected: reload required")
+                    or ("restore rejected: reload required (" .. tostring(state.restoreError or "no detail")
+                        .. "; skin error: " .. state.lastError .. ")"))
             else
                 self:Note("skin " .. key, state.count > 0 and (state.count .. " cosmetic elements styled")
                     or "native frames unavailable or unsupported")

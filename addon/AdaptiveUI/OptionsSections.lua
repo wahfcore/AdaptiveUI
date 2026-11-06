@@ -311,8 +311,8 @@ end
 
 
 A.lookTiles = {
-    { value = "oakborn", title = "AUI Oakborn", sub = "The flagship: carved oak", art = "oak-plate-plain" },
-    { value = "dusk", title = "AUI Dusk", sub = "Obsidian stone", art = "plate02-plain" },
+    { value = "dusk", title = "AUI Dusk", sub = "Obsidian on slate", art = "plate02-plain" },
+    { value = "oakborn", title = "AUI Oakborn", sub = "Carved oak", art = "oak-plate-plain" },
     { value = "blizzard", title = "Blizzard", sub = "The game's own frames", art = nil },
 }
 function rowBuilders.look(page, option)

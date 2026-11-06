@@ -923,6 +923,8 @@ function A:StyleNativeModule(key, state)
                 fonts(self, state, timer, self:Type("caption"))
             end
         end
+
+        if self.StyleDamageMeter then self:StyleDamageMeter(state) end
     elseif key == "party" then
         for _, name in ipairs({ "PartyFrame", "CompactPartyFrame", "CompactRaidFrameContainer" }) do
             local root = _G[name]

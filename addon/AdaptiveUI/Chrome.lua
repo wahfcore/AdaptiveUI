@@ -60,6 +60,10 @@ end
 function A:MapSkinMode()
     local skin = opt(self, "mapSkin", "base")
     if skin == "shelf" and self:HasArt("oakMapMantle") then return "shelf" end
+
+
+    if skin == "slate" and self:HasArt("bar03") then return "slate" end
+    if skin == "slate" and self:HasArt("mapMin") then return "base" end
     if (skin == "shelf" or skin == "base") and self:HasArt("mapMin") then return "base" end
     return "card"
 end
@@ -72,14 +76,14 @@ end
 
 function A:MapOnPlaque()
     local mode = self:MapSkinMode()
-    return mode == "base" or mode == "shelf"
+    return mode == "base" or mode == "shelf" or mode == "slate"
 end
 
 
 
 function A:MapBaseLike(mode)
     mode = mode or self:MapSkinMode()
-    return mode == "base" or mode == "shelf"
+    return mode == "base" or mode == "shelf" or mode == "slate"
 end
 
 
@@ -249,13 +253,39 @@ A.mapMantle = { file = "oak-map-mantle", ratio = 1679 / 252, topU0 = 73 / 1679, 
 
                 black = { 0, 0, 0 }, scrimAlpha = 0.80, scrimSolid = 0.62, light = { 0.94, 0.91, 0.85 }, lightMuted = { 0.74, 0.72, 0.68 } }
 
+
+
+
+
+
+
+
+
+
+A.mapSlate = setmetatable({ file = "bar03", ratio = 1024 / 128, topU0 = 8 / 1024, topU1 = 1016 / 1024,
+    rimV = 0.072368, backPad = 0, drop = 4, scrimAlpha = 0.6 }, { __index = A.mapMantle })
+
+
+function A:MapMantleSpec()
+    if self:MapSkinMode() == "slate" then return self.mapSlate end
+    return self.mapMantle
+end
+
+function A:MapShelfLike(mode)
+    mode = mode or self:MapSkinMode()
+    return mode == "shelf" or mode == "slate"
+end
+
 function A:MapShelfGeometry(mapW, mapH)
-    local m = self.mapMantle
+    local m = self:MapMantleSpec()
     local d = m.backPad
 
     local w = (mapW + 2 * d) / (m.topU1 - m.topU0)
     local h = w / m.ratio
-    local overlap = h * m.rimV
+    local rim = h * m.rimV
+    local drop = m.drop or 0
+
+    local overlap = rim - drop
     local left = m.topU0 * w + d
     local zs = self:MapPlaqueTextSize() or m.zonePx
     local cs = self:MapPlaqueSubSize() or m.coordPx
@@ -270,9 +300,9 @@ function A:MapShelfGeometry(mapW, mapH)
     local rowY = m.pad + rowH / 2
     local textTop = m.pad + rowH
     local zoneFoot = m.pad + zoneH
-    return { plaque = true, base = true, shelf = true, mode = "shelf", w = w, h = h, overlap = overlap,
+    return { plaque = true, base = true, shelf = true, mode = self:MapSkinMode(), w = w, h = h, overlap = overlap,
              left = left, right = w - left - mapW, top = d, bottom = h - overlap, mapW = mapW, mapH = mapH,
-             backPad = d, lip = 0,
+             backPad = d, backFoot = rim + drop, lip = 0,
              zoneY = zoneY, zoneH = zoneH, coordY = rowY, coordH = coordH,
              clockY = rowY, clockH = clockH, clockR = mapW - m.pad,
              textX = m.pad, textW = mapW - 2 * m.pad - m.calRoom, coordW = mapW - 2 * m.pad,
@@ -282,7 +312,7 @@ function A:MapShelfGeometry(mapW, mapH)
 end
 
 function A:MapPlaqueGeometry(mapW, mapH)
-    if self:MapSkinMode() == "shelf" then return self:MapShelfGeometry(mapW, mapH) end
+    if self:MapShelfLike() then return self:MapShelfGeometry(mapW, mapH) end
     local b, art = self.mapBase, self.mapPlaqueArt
     local w = mapW + 2 * b.lip
     local h = w / art.ratio
@@ -335,7 +365,7 @@ end
 
 function A:MapPlaqueTextSize()
     local mode = self:MapSkinMode()
-    if mode == "shelf" then return clusterTextSize(self, self.mapMantle.zonePx) end
+    if self:MapShelfLike(mode) then return clusterTextSize(self, self:MapMantleSpec().zonePx) end
     if mode == "base" then return clusterTextSize(self, self.mapBase.zonePx) end
     return nil
 end
@@ -344,14 +374,14 @@ end
 
 function A:MapPlaqueSubSize()
     if not self:MapBaseLike() then return nil end
-    if self:MapSkinMode() == "shelf" then return clusterTextSize(self, self.mapMantle.coordPx) end
+    if self:MapShelfLike() then return clusterTextSize(self, self:MapMantleSpec().coordPx) end
     return clusterTextSize(self, self.mapBase.subPx)
 end
 
 
 
 function A:MapClockSize()
-    if self:MapSkinMode() == "shelf" then return clusterTextSize(self, self.mapMantle.clockPx) end
+    if self:MapShelfLike() then return clusterTextSize(self, self:MapMantleSpec().clockPx) end
     return self:MapPlaqueSubSize()
 end
 
@@ -393,7 +423,7 @@ function A:MapBaseFade(state, cluster, map, g)
     local want = g and g.base
 
 
-    local square = want and g.shelf and self.mapMantle.back == "square"
+    local square = want and g.shelf and self:MapMantleSpec().back == "square"
     local halo, edge = entries.mapHalo, entries.mapEdge
     if want and not square and slots.mapHalo then
         if not halo then
@@ -435,7 +465,7 @@ function A:MapBaseFade(state, cluster, map, g)
 
 
         local d = square and g.backPad or b.backPx * self:PhysicalPixel(cluster)
-        local foot = square and g.overlap or 0
+        local foot = square and (g.backFoot or g.overlap) or 0
         local sig = string.format("%.4f|%.4f", d, foot)
         if back.auiSig ~= sig then
             back.auiSig = sig
@@ -446,7 +476,7 @@ function A:MapBaseFade(state, cluster, map, g)
         if square then
 
 
-            local a, k = self.mapMantle.backAlpha, self.mapMantle.black
+            local a, k = self:MapMantleSpec().backAlpha, self:MapMantleSpec().black
             if back.auiBlack ~= a then
                 back.auiBlack = a
                 back:SetColorTexture(k[1], k[2], k[3], a)
@@ -495,7 +525,7 @@ function A:MapBaseFade(state, cluster, map, g)
         if back and back:IsShown() then back:Hide() end
         if entries.mapRise and entries.mapRise:IsShown() then entries.mapRise:Hide() end
     end
-    if want and slots.mapEdge and (not square or self.mapMantle.feather) then
+    if want and slots.mapEdge and (not square or self:MapMantleSpec().feather) then
         local host = entries.mapEdgeHost
         if not host then
             host = self:Own(CreateFrame("Frame", nil, cluster))
@@ -672,12 +702,18 @@ function A:MapShelf(state, entries, cluster, map, g)
         if self.mapShelfEntries == entries then self.mapShelfEntries = nil end
         return
     end
-    local m = self.mapMantle
+    local m = self:MapMantleSpec()
     if not entries.mapShelf then
         entries.mapShelf = self:PaintedTexture(cluster, "BORDER", 1, m.file)
         entries.mapShelfAcc = self:PaintedTwin(entries.mapShelf)
     end
     local shelf = entries.mapShelf
+
+    if shelf.auiShelfFile ~= m.file then
+        shelf.auiShelfFile = m.file
+        self:SetPainted(shelf, m.file)
+        shelf.auiSig = nil
+    end
     local sig = string.format("%.3f|%.3f|%.3f|%.3f", g.w, g.h, g.left, g.overlap)
     if shelf.auiSig ~= sig then
         shelf.auiSig = sig

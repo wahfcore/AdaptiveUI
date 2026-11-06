@@ -36,7 +36,7 @@ A.advancedSections = {
         { "layout", "Layout" }, { "buttons", "Buttons" }, { "ground", "Ground & effects" }, { "sizes", "Group sizes" } } },
     { key = "mapchat", label = "Map, chat & windows", tabs = {
         { "minimap", "Minimap" }, { "chat", "Chat" }, { "tracker", "Quest tracker" }, { "windows", "Windows" },
-        { "tooltips", "Tooltips" } } },
+        { "tooltips", "Tooltips" }, { "meter", "Damage meter" } } },
     { key = "info", label = "Buffs & info", tabs = {
         { "buffs", "Buffs" }, { "strips", "Info strips" }, { "bar", "Info bar" } } },
     { key = "layout", label = "Move & size", tabs = {
@@ -50,7 +50,7 @@ A.advancedSections = {
 A.advancedGroupHome = {
     theme = { "look", "scheme" }, general = { "look", "surfaces" },
     plus = { "units", "general" }, plustext = { "units", "general" }, pluscolor = { "units", "general" },
-    gauges = { "units", "general" }, plusparty = { "units", "party" }, damage = { "units", "player" }, swing = { "tray", "bars" }, traycolor = { "tray", "colours" },
+    gauges = { "units", "general" }, plusparty = { "units", "party" }, damage = { "units", "player" }, swing = { "tray", "bars" }, meter = { "mapchat", "meter" }, traycolor = { "tray", "colours" },
     nameplates = { "units", "nameplates" },
     forms = { "actionbars", "forms" },
     casts = { "casts", "look" },
@@ -74,7 +74,7 @@ put("look", "surfaces", "themeShadow", "themeBezel", "themeTextShadow", "unitVei
 put("look", "text", "textScale", "themeHeadingFont", "motionLevel")
 put("units", "general", "unitTextScale", "barEffect", "flatBars", "plusBarTexture", "gaugeTicks", "plusPixelSnap", "plusShowPvp",
     "plateFillStyle", "oakPlate", "plateSmallSkin", "scale")
-put("units", "player", "plusPlayerOn", "plusColorPlayer", "plusPowerText")
+put("units", "player", "plusPlayerOn", "plusColorPlayer", "plusPowerText", "combatDiamonds")
 put("units", "target", "plusTargetOn", "plusColorTarget", "plusTargetAuras", "plusMirror", "plusExecute")
 put("units", "tot", "plusTotOn", "plusColorTot", "plusTotPlacement")
 put("units", "focus", "plusFocusOn", "plusColorFocus", "plusFocusTargetOn", "plusFocusTargetTargetOn")
@@ -86,7 +86,7 @@ put("casts", "target", "castTargetMode", "castTargetAnchor")
 put("casts", "focus", "castFocusMode")
 put("casts", "look", "plateMantleCast", "castRestrictedStrip", "casts")
 put("actionbars", "bar", "keyboardSkin", "keyboardBackdrop", "keyboardCentre", "keyboardLift")
-put("actionbars", "buttons", "actionTextScale", "keyboardSlotSkin", "keyboardSlotInset", "keyboardHotkeyAbbrev",
+put("actionbars", "buttons", "actionTextScale", "actionRangeTint", "keyboardSlotSkin", "keyboardSlotInset", "keyboardHotkeyAbbrev",
     "keyboardEmptyHotkey", "emptyRecede", "iconCrop")
 put("actionbars", "menu", "keyboardMicroRow", "keyboardMicroSkin", "keyboardMicroScale")
 put("actionbars", "xp", "xpLane", "keyboardStatusLane")

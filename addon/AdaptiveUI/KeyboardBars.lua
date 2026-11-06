@@ -251,6 +251,7 @@ function A:KeyboardSlotStyle()
     if not (self.db and self.optionIndex and self.optionIndex.keyboardSlotSkin) then return "classic" end
     local style = self:GetOption("keyboardSlotSkin")
     local slots = self.artSlots or {}
+    if style == "diamond" then return "diamond" end
     if style == "tile" and slots.kbTileSocket and slots.kbTileFace then return "tile" end
     return "classic"
 end
@@ -733,7 +734,100 @@ local function microButtonSlot(self, state, button, on)
 end
 A.KeyboardMicroButtonSlot = microButtonSlot
 
+local keyboardTile
+
+
+
+
+
+
+
+
+
+local DIAMOND_PLINTH = 1.22
+local DIAMOND_INSET = 3
+
+local function diamondRegions(button, state)
+    local out = { button.icon, button.Flash }
+    local veil = state and state.kb and state.kb[button] and state.kb[button].rangeVeil
+    if veil then out[#out + 1] = veil end
+    for _, getter in ipairs({ "GetPushedTexture", "GetHighlightTexture", "GetCheckedTexture" }) do
+        if type(button[getter]) == "function" then
+            local ok, t = pcall(button[getter], button)
+            if ok and t then out[#out + 1] = t end
+        end
+    end
+    return out
+end
+
+local function keyboardDiamond(self, state, button, on, bound)
+    local entries = state.decorations[button]
+    if not on and not (entries and entries.kbDiamond) then return false end
+    if not entries then entries = {}; state.decorations[button] = entries end
+    if on and not entries.kbDiamond then
+        local ok = pcall(function()
+            local plinth = self:PaintedTexture(button, "BACKGROUND", -3, "socket-plinth")
+            plinth:SetPoint("CENTER", button, "CENTER", 0, 0)
+            local mask = self:Own(button:CreateMaskTexture(nil, "BACKGROUND", nil, -1))
+            mask:SetTexture(self.artPath .. "diamond-mask.tga", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            mask:SetPoint("TOPLEFT", button, "TOPLEFT", DIAMOND_INSET, -DIAMOND_INSET)
+            mask:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -DIAMOND_INSET, DIAMOND_INSET)
+            entries.kbDiamond, entries.kbDiamondAcc = plinth, self:PaintedTwin(plinth)
+            book(state, button).diamondMask = mask
+        end)
+        if not ok then return false end
+    end
+    local plinth = entries.kbDiamond
+    local data = book(state, button)
+    local mask = data.diamondMask
+    if not (plinth and mask) then return false end
+    if not on then
+        if plinth:IsShown() then self:HidePainted(plinth) end
+        if data.diamondMasked then
+            data.diamondMasked = nil
+            for _, region in ipairs(diamondRegions(button, state)) do
+                if type(region.RemoveMaskTexture) == "function" then pcall(region.RemoveMaskTexture, region, mask) end
+            end
+            if button.IconMask and button.icon and type(button.icon.AddMaskTexture) == "function" then
+                pcall(button.icon.AddMaskTexture, button.icon, button.IconMask)
+            end
+        end
+        return false
+    end
+    local w = self:Number(button.GetWidth, 1, button) or 45
+    local size = math.floor(w * DIAMOND_PLINTH + 0.5)
+    if plinth.kbDiamondSize ~= size then
+        plinth.kbDiamondSize = size
+        plinth:SetSize(size, size)
+    end
+    if not data.diamondMasked then
+        data.diamondMasked = true
+        if button.IconMask and button.icon and type(button.icon.RemoveMaskTexture) == "function" then
+            pcall(button.icon.RemoveMaskTexture, button.icon, button.IconMask)
+        end
+        for _, region in ipairs(diamondRegions(button, state)) do
+            if type(region.AddMaskTexture) == "function" then pcall(region.AddMaskTexture, region, mask) end
+        end
+    end
+    if not plinth:IsShown() then plinth:Show() end
+    self:SyncPainted(plinth)
+    local alpha = (bound == false) and 0.55 or 1
+    if plinth.kbDiamondAlpha ~= alpha then
+        plinth.kbDiamondAlpha = alpha
+        self:PaintedAlpha(plinth, alpha)
+    end
+    return true
+end
+
+
 local function keyboardSlot(self, state, button, on, bound)
+    local diamond = on and self:KeyboardSlotStyle() == "diamond"
+    local wore = keyboardDiamond(self, state, button, diamond, bound)
+    local tile = keyboardTile(self, state, button, on and not diamond, bound)
+    return wore or tile
+end
+
+function keyboardTile(self, state, button, on, bound)
     local entries = state.decorations[button]
     if not on and not (entries and entries.kbBezel) then return false end
     if not entries then entries = {}; state.decorations[button] = entries end
@@ -766,6 +860,7 @@ local function keyboardSlot(self, state, button, on, bound)
 
         self:HidePainted(bezel)
         if floor then self:HidePainted(floor) end
+        self:KeyboardSeat(entries, button, false)
 
 
 
@@ -789,6 +884,7 @@ local function keyboardSlot(self, state, button, on, bound)
     end
     slotCoord(bezel, restCell(bound))
     if floor then floorSkin(self, floor, bound) end
+    self:KeyboardSeat(entries, button, true)
     if not bezel:IsShown() then bezel:Show() end
     if floor and not floor:IsShown() then floor:Show() end
     self:SyncPainted(bezel)
@@ -955,10 +1051,22 @@ function A:KeyboardHotkeyText(text)
 
 
     local out = text:gsub("[a-z]", string.upper)
-    for _, rule in ipairs(ABBREV) do out = out:gsub(rule[1], rule[2]) end
 
+
+
+
+    local mods = ""
+    while true do
+        local m, rest = out:match("^(%u+)%-(.+)$")
+        if m == "SHIFT" or m == "CTRL" or m == "ALT" or m == "META" then
+            mods = mods .. m:sub(1, 1)
+            out = rest
+        else
+            break
+        end
+    end
     for _, rule in ipairs(ABBREV) do out = out:gsub(rule[1], rule[2]) end
-    return utf8Head(out, 6)
+    return utf8Head(mods .. out, 6)
 end
 
 
@@ -1073,6 +1181,10 @@ local function slotType(self, state, button, on, empty)
             local face = (type(short) ~= "string" or self:KeyboardDrawable(short)) and "ours" or "client"
             if label.kbSize ~= size or label.kbFace ~= face then
                 label.kbSize, label.kbFace = size, face
+                if not label.kbFar then
+                    local c = A.kbHotkeyColour
+                    label:SetTextColor(c[1], c[2], c[3])
+                end
                 if face == "ours" then
                     self:SetThemedFont(label, size, "numeric", "OUTLINE")
                 else
@@ -1083,6 +1195,12 @@ local function slotType(self, state, button, on, empty)
                 label.kbText = short
                 label:SetText(short)
             end
+
+
+
+
+
+            self:KeyboardRangeHook(state, button, hot)
 
             local bound = label.kbText ~= nil and label.kbText ~= ""
             if bound ~= (label:IsShown() == true) then
@@ -1437,8 +1555,10 @@ function A:KeyboardSlateStud(lane, host, rect)
     if not (rect and rect.slate) then
         if stud and stud:IsShown() then stud:Hide() end
         if stud then self.themed[stud] = nil end
+        self.slateStud = nil
         return nil
     end
+    self.slateStud = lane.auiStud
     if not stud then
         stud = self:Own(lane:CreateTexture(nil, "OVERLAY", nil, 7))
         lane.auiStud = stud
@@ -1467,6 +1587,9 @@ function A:KeyboardSlateStud(lane, host, rect)
         self.themed[stud] = nil
     end
     if not stud:IsShown() then stud:Show() end
+    self.slateStud = stud
+
+    if self.inCombat and self.SetCombatDiamonds then self:SetCombatDiamonds(true) end
     return stud
 end
 
@@ -1995,4 +2118,94 @@ function A:KeyboardReport(emit)
                 x and string.format("%.0f,%.0f %.0fx%.0f", x, y, w, h) or "(no rect)"))
         end
     end
+end
+
+
+
+A.kbRange = { veil = { 0.95, 0.12, 0.10, 0.42 }, label = { 1.00, 0.30, 0.26 } }
+
+A.kbHotkeyColour = { 0.957, 0.922, 0.843 }
+
+local function isRed(r, g, b)
+    return type(r) == "number" and type(g) == "number" and type(b) == "number" and r > 0.8 and g < 0.4 and b < 0.4
+end
+
+function A:KeyboardRangePaint(state, button, r, g, b)
+    if not (self:IsPublic(r) and self:IsPublic(g) and self:IsPublic(b)) then return end
+    local entries = state.decorations[button]
+    local label = entries and entries.kbHotkey
+    local far = isRed(r, g, b) and self:GetOption("actionRangeTint") ~= false
+    if label and label.kbFar ~= far then
+        label.kbFar = far
+        local c = far and A.kbRange.label or A.kbHotkeyColour
+        label:SetTextColor(c[1], c[2], c[3])
+    end
+
+    local veil = book(state, button).rangeVeil
+    if veil and veil:IsShown() ~= far then veil:SetShown(far) end
+end
+
+function A:KeyboardRangeHook(state, button, hot)
+    if not hot or type(hooksecurefunc) ~= "function" then return end
+    local data = book(state, button)
+
+    if not data.rangeVeil and button.icon then
+        local veil = self:Own(button:CreateTexture(nil, "ARTWORK", nil, 7))
+        veil:SetAllPoints(button.icon)
+        local v = A.kbRange.veil
+        veil:SetColorTexture(v[1], v[2], v[3], v[4])
+        veil:Hide()
+        data.rangeVeil = veil
+        local entries = state.decorations[button]
+        if entries then entries.kbRangeVeil = veil end
+    end
+    if data.rangeHooked then return end
+    data.rangeHooked = true
+    pcall(hooksecurefunc, hot, "SetVertexColor", function(_, r, g, b)
+        if A.KeyboardSkinOn and A:KeyboardSkinOn() then pcall(A.KeyboardRangePaint, A, state, button, r, g, b) end
+    end)
+end
+
+
+
+
+
+
+
+A.kbSeat = { well = 8 / 64, depth = 0.11, alpha = 0.62 }
+
+function A:KeyboardSeat(entries, button, on)
+    if not on then
+        if entries.kbSeatTop and entries.kbSeatTop:IsShown() then entries.kbSeatTop:Hide(); entries.kbSeatLeft:Hide() end
+        return
+    end
+    if not entries.kbSeatTop then
+        local ok = pcall(function()
+            local top = self:Own(button:CreateTexture(nil, "ARTWORK", nil, 1))
+            top:SetTexture(self.artPath .. "inner-shadow.tga", "CLAMP", "CLAMP")
+            top:SetTexCoord(0, 1, 1, 0)
+            local left = self:Own(button:CreateTexture(nil, "ARTWORK", nil, 1))
+            left:SetTexture(self.artPath .. "inner-shadow.tga", "CLAMP", "CLAMP")
+            left:SetTexCoord(0, 1, 0, 1, 0, 0, 0, 0)
+
+            for _, t in ipairs({ top, left }) do self:Tint(t, "shadow", "vertex", A.kbSeat.alpha) end
+            entries.kbSeatTop, entries.kbSeatLeft = top, left
+        end)
+        if not ok then return end
+    end
+    local top, left = entries.kbSeatTop, entries.kbSeatLeft
+    local w = self:Number(button.GetWidth, 1, button) or A.kbStyle.slot
+    local inset, depth = w * A.kbSeat.well, math.max(2, w * A.kbSeat.depth)
+    if top.kbSeatW ~= w then
+        top.kbSeatW = w
+        top:ClearAllPoints()
+        top:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
+        top:SetPoint("TOPRIGHT", button, "TOPRIGHT", -inset, -inset)
+        top:SetHeight(depth)
+        left:ClearAllPoints()
+        left:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
+        left:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", inset, inset)
+        left:SetWidth(depth)
+    end
+    if not top:IsShown() then top:Show(); left:Show() end
 end

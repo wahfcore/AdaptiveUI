@@ -21,7 +21,8 @@ local _, A = ...
 
 
 
-A.looks = { "oakborn", "dusk", "blizzard" }
+
+A.looks = { "dusk", "oakborn", "blizzard" }
 
 function A:Look()
     if not (self.db and self.optionIndex and self.optionIndex.look) then return "dusk" end
@@ -266,9 +267,10 @@ A.lookPresets = {
     },
     dusk = {
         unitMode = "plus", plateSkin = "inlay", plateSmallSkin = "tile", raidSkin = "tile",
-        keyboardSkin = "base", keyboardSlotSkin = "tile", keyboardBackdrop = "fade", xpLane = "inlay",
+        keyboardSlotSkin = "tile", keyboardBackdrop = "fade", xpLane = "inlay",
         compassGround = "divider", compassButtonSkin = "tiles", compassBumperSkin = "arm",
-        mapSkin = "base", windowSkin = "slate", chromeCrest = "windows",
+
+        keyboardSkin = "slate", mapSkin = "slate", windowSkin = "slate", chromeCrest = "windows",
         trackerStyle = "tidy", chatStyle = "tidy",
         castPlayerMode = "custom", formLabel = "flash",
         ["skins.actions"] = true, ["skins.units"] = true, ["skins.party"] = true, ["skins.auras"] = true,
@@ -329,20 +331,23 @@ end
 
 
 
-A.lookNote = "Your look is now AUI Oakborn. Options > Look > Look switches between AUI Oakborn, AUI Dusk and Blizzard."
+
+A.lookNote = "Your look is now AUI Dusk. Options > Look > Look switches between AUI Dusk, AUI Oakborn and Blizzard."
 
 
 
 
 
-A.lookSettleKeys = { mapSkin = { base = true, branch = true, shelf = true }, windowSkin = { painted = true, branch = true } }
+A.lookSettleKeys = { mapSkin = { base = true, branch = true, shelf = true }, windowSkin = { painted = true, branch = true },
+    keyboardSkin = { base = true } }
 function A:SettleLook(profile)
     if profile.lookSettled == true then return false end
     profile.lookSettled = true
     if profile.look ~= nil and profile.look ~= "dusk" then return false end
-    profile.look = "oakborn"
+    local look = self.shippedDefaults and self.shippedDefaults.look or "dusk"
+    profile.look = look
     for key, from in pairs(self.lookSettleKeys) do
-        local value = self.lookPresets.oakborn[key]
+        local value = self.lookPresets[look][key]
         local option = self.optionIndex and self.optionIndex[key]
         local have = profile[key]
         if option and self:ValidateOption(option, value) ~= nil and (have == nil or from[have]) then profile[key] = value end
@@ -427,7 +432,7 @@ A.scrubMovedDefaults = { "plateSkin", "plateMantleCast", "compassGround", "keybo
 function A:ScrubProfile(profile, fresh)
     if type(profile) ~= "table" then return 0 end
     local lookOption = self.optionIndex and self.optionIndex.look
-    local look = lookOption and self:ValidateOption(lookOption, profile.look) or "oakborn"
+    local look = lookOption and self:ValidateOption(lookOption, profile.look) or self.shippedDefaults.look
     local moved = 0
     for _, key in ipairs(self.scrubMovedDefaults) do
         local option = self.optionIndex and self.optionIndex[key]

@@ -55,9 +55,10 @@ A.options = {
 
 
 
+
     { key = "look", label = "Look", type = "enum", widget = "look", default = "dusk", values = {
-          { value = "oakborn", label = "AUI Oakborn" },
           { value = "dusk", label = "AUI Dusk" },
+          { value = "oakborn", label = "AUI Oakborn" },
           { value = "blizzard", label = "Blizzard" },
       }, apply = function(self, value) if self.ApplyLook then self:ApplyLook(value) end end },
     { key = "themeScheme", group = "theme", label = "Color scheme", type = "enum", widget = "scheme", default = "dusk", values = SCHEME_VALUES,
@@ -215,6 +216,8 @@ A.options = {
 
 
     { key = "plusRankStud", group = "gauges", label = "Elite and boss diamond", type = "bool", default = true },
+
+    { key = "combatDiamonds", group = "gauges", label = "Red diamond glow in combat", type = "bool", default = true },
 
     { key = "plusSwing", group = "swing", label = "Swing timer", type = "bool", default = true },
 
@@ -1071,6 +1074,8 @@ A.options = {
       default = "tile", values = {
           { value = "tile", label = "Painted tile" },
 
+          { value = "diamond", label = "Diamonds" },
+
           { value = "classic", label = "Blizzard's icon frame" },
       } },
 
@@ -1091,6 +1096,8 @@ A.options = {
 
 
     { key = "actionTextScale", group = "keyboard", label = "Action bar text size", type = "number", default = 1, min = 0.8, max = 1.5, step = 0.05, format = "%.0f%%", scale = 100 },
+
+    { key = "actionRangeTint", group = "keyboard", label = "Out of range: red key and icon", type = "bool", default = true },
     { key = "keyboardHotkeyAbbrev", group = "keyboard", label = "Abbreviate keybind labels", type = "bool", default = true },
 
 
@@ -1171,6 +1178,8 @@ A.options = {
 
           { value = "shelf", label = "Oak shelf (the map standing on your oak shelf, its name and clock inside)" },
 
+          { value = "slate", label = "Slate plank (the map standing on your slate plank, its name and clock inside)" },
+
           { value = "base", label = "Base (the map standing on your minimal panel)" },
           { value = "card", label = "Card (0.46-0.52)" },
       } },
@@ -1183,6 +1192,11 @@ A.options = {
           { value = "painted", label = "Painted (your options panel)" },
           { value = "flat", label = "Flat (0.47-0.52)" },
       } },
+
+
+    { key = "damageMeterSkin", group = "meter", label = "Damage meter", type = "enum", default = "plain",
+      values = choice("plain", "Plain panel, buttons to match", "off", "Blizzard's own") },
+    { key = "damageMeterFoot", group = "meter", label = "Slate plank under the damage meter", type = "bool", default = false },
     { key = "trackerStyle", label = "Objectives", type = "enum", default = "tidy", values = {
           { value = "tidy", label = "Tidy (no header boxes)" },
           { value = "bare", label = "Bare (no backing)" },
@@ -1521,7 +1535,9 @@ end
 
 
 
-A.shippedDefaults = { look = "oakborn" }
+
+
+A.shippedDefaults = { look = "dusk", keyboardSkin = "slate", mapSkin = "slate", windowSkin = "slate" }
 function A:ResetValue(option)
     local shipped = self.shippedDefaults[option.key]
     if shipped ~= nil then return shipped end
@@ -2136,6 +2152,7 @@ A.optionGroupSection = {
     casts = { "combat", "Cast bars" },
     damage = { "combat", "Damage strip" },
     swing = { "combat", "Resource tray" },
+    meter = { "layout", "Damage meter" },
     traycolor = { "combat", "Resource tray colours" },
     plusparty = { "combat", "Party and target-of-target" },
     actions = { "layout", "Action bars (controller)" },
@@ -2320,6 +2337,7 @@ A.optionTags = {
     casts = "cast bar channel spell timer interrupt",
     damage = "dps damage meter strip recount",
     swing = "resource tray swing timer auto attack health power mana rage energy",
+    meter = "damage meter dps details recount skin",
     traycolor = "resource tray colour color recolor health mana rage energy combo swing",
     plusparty = "party group raid tot target of target",
     actions = "action bar compass controller socket icon diamond",
@@ -2362,7 +2380,11 @@ A.optionKeywords = {
     plusSwing = "swing timer auto attack melee weapon speed white hit",
     swingVitals = "health mana rage energy power tray swing timer extra bars combat",
     trayBarHeight = "thick thicker thin bar height size tray resource",
+    damageMeterSkin = "damage meter dps details recount skin panel blizzard",
+    damageMeterFoot = "damage meter slate plank foot mantle bar",
     trayAnchor = "tray move unlock detach free anywhere anchor position independent",
+    combatDiamonds = "combat diamond glow red fight stud plate slate",
+    actionRangeTint = "range out of range red tint icon keybind distance spell awareness",
     unitTextScale = "font text size bigger smaller unit frame plate name number",
     actionTextScale = "font text size bigger smaller action bar hotkey keybind count stack",
     plusRankStud = "elite boss rare diamond stud classification",
@@ -2468,7 +2490,11 @@ A.optionDesc = {
     plusSwing = "A bar under your plate that fills until your next auto attack.",
     swingVitals = "Health and your rage, energy or mana also shown in the swing timer's tray.",
     trayBarHeight = "How thick the tray's bars are.",
+    damageMeterSkin = "Blizzard's damage meter on a plain panel, its buttons and bars to match.",
+    damageMeterFoot = "The slate plank under the damage meter, like the settings window's foot.",
     trayAnchor = "Under the player plate, or free to move anywhere (Move & size > Resource tray).",
+    combatDiamonds = "In a fight, the player plate's diamond and the slate plank's stud glow red.",
+    actionRangeTint = "Out of range, the keybind turns red and the icon takes a red veil.",
     unitTextScale = "Names, levels and numbers on every unit plate.",
     actionTextScale = "Keybinds, stack counts and the page number on the action bars.",
     dpsStripMetric = "Damage and DPS, or one of them.",

@@ -700,6 +700,7 @@ events:SetScript("OnEvent", function(_, event, ...)
         A:ObserveInput()
     elseif event == "PLAYER_REGEN_DISABLED" then
         A.inCombat = true
+        if A.SetCombatDiamonds then pcall(A.SetCombatDiamonds, A, true) end
 
         if A.chipTestRunning and A.chipTestAbort then pcall(A.chipTestAbort) end
 
@@ -713,6 +714,7 @@ events:SetScript("OnEvent", function(_, event, ...)
         A:LockMovers()
     elseif event == "PLAYER_REGEN_ENABLED" then
         A.inCombat = false
+        if A.SetCombatDiamonds then pcall(A.SetCombatDiamonds, A, false) end
         if A.pendingCreate and A.initialized then
             A.pendingCreate = nil
             local ok = pcall(A.CreateHUD, A)

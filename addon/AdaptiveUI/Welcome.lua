@@ -46,7 +46,7 @@ local STEP_COUNT = 6
 local BODY, TITLE = 14, 16
 
 
-A.welcomeSchemes = { "oakborn", "dusk", "ember", "frost", "obsidian", "porcelain" }
+A.welcomeSchemes = { "dusk", "oakborn", "ember", "frost", "obsidian", "porcelain" }
 
 local function text(parent, size, heading, x, y, width, role, wrap, justify)
     local fs = parent:CreateFontString(nil, "OVERLAY")
@@ -301,8 +301,8 @@ function A:CreateWelcome()
     section(s3, -284, "Look")
     local lookDefs = {}
     for i, def in ipairs({
-        { "oakborn", "AUI Oakborn", "The flagship: carved oak." },
-        { "dusk", "AUI Dusk", "Obsidian stone." },
+        { "dusk", "AUI Dusk", "Obsidian on slate." },
+        { "oakborn", "AUI Oakborn", "Carved oak." },
         { "blizzard", "Blizzard", "The game's own frames." },
     }) do
         lookDefs[i] = { value = def[1], title = def[2], desc = def[3],

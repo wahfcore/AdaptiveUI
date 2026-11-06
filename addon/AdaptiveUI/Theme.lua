@@ -1960,6 +1960,8 @@ function A:CustomScheme()
 end
 
 function A:Scheme()
+
+    if self.schemeOverride and self.schemeIndex[self.schemeOverride] then return self.schemeIndex[self.schemeOverride] end
     local id = self.db and self.optionIndex and self:GetOption("themeScheme") or nil
     if id == "custom" then
         return self:CustomScheme() or self.schemes[1]
@@ -4664,3 +4666,40 @@ function A.Contrast(a, b)
     if la < lb then la, lb = lb, la end
     return (la + 0.05) / (lb + 0.05)
 end
+
+
+
+
+
+
+function A:PaintedLookFor(name, schemeId)
+    if not (self.db and self.painted) then return nil end
+    local prev = self.schemeOverride
+    self.schemeOverride = schemeId
+    local ok, out = pcall(function()
+        local file, on, layers = self:PaintedPath(name)
+        local r, g, b = 1, 1, 1
+        if on then r, g, b = self:PaintedBodyTint(name) end
+        local acc
+        if on and layers and layers.acc then
+            local accFile, ar, ag, ab = self:PaintedAcc(self:LookName(name), layers)
+            acc = { file = accFile, color = { ar, ag, ab } }
+        end
+        local glaze
+        if on and self:GlazeOn() then
+            local gr, gg, gb = self:GlazeColour(name)
+            glaze = { gr, gg, gb }
+        end
+        return { file = file, color = { r, g, b }, acc = acc, glaze = glaze }
+    end)
+    self.schemeOverride = prev
+    return ok and out or nil
+end
+
+function AdaptiveUI_PaintedLook(name, schemeId) return A:PaintedLookFor(name, schemeId) end
+function AdaptiveUI_SchemeList()
+    local out = {}
+    for _, s in ipairs(A.schemes or {}) do out[#out + 1] = { id = s.id, name = s.name } end
+    return out
+end
+function AdaptiveUI_SchemeId() local s = A:Scheme(); return s and s.id end
