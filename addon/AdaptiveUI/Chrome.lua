@@ -262,7 +262,10 @@ A.mapMantle = { file = "oak-map-mantle", ratio = 1679 / 252, topU0 = 73 / 1679, 
 
 
 
-A.mapSlate = setmetatable({ file = "bar03", ratio = 1024 / 128, topU0 = 8 / 1024, topU1 = 1016 / 1024,
+
+
+
+A.mapSlate = setmetatable({ file = "bar03", ratio = 14.118421, topU0 = 8 / 1024, topU1 = 1016 / 1024,
     rimV = 0.072368, backPad = 0, drop = 4, scrimAlpha = 0.6 }, { __index = A.mapMantle })
 
 
@@ -1279,4 +1282,75 @@ end
 function A:IsCompactUnitFrame(frame)
     return type(frame) == "table" and type(frame.healthBar) == "table" and type(frame.background) == "table"
         and type(frame.CreateTexture) == "function"
+end
+
+
+
+
+
+
+
+
+local function frameName(f)
+    local ok, name = pcall(f.GetName, f)
+    if ok and type(name) == "string" and name ~= "" then return name end
+    local okp, parent = pcall(f.GetParent, f)
+    if okp and type(parent) == "table" then
+        for k, v in pairs(parent) do if v == f and type(k) == "string" then return frameName(parent) .. "." .. k end end
+    end
+    return "?"
+end
+
+function A:MapProbeLines()
+    local out = {}
+    local function add(s) out[#out + 1] = "mapprobe: " .. s end
+    local map = MinimapCluster and MinimapCluster.MinimapContainer and MinimapCluster.MinimapContainer.Minimap or Minimap
+    if type(map) ~= "table" then add("no minimap"); return out end
+    local ml, mb, mw, mh = self:Number(map.GetRect, 1, map), self:Number(map.GetRect, 2, map),
+        self:Number(map.GetRect, 3, map), self:Number(map.GetRect, 4, map)
+    local ms = self:Number(map.GetEffectiveScale, 1, map) or 1
+    add(string.format("mode %s | seat error %s | map %s,%s %sx%s eff %.3f", tostring(self:MapSkinMode()),
+        tostring(self.mapButtonSeatError), tostring(ml), tostring(mb), tostring(mw), tostring(mh), ms))
+    if not (ml and mb and mw and mh) then return out end
+
+    local R, T = (ml + mw) * ms, (mb + mh) * ms
+    local box = { R - 90 * ms, T - 70 * ms, R + 90 * ms, T + 40 * ms }
+    local seen, n = {}, 0
+    local function visit(f)
+        if n >= 30 or type(f) ~= "table" or seen[f] then return end
+        seen[f] = true
+        if type(f.GetRect) ~= "function" or not self:Read(f.IsShown, 1, f) then return end
+        local l, b, w, h = self:Number(f.GetRect, 1, f), self:Number(f.GetRect, 2, f),
+            self:Number(f.GetRect, 3, f), self:Number(f.GetRect, 4, f)
+        local s = self:Number(f.GetEffectiveScale, 1, f) or 1
+        if not (l and b and w and h) or w > 120 or h > 120 then return end
+        l, b, w, h = l * s, b * s, w * s, h * s
+        if l + w < box[1] or l > box[3] or b + h < box[2] or b > box[4] then return end
+        n = n + 1
+        local point, rel, relPoint, x, y = self:Read(f.GetPoint, 1, f, 1), self:Read(f.GetPoint, 2, f, 1),
+            self:Read(f.GetPoint, 3, f, 1), self:Read(f.GetPoint, 4, f, 1), self:Read(f.GetPoint, 5, f, 1)
+        add(string.format("%s | %dx%d at %d,%d | %s | %s %s %s %s,%s", frameName(f), math.floor(w + 0.5),
+            math.floor(h + 0.5), math.floor(l - R + 0.5), math.floor(b + h - T + 0.5),
+            tostring(self:Read(f.GetFrameStrata, 1, f)), tostring(point),
+            type(rel) == "table" and frameName(rel) or tostring(rel), tostring(relPoint),
+            type(x) == "number" and string.format("%.1f", x) or "?", type(y) == "number" and string.format("%.1f", y) or "?"))
+    end
+    local function children(f)
+        if type(f) ~= "table" or type(f.GetChildren) ~= "function" then return {} end
+        local ok, list = pcall(function() return { f:GetChildren() } end)
+        return ok and list or {}
+    end
+    for _, root in ipairs({ MinimapCluster, map, UIParent }) do
+        for _, c in ipairs(children(root)) do
+            visit(c)
+            if root ~= UIParent then for _, g in ipairs(children(c)) do visit(g) end end
+        end
+    end
+    if n == 0 then add("nothing shown in the corner box") end
+    add("(x,y: the frame's top-left from the map's top-right corner, screen px)")
+    return out
+end
+
+function A:MapProbeCommand()
+    for _, line in ipairs(self:MapProbeLines()) do self:Print(line) end
 end

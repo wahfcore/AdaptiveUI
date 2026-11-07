@@ -1948,11 +1948,18 @@ function A:MapZoneAnchor()
     return zone, inset, true
 end
 
-A.mapButtonSeats = { "Tracking", "GameTimeFrame", "InstanceDifficulty", "TimeManagerClockButton" }
+
+
+
+A.mapButtonSeats = { "Tracking", "GameTimeFrame", "AddonCompartmentFrame", "IndicatorFrame", "InstanceDifficulty",
+    "TimeManagerClockButton" }
+A.mapButtonColumn = { "AddonCompartmentFrame", "IndicatorFrame" }
 function A:MapButtonFrames()
     return {
         Tracking = MinimapCluster and MinimapCluster.Tracking,
         GameTimeFrame = _G.GameTimeFrame,
+        AddonCompartmentFrame = _G.AddonCompartmentFrame,
+        IndicatorFrame = MinimapCluster and MinimapCluster.IndicatorFrame,
         InstanceDifficulty = MinimapCluster and MinimapCluster.InstanceDifficulty,
         TimeManagerClockButton = _G.TimeManagerClockButton,
         TimeManagerClockTicker = _G.TimeManagerClockTicker,
@@ -2005,10 +2012,21 @@ function A:SeatMapButtons(state, map, g)
             local h = self:Number(cal.GetHeight, 1, cal)
             if h and h > 0 and h < 64 then calH = h / s end
         end
+        local y = inset + calH + 2
+        for _, name in ipairs(A.mapButtonColumn) do
+            local f = frames[name]
+            if type(f) == "table" and type(f.GetNumPoints) == "function"
+                and (type(f.IsShown) ~= "function" or f:IsShown()) then
+                local s = k(f)
+                self:PlaceNative(state, f, "TOPRIGHT", map, "TOPRIGHT", -inset * s, -y * s)
+                local h = self:Number(f.GetHeight, 1, f)
+                y = y + ((h and h > 0 and h < 64) and h / s or 20) + 2
+            end
+        end
         local diff = frames.InstanceDifficulty
         if type(diff) == "table" and type(diff.GetNumPoints) == "function" then
             local s = k(diff)
-            self:PlaceNative(state, diff, "TOPRIGHT", map, "TOPRIGHT", -inset * s, -(inset + calH + 2) * s)
+            self:PlaceNative(state, diff, "TOPRIGHT", map, "TOPRIGHT", -inset * s, -y * s)
         end
         local clock = frames.TimeManagerClockButton
         if type(clock) == "table" and type(clock.GetNumPoints) == "function" then

@@ -240,6 +240,12 @@ local function compassDivider(self, state, root, page, bar, on)
         glint:SetBlendMode("ADD")
         glint:SetAlpha(0)
         host.glint = glint
+
+        local rest = self:Own(host:CreateTexture(nil, "ARTWORK", nil, 2))
+        rest:SetTexture(self.artPath .. "diamond-glow.tga", "CLAMP", "CLAMP")
+        rest:SetBlendMode("ADD")
+        rest:SetAlpha(0)
+        host.restGlow = rest
         entries.groundDivider = host
     end
     local level = self:Number(page.GetFrameLevel, 1, page) or self:Number(root.GetFrameLevel, 1, root)
@@ -266,6 +272,17 @@ local function compassDivider(self, state, root, page, bar, on)
         host.glint:ClearAllPoints()
         host.glint:SetPoint("CENTER", host, "TOPLEFT", w * d.diamondU, -h * d.diamondV)
         host.glint:SetSize(g, g)
+        if host.restGlow then
+            local rg = g * A.compassGlow.restSize
+            host.restGlow:ClearAllPoints()
+            host.restGlow:SetPoint("CENTER", host.glint, "CENTER", 0, 0)
+            host.restGlow:SetSize(rg, rg)
+        end
+    end
+    if host.restGlow then
+        self:Tint(host.restGlow, "accent", "vertex", 1)
+        local want = self:CompassDiamondGlowOn() and A.compassGlow.rest or 0
+        if math.abs((host.restGlow:GetAlpha() or 0) - want) > 0.001 then host.restGlow:SetAlpha(want) end
     end
     self:CompassShadow(host.shadow, host, self:LookName("compass-divider"), w, h, false)
     if (self.painted[host.art] and self.painted[host.art].name) ~= "compass-divider" then
@@ -301,6 +318,15 @@ A.CompassDividerHost = compassDivider
 
 
 
+
+function A:TriggerDown(side)
+    local key = side == "left" and _G.GAMEPAD_TRIGGER_LEFT or _G.GAMEPAD_TRIGGER_RIGHT
+    if type(IsKeyDown) ~= "function" or type(key) ~= "string" then return nil end
+    local ok, down = pcall(IsKeyDown, key)
+    if ok and type(down) == "boolean" and self:IsPublic(down) then return down end
+    return nil
+end
+
 A.compassDividerTick = 0.05
 A.compassDividerHold = 0.15
 function A:TickCompassDivider(elapsed)
@@ -317,9 +343,21 @@ function A:TickCompassDivider(elapsed)
     local peak = A.dividerArt.light
     local lit = {}
     for _, side in ipairs({ "left", "right" }) do
-        local bar = host.bars and host.bars[side]
-        local bg = bar and bar.BackgroundFocus
-        local shown = on and bg and type(bg.IsShown) == "function" and self:Read(bg.IsShown, 1, bg) == true or false
+
+
+
+
+
+
+        local down = A:TriggerDown(side)
+        local shown
+        if down ~= nil then
+            shown = on and down
+        else
+            local bar = host.bars and host.bars[side]
+            local bg = bar and bar.BackgroundFocus
+            shown = on and bg and type(bg.IsShown) == "function" and self:Read(bg.IsShown, 1, bg) == true or false
+        end
         host.shownFor = host.shownFor or {}
         host.shownFor[side] = shown and ((host.shownFor[side] or 0) + dt) or 0
         local held = shown and host.shownFor[side] >= A.compassDividerHold - 1e-9
@@ -330,6 +368,8 @@ function A:TickCompassDivider(elapsed)
     end
     local g = lit.left and peak * 0.65 or 0
     if math.abs((host.glint:GetAlpha() or 0) - g) > 0.001 then host.glint:SetAlpha(g) end
+
+    if self.CompassStudFlare then self:CompassStudFlare(host, host, lit.left) end
     host.held = lit
 end
 

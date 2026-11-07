@@ -2,7 +2,7 @@
 ## Title: AdaptiveUI
 ## Notes: A WoW dad's answer to off-night couch gaming. A controller-first HUD that only restyles; your keybinds and controls are never touched.
 ## Author: Wahf
-## Version: 0.84.0-beta
+## Version: 0.86.3-beta
 ## SavedVariables: AdaptiveUIDB
 ## SavedVariablesPerCharacter: AdaptiveUICharDB, AdaptiveUIInspectDB
 ## IconTexture: Interface\AddOns\AdaptiveUI\Art\crest
@@ -38,6 +38,7 @@ Help.lua
 InputSwitch.lua
 HUD.lua
 ClassBar.lua
+ComboDiamonds.lua
 Swing.lua
 DamageMeterSkin.lua
 CombatGlow.lua

@@ -423,6 +423,8 @@ function A:Slash(message)
 
     elseif command == "npprobe" then self:NameplateProbeCommand()
 
+    elseif command == "mapprobe" then self:MapProbeCommand()
+
     elseif command == "formprobe" then self:FormProbeCommand()
     elseif command == "forms" then self:FormsCommand()
 

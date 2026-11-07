@@ -159,6 +159,11 @@ local function bumperHost(self, state, root, side)
         host.glint:SetTexture(self.artPath .. "diamond-glow.tga", "CLAMP", "CLAMP")
         host.glint:SetBlendMode("ADD")
         host.glint:SetAlpha(0)
+
+        host.restGlow = self:Own(press:CreateTexture(nil, "ARTWORK", nil, 1))
+        host.restGlow:SetTexture(self.artPath .. "diamond-glow.tga", "CLAMP", "CLAMP")
+        host.restGlow:SetBlendMode("ADD")
+        host.restGlow:SetAlpha(0)
         entries[key] = host
         entries[key .. "Art"] = host.art
         entries[key .. "Acc"] = self:PaintedTwin(host.art)
@@ -240,6 +245,11 @@ function A:BumperPlaques(state, page, on)
                 self:Tint(host.halo, "mark", "vertex", 1)
                 self:Tint(host.rim, "mark", "vertex", 1)
                 self:Tint(host.glint, "mark", "vertex", 1)
+                if host.restGlow then
+                    self:Tint(host.restGlow, "mark", "vertex", 1)
+                    local want = self:CompassDiamondGlowOn() and A.compassGlow.rest or 0
+                    if math.abs((host.restGlow:GetAlpha() or 0) - want) > 0.001 then host.restGlow:SetAlpha(want) end
+                end
                 host.highlight = hl
                 if not host:IsShown() then host:Show() end
             end
@@ -257,7 +267,7 @@ end
 function A:TickBumpers(elapsed)
     elapsed = tonumber(elapsed) or 0
 
-    self:TickTriggerChips()
+    self:TickTriggerChips(elapsed)
     local state = self.nativeSkins and self.nativeSkins.actions
     local root = _G.GamepadMainActionBarFrame
     local entries = state and root and state.decorations[root]
@@ -279,6 +289,8 @@ function A:TickBumpers(elapsed)
                 if math.abs((t:GetAlpha() or 0) - want) > 0.001 then t:SetAlpha(want) end
             end
 
+            self:CompassStudFlare(host.press, host, down and glowOn)
+
             local sh = host.shadow
             if sh and host.shadowFile then
                 local want = A.compassShadow.alpha * (down and A.compassShadow.pressed or 1)
@@ -287,6 +299,37 @@ function A:TickBumpers(elapsed)
             self:EaseBumperPress(host, down, elapsed)
         end
     end
+end
+
+
+
+
+
+
+
+
+
+
+A.compassFlare = { size = 2.2, strength = 1 }
+
+function A:CompassStudFlare(carrier, host, down)
+    local was = host.flareDown == true
+    host.flareDown = down == true
+    if not (down and not was and carrier and host.glint) then return false end
+    local fx = self:Fx(carrier, "pressFlare", "diamond-glow", "ARTWORK", 4)
+    if not fx then return false end
+    local s = (self:Number(host.glint.GetWidth, 1, host.glint) or 16) * A.compassFlare.size
+    fx:ClearAllPoints()
+    fx:SetPoint("CENTER", host.glint, "CENTER", 0, 0)
+    fx:SetSize(s, s)
+
+    local store = self.motionGroups[fx]
+    local running = store and store.flare
+    if running and type(running.IsPlaying) == "function" and select(2, pcall(running.IsPlaying, running)) == true then
+        pcall(running.Stop, running)
+    end
+    local r, g, b = self:Color(self:MarkRole())
+    return self:PlayFlare(fx, r, g, b, A.compassFlare.strength)
 end
 
 
@@ -323,6 +366,12 @@ function A:SizeBumperPress(host)
     host.glint:ClearAllPoints()
     host.glint:SetPoint("CENTER", press, "TOPLEFT", w * su * s, -h * a.studV * s)
     pcall(host.glint.SetSize, host.glint, h * 0.9 * s, h * 0.9 * s)
+    if host.restGlow then
+        local rg = h * 0.9 * s * A.compassGlow.restSize
+        host.restGlow:ClearAllPoints()
+        host.restGlow:SetPoint("CENTER", host.glint, "CENTER", 0, 0)
+        pcall(host.restGlow.SetSize, host.restGlow, rg, rg)
+    end
 end
 
 
@@ -409,11 +458,18 @@ A.triggerChip = {
     gap = 5,
     plus = 20,
     tone = { 0.045, 0.045, 0.05 },
+
+
+    slateTone = { 14 / 255, 29 / 255, 36 / 255 },
     alpha = 0.94,
     ink = { 1, 1, 1 },
     text = "body",
 }
-A.triggerChipKeys = { "LeftIcon", "RightIcon", "CenteredIcons" }
+
+
+
+A.triggerChipKeys = { "LeftIcon", "RightIcon", "CenteredIcons", "LeftInputPrompt", "RightInputPrompt" }
+A.triggerChipPairs = { CenteredIcons = true, LeftInputPrompt = true, RightInputPrompt = true }
 
 function A:TriggerChipMode()
     if not (self.artSlots and self.artSlots.oakChip) then return "native" end
@@ -423,7 +479,11 @@ function A:TriggerChipMode()
     end
     if style == "flat" then return "flat" end
     if style == "native" then return "native" end
-    return self:Look() == "oakborn" and "flat" or "native"
+
+
+
+    local look = self:Look()
+    return (look == "oakborn" or look == "dusk") and "flat" or "native"
 end
 
 
@@ -461,6 +521,23 @@ function A:TriggerLabels()
     return pair[1], pair[2]
 end
 
+local BUMPERS = { xbox = { "LB", "RB" }, shapes = { "L1", "R1" }, nintendo = { "L", "R" } }
+function A:BumperLabels()
+    local pair = BUMPERS[self:TriggerLabelStyle()] or BUMPERS.xbox
+    return pair[1], pair[2]
+end
+
+
+function A:TriggerChipNames(key, left, right)
+    if key == "CenteredIcons" then return { left, right } end
+    if key == "LeftInputPrompt" or key == "RightInputPrompt" then
+        local lb, rb = self:BumperLabels()
+        if key == "LeftInputPrompt" then return { lb, left } end
+        return { rb, right }
+    end
+    return { key == "LeftIcon" and left or right }
+end
+
 
 function A:TriggerChipTextSize(root)
     local size = self:Type(A.triggerChip.text)
@@ -496,9 +573,9 @@ local function chipHost(self, state, root, key)
         inner:SetAlpha(0)
         host.inner = inner
         host.chips = {}
-        if key == "CenteredIcons" then
-            host.chips[1] = chipPart(self, inner, "LT")
-            host.chips[2] = chipPart(self, inner, "RT")
+        if A.triggerChipPairs[key] then
+            host.chips[1] = chipPart(self, inner, "")
+            host.chips[2] = chipPart(self, inner, "")
             host.plus = self:Own(inner:CreateFontString(nil, "OVERLAY"))
             pcall(host.plus.SetFont, host.plus, self:FontPath("numeric"), A.triggerChip.plus, "")
             host.plus:SetText("+")
@@ -515,10 +592,13 @@ end
 function A:LayoutTriggerChip(host, key, size, left, right)
     local c = A.triggerChip
     local h = math.max(c.height, size + 6)
-    local names = key == "CenteredIcons" and { left, right } or { key == "LeftIcon" and left or right }
+    local names = self:TriggerChipNames(key, left, right)
     local ink = c.ink
+
+    local tone = self:Look() == "dusk" and c.slateTone or c.tone
     local widths, total = {}, 0
     for i, part in ipairs(host.chips) do
+        part.plate:SetVertexColor(tone[1], tone[2], tone[3], c.alpha)
         local t = part.text
         local fontOk = pcall(t.SetFont, t, self:FontPath("numeric"), size, "")
         if not fontOk then pcall(t.SetFont, t, STANDARD_TEXT_FONT or self.fallbackFont, size, "") end
@@ -577,7 +657,8 @@ function A:TriggerChips(state, page, on)
             if host then
                 local level = self:Number(prompt.GetFrameLevel, 1, prompt)
                 if level and host:GetFrameLevel() ~= level then pcall(host.SetFrameLevel, host, level) end
-                local sig = string.format("%s|%s|%s|%.2f", tostring(prompt), left, right, size)
+
+                local sig = string.format("%s|%s|%s|%.2f|%s", tostring(prompt), left, right, size, self:Look())
                 if host.sig ~= sig then
                     host.sig = sig
                     host:ClearAllPoints()
@@ -595,11 +676,16 @@ end
 
 
 
-function A:TickTriggerChips()
+
+
+
+
+function A:TickTriggerChips(elapsed)
     local state = self.nativeSkins and self.nativeSkins.actions
     local root = _G.GamepadMainActionBarFrame
     local entries = state and root and state.decorations[root]
     if not entries then return end
+    local k = (self:MotionOn() and elapsed and elapsed > 0) and (1 - math.exp(-elapsed / self.tokens.motion.quick)) or 1
     for _, key in ipairs(A.triggerChipKeys) do
         local host = entries["trigger" .. key]
         local prompt = host and host.prompt
@@ -610,7 +696,12 @@ function A:TickTriggerChips()
                 seen = type(probe) == "function" and self:Read(probe, 1, prompt) == true or false
             end
             local want = seen and 1 or 0
-            if host.inner:GetAlpha() ~= want then host.inner:SetAlpha(want) end
+            local now = host.inner:GetAlpha() or 0
+            if now ~= want then
+                local next = now + (want - now) * k
+                if math.abs(next - want) < 0.01 then next = want end
+                host.inner:SetAlpha(next)
+            end
         end
     end
 end

@@ -2141,8 +2141,10 @@ function A:KeyboardRangePaint(state, button, r, g, b)
         label:SetTextColor(c[1], c[2], c[3])
     end
 
+
     local veil = book(state, button).rangeVeil
-    if veil and veil:IsShown() ~= far then veil:SetShown(far) end
+    local want = far and A.kbRange.veil[4] or 0
+    if veil and math.abs((veil:GetAlpha() or 0) - want) > 0.001 then veil:SetAlpha(want) end
 end
 
 function A:KeyboardRangeHook(state, button, hot)
@@ -2153,8 +2155,8 @@ function A:KeyboardRangeHook(state, button, hot)
         local veil = self:Own(button:CreateTexture(nil, "ARTWORK", nil, 7))
         veil:SetAllPoints(button.icon)
         local v = A.kbRange.veil
-        veil:SetColorTexture(v[1], v[2], v[3], v[4])
-        veil:Hide()
+        veil:SetColorTexture(v[1], v[2], v[3], 1)
+        veil:SetAlpha(0)
         data.rangeVeil = veil
         local entries = state.decorations[button]
         if entries then entries.kbRangeVeil = veil end

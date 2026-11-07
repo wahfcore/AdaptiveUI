@@ -260,6 +260,11 @@ end
 
 local function fillDots(self, frame)
 
+    if self.ComboDiamondsShown and self:ComboDiamondsShown(frame, self:ClassBarDotCount(), MAX_DOTS) then
+        self:FillComboDiamonds(frame, MAX_DOTS, self.comboType)
+        return
+    end
+
 
 
     local fillFile = self.artPath .. self:LookName("dot-fill") .. ".tga"

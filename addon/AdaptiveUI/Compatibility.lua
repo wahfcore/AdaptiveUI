@@ -4,7 +4,7 @@ A.name = addonName
 
 
 
-A.version = "0.84.0-beta"
+A.version = "0.86.3-beta"
 do
     local getMeta = (type(C_AddOns) == "table" and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
     if type(getMeta) == "function" then

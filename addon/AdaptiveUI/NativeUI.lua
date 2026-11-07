@@ -359,6 +359,31 @@ end
 
 
 
+local function vertexVeil(self, state, region, on)
+    if not region or type(region.SetVertexColor) ~= "function" or type(region.GetVertexColor) ~= "function" then return end
+    if self:IsOwn(region) then return end
+    local captured = state.properties and state.properties[region] and state.properties[region].vertexVeil
+    if not on then
+        if captured then self:ReleaseProperty(state, region, "vertexVeil") end
+        return
+    end
+    local r, g, b, a = region:GetVertexColor()
+    if not captured then
+        for _, v in ipairs({ r, g, b, a or 1 }) do
+            if not self:IsPublic(v) or type(v) ~= "number" then return end
+        end
+        local old = { r, g, b, a or 1 }
+        self:RememberProperty(state, region, "vertexVeil", function()
+            return function() region:SetVertexColor(old[1], old[2], old[3], old[4]) end
+        end)
+    end
+    if self:IsPublic(a) and a ~= 0 then region:SetVertexColor(r, g, b, 0) end
+end
+A.NativeVertexVeil = vertexVeil
+
+
+
+
 local function cropIcon(self, state, icon)
     if not icon or type(icon.SetTexCoord) ~= "function" or type(icon.GetTexCoord) ~= "function" then return end
     local coords = { icon:GetTexCoord() }
@@ -943,6 +968,228 @@ local function tileArt(self, entries, button, shape, bound, index)
     return true
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+A.compassSeat = { depth = 0.11, alpha = 0.62,
+    square = { top = { "top", "right" }, right = { "top", "right" }, left = { "top", "left" },
+               bottom = { "bottom", "right" } },
+    diamond = { top = { "ul", "ur" }, left = { "ul", "ll" }, right = { "ur", "lr" }, bottom = { "ll", "lr" } } }
+
+
+
+local SEAT_CORNER = { ul = { 0, 0 }, ur = { 1, 0 }, ll = { 0, 1 }, lr = { 1, 1 } }
+function A:CompassSeatRamp(edge, d)
+    local c = SEAT_CORNER[edge] or SEAT_CORNER.ul
+    local D = math.max(0.02, d) * math.sqrt(2)
+    local out = {}
+    for i, p in ipairs({ { 0, 0 }, { 0, 1 }, { 1, 0 }, { 1, 1 } }) do
+        local s = math.abs(p[1] - c[1]) + math.abs(p[2] - c[2])
+        out[2 * i - 1] = 0.5
+        out[2 * i] = 1 + (0.5 - s) / D
+    end
+    return unpack(out)
+end
+
+local SEAT_STRIP = {
+    top = { "TOPLEFT", "TOPRIGHT", "h", { 0, 1, 1, 0 } },
+    bottom = { "BOTTOMLEFT", "BOTTOMRIGHT", "h", { 0, 1, 0, 1 } },
+    left = { "TOPLEFT", "BOTTOMLEFT", "w", { 0, 1, 0, 1, 0, 0, 0, 0 } },
+    right = { "TOPRIGHT", "BOTTOMRIGHT", "w", { 0, 0, 0, 0, 0, 1, 0, 1 } },
+}
+
+local function compassSeat(self, entries, button, on, shape, direction, mask)
+    local a, b = entries.cpSeatA, entries.cpSeatB
+    if not on then
+        if a and a:IsShown() then a:Hide(); b:Hide() end
+        return false
+    end
+    if not a then
+        local ok = pcall(function()
+            for _, key in ipairs({ "cpSeatA", "cpSeatB" }) do
+                local t = self:Own(button:CreateTexture(nil, "ARTWORK", nil, 1))
+                t:SetTexture(self.artPath .. "inner-shadow.tga", "CLAMP", "CLAMP")
+                self:Tint(t, "shadow", "vertex", A.compassSeat.alpha)
+                entries[key] = t
+            end
+        end)
+        if not ok then return false end
+        a, b = entries.cpSeatA, entries.cpSeatB
+    end
+    local w = self:Number(button.GetWidth, 1, button) or 45
+    local pad = self:SocketInset(w)
+    local box = w - 2 * pad
+    local depth = math.max(2, box * A.compassSeat.depth)
+    local edges = (A.compassSeat[shape] or A.compassSeat.square)[direction] or A.compassSeat.square.top
+    local sig = string.format("%s|%s|%.2f", shape, direction, w)
+    if a.cpSeatSig ~= sig then
+        a.cpSeatSig = sig
+        for i, t in ipairs({ a, b }) do
+            local edge = edges[i]
+            t:ClearAllPoints()
+            if shape == "diamond" then
+                t:SetPoint("TOPLEFT", button, "TOPLEFT", pad, -pad)
+                t:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -pad, pad)
+                if not pcall(t.SetTexCoord, t, self:CompassSeatRamp(edge, depth / box)) then
+
+                    a.cpSeatSig = nil
+                    a:Hide(); b:Hide()
+                    return false
+                end
+            else
+                local strip = SEAT_STRIP[edge] or SEAT_STRIP.top
+                local x1, y1 = pad, -pad
+                local x2, y2 = pad, -pad
+                if strip[1]:find("RIGHT") then x1 = -pad end
+                if strip[2]:find("RIGHT") then x2 = -pad end
+                if strip[1]:find("BOTTOM") then y1 = pad end
+                if strip[2]:find("BOTTOM") then y2 = pad end
+                t:SetPoint(strip[1], button, strip[1], x1, y1)
+                t:SetPoint(strip[2], button, strip[2], x2, y2)
+                if strip[3] == "h" then t:SetHeight(depth) else t:SetWidth(depth) end
+                t:SetTexCoord(unpack(strip[4]))
+            end
+        end
+    end
+
+    if mask and a.cpSeatMask ~= mask then
+        for _, t in ipairs({ a, b }) do
+            if a.cpSeatMask and type(t.RemoveMaskTexture) == "function" then pcall(t.RemoveMaskTexture, t, a.cpSeatMask) end
+            if type(t.AddMaskTexture) == "function" then pcall(t.AddMaskTexture, t, mask) end
+        end
+        a.cpSeatMask = mask
+    end
+    if not a:IsShown() then a:Show(); b:Show() end
+    return true
+end
+
+
+
+
+
+
+
+
+
+
+
+
+A.compassRange = { veil = { 0.95, 0.12, 0.10, 0.42 } }
+
+local function isRed(r, g, b)
+    return type(r) == "number" and type(g) == "number" and type(b) == "number" and r > 0.8 and g < 0.4 and b < 0.4
+end
+
+function A:CompassRangePaint(state, button, r, g, b)
+    if not (self:IsPublic(r) and self:IsPublic(g) and self:IsPublic(b)) then return end
+    local entries = state.decorations[button]
+    local veil = entries and entries.cpRangeVeil
+    if not veil then return end
+    local far = isRed(r, g, b) and self:GetOption("actionRangeTint") ~= false
+    local want = far and A.compassRange.veil[4] or 0
+    if math.abs((veil:GetAlpha() or 0) - want) > 0.001 then veil:SetAlpha(want) end
+end
+
+local function compassRange(self, state, entries, button, on, mask)
+    local veil = entries.cpRangeVeil
+    if not on then
+        if veil and (veil:GetAlpha() or 0) > 0 then veil:SetAlpha(0) end
+        return false
+    end
+    local indicator = button.RangeIndicator
+    if not veil then
+        if not (indicator and button.icon) then return false end
+        local ok = pcall(function()
+            veil = self:Own(button:CreateTexture(nil, "ARTWORK", nil, 7))
+            veil:SetAllPoints(button.icon)
+            local v = A.compassRange.veil
+            veil:SetColorTexture(v[1], v[2], v[3], 1)
+            veil:SetAlpha(0)
+            entries.cpRangeVeil = veil
+        end)
+        if not ok then return false end
+    end
+
+    if mask ~= veil.cpMask then
+        if veil.cpMask and type(veil.RemoveMaskTexture) == "function" then pcall(veil.RemoveMaskTexture, veil, veil.cpMask) end
+        if mask and type(veil.AddMaskTexture) == "function" then pcall(veil.AddMaskTexture, veil, mask) end
+        veil.cpMask = mask
+    end
+    if not veil.cpHooked and indicator and type(hooksecurefunc) == "function" then
+        veil.cpHooked = true
+        pcall(hooksecurefunc, indicator, "SetVertexColor", function(_, r, g, b)
+            pcall(A.CompassRangePaint, A, state, button, r, g, b)
+        end)
+        pcall(hooksecurefunc, indicator, "Hide", function()
+            local v = state.decorations[button] and state.decorations[button].cpRangeVeil
+            if v and (v:GetAlpha() or 0) > 0 then v:SetAlpha(0) end
+        end)
+    end
+    return true
+end
+
+
+
+
+
+
+
+
+A.compassDrop = { offset = 0.14, size = 1.34, alpha = 0.78 }
+
+function A:CompassDropOn()
+    if not (self.db and self.optionIndex and self.optionIndex.compassDropShadow) then return true end
+    return self:GetOption("compassDropShadow") ~= false
+end
+
+local function compassDrop(self, entries, button, on)
+    local t = entries.cpDrop
+    if not on then
+        if t and t:IsShown() then t:Hide() end
+        return false
+    end
+    if not t then
+        local ok = pcall(function()
+            t = self:Own(button:CreateTexture(nil, "BACKGROUND", nil, -6))
+            t:SetTexture(self.artPath .. "slot-shadow.tga", "CLAMP", "CLAMP")
+            entries.cpDrop = t
+        end)
+        if not ok or not t then return false end
+    end
+    local tile = entries.tileBound
+    local body = (tile and tile.tileSize) or self:Number(button.GetWidth, 1, button) or 45
+    local d = A.compassDrop
+    local sig = string.format("%.2f", body)
+    if t.cpDropSig ~= sig then
+        t.cpDropSig = sig
+        t:ClearAllPoints()
+        t:SetPoint("CENTER", button, "CENTER", body * d.offset, -body * d.offset)
+        t:SetSize(body * d.size, body * d.size)
+    end
+
+    local r, g, b = self:Color("shadow")
+    local tintKey = string.format("%.4f|%.4f|%.4f", tonumber(r) or 0, tonumber(g) or 0, tonumber(b) or 0)
+    if t.cpDropTint ~= tintKey then
+        t.cpDropTint = tintKey
+        self:Tint(t, "shadow", "vertex", d.alpha)
+    end
+    if not t:IsShown() then t:Show() end
+    return true
+end
+
 local function diamondShape(self, state, button, on, bound, focused, index)
     if not isGamepadButton(button) then return false end
     state.diamondOn = state.diamondOn or setmetatable({}, { __mode = "k" })
@@ -1018,6 +1265,11 @@ local function diamondShape(self, state, button, on, bound, focused, index)
             if entries[key] and entries[key]:IsShown() then self:HidePainted(entries[key]) end
         end
     end
+
+    compassSeat(self, entries, button, tiles and bound ~= false, shape, TILE_DIRECTIONS[index or 0] or "top", mask)
+
+    compassDrop(self, entries, button, tiles and bound ~= false and self:CompassDropOn())
+    compassRange(self, state, entries, button, on, on and mask or nil)
     return on
 end
 
@@ -1119,6 +1371,13 @@ local function actionButton(self, state, button, family, index, focused)
 
     hideRegion(self, state, button.SquareShadow)
     hideRegion(self, state, button.CircleShadow)
+
+
+
+
+
+    vertexVeil(self, state, button.SquareShadowFocus, true)
+    vertexVeil(self, state, button.CircleShadowFocus, true)
     if self:GetOption("iconCrop") then
         cropIcon(self, state, button.icon)
     else
@@ -1140,10 +1399,13 @@ local function actionButton(self, state, button, family, index, focused)
     if not self:GetOption("emptyRecede") then bound = true end
 
 
+    if family == "class" then bound = true end
 
 
 
-    local glyphOn = self:GetOption("actionGlyphs") == true and isGamepadButton(button)
+
+
+    local glyphOn = self:GetOption("actionGlyphs") == true and isGamepadButton(button) and family ~= "class"
     local ours = false
     if glyphOn or (state.decorations[button] and state.decorations[button].glyph) then
         local entries = state.decorations[button]
@@ -1204,7 +1466,9 @@ local function actionButton(self, state, button, family, index, focused)
         local entries = state.decorations[button]
         if not entries then entries = {}; state.decorations[button] = entries end
 
-        local onTile = self.KeyboardSlotOn and self:KeyboardSlotOn(button)
+
+        local onTile = (self.KeyboardSlotOn and self:KeyboardSlotOn(button))
+            or (isGamepadButton(button) and self:CompassTilesOn())
         countPlinth(self, entries, button, self:AuthoredSockets() and not onTile, bound)
     end
 
@@ -1317,6 +1581,121 @@ local function barFocus(self, state, bar, authored)
     return self:Read(bg.IsShown, 1, bg) == true
 end
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+A.flyoutWheel = { backing = 1.45, backingAlpha = 0.88 }
+
+local function flyoutButtons(fly)
+    if type(fly.buttons) == "table" then return fly.buttons end
+    local out = {}
+    if type(fly.GetChildren) == "function" then
+        for _, child in ipairs({ fly:GetChildren() }) do
+            if type(child) == "table" and child.icon and child.IconMask then out[#out + 1] = child end
+        end
+    end
+    return out
+end
+
+local function flyoutWheel(self, state)
+    local fly = _G.GamepadSpellFlyout
+    if type(fly) ~= "table" or type(fly.CreateTexture) ~= "function" then return false end
+    local on = self:AuthoredSockets() and self:CompassTilesOn() and true or false
+    local entries = state.decorations[fly]
+    if not on and not entries then return false end
+    if not entries then entries = {}; state.decorations[fly] = entries end
+
+    if not A.flyoutHooked and type(hooksecurefunc) == "function" and type(fly.UpdateLayout) == "function" then
+        A.flyoutHooked = pcall(hooksecurefunc, fly, "UpdateLayout", function() A.nativeDirty = true end)
+    end
+    local held = { fly.Background }
+    for _, backdrop in ipairs(type(fly.SlotBackdrops) == "table" and fly.SlotBackdrops or {}) do held[#held + 1] = backdrop end
+    for _, region in ipairs(held) do
+        if on then self:HoldHidden(state, region) else self:ReleaseHidden(state, region) end
+    end
+
+    local back = entries.wheelBack
+    if on and not back then
+        local ok = pcall(function()
+            back = self:Own(fly:CreateTexture(nil, "BACKGROUND", nil, -7))
+            back:SetTexture(self.artPath .. "slot-shadow.tga", "CLAMP", "CLAMP")
+            back:SetPoint("CENTER", fly, "CENTER", 0, 0)
+            entries.wheelBack = back
+        end)
+        if not ok then back = nil end
+    end
+    if back then
+        if on then
+            local w = (self:Number(fly.GetWidth, 1, fly) or 200) * A.flyoutWheel.backing
+            if back.wheelW ~= w then back.wheelW = w; back:SetSize(w, w) end
+            local r, g, b = self:Color("shadow")
+            local key = string.format("%.4f|%.4f|%.4f", tonumber(r) or 0, tonumber(g) or 0, tonumber(b) or 0)
+            if back.wheelTint ~= key then back.wheelTint = key; self:Tint(back, "shadow", "vertex", A.flyoutWheel.backingAlpha) end
+            if not back:IsShown() then back:Show() end
+        elseif back:IsShown() then
+            back:Hide()
+        end
+    end
+
+    for _, button in ipairs(flyoutButtons(fly)) do
+        local be = state.decorations[button]
+        if on or be then
+            if not be then be = {}; state.decorations[button] = be end
+            if on then
+                hideRegion(self, state, button.NormalTexture)
+                hideRegion(self, state, button.PushedTexture)
+            else
+                self:ReleaseProperty(state, button.NormalTexture, "alpha")
+                self:ReleaseProperty(state, button.PushedTexture, "alpha")
+            end
+            local icon = button.icon
+            if on and not be.wheelMask and type(button.CreateMaskTexture) == "function" then
+                pcall(function()
+                    local mask = self:Own(button:CreateMaskTexture(nil, "BACKGROUND", nil, -1))
+                    mask:SetTexture(self.artPath .. "minimap-mask.tga", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+                    mask:SetPoint("CENTER", icon, "CENTER", 0, 0)
+                    be.wheelMask = mask
+                end)
+            end
+            local mask = be.wheelMask
+            if mask and icon and type(icon.AddMaskTexture) == "function" and (mask.wheelMasked == true) ~= on then
+                if on then
+                    if button.IconMask then pcall(icon.RemoveMaskTexture, icon, button.IconMask) end
+                    pcall(icon.AddMaskTexture, icon, mask)
+                else
+                    pcall(icon.RemoveMaskTexture, icon, mask)
+                    if button.IconMask then pcall(icon.AddMaskTexture, icon, button.IconMask) end
+                end
+                mask.wheelMasked = on
+            end
+            if mask and on then
+                local size = self:Number(icon.GetWidth, 1, icon) or 36
+                if mask.wheelSize ~= size then mask.wheelSize = size; mask:SetSize(size, size) end
+            end
+            if on then
+                tileArt(self, be, button, "square", true, 2)
+            else
+                for _, key in ipairs({ "tileBound", "tileEmpty" }) do
+                    if be[key] and be[key]:IsShown() then self:HidePainted(be[key]) end
+                end
+            end
+            compassDrop(self, be, button, on and self:CompassDropOn())
+        end
+    end
+    return on
+end
+A.FlyoutWheel = flyoutWheel
+
 function handlers.actions(self, state)
     local bars = path(GamepadMainActionBarFrame, "PageUnit", "actionBars")
     if type(bars) == "table" then
@@ -1326,6 +1705,13 @@ function handlers.actions(self, state)
             local bar = bars[key]
             if bar then
                 local focused = barFocus(self, state, bar, authored) and authored
+
+
+
+
+                if key == "stanceBar" or key == "possessBar" then
+                    vertexVeil(self, state, bar.BackgroundWatermark, authored)
+                end
 
 
 
@@ -1348,7 +1734,18 @@ function handlers.actions(self, state)
 
 
 
+
+    for _, key in ipairs({ "LeftClassAction", "RightClassAction" }) do
+        local button = path(GamepadMainActionBarFrame, "PageUnit", key)
+        if button then actionButton(self, state, button, "class", 2, false) end
+    end
+
+
+
+
+
     if self.ApplyKeyboardBars then self:ApplyKeyboardBars(state) end
+    flyoutWheel(self, state)
     for _, name in ipairs({ "EssentialCooldownViewer", "UtilityCooldownViewer", "BuffIconCooldownViewer", "BuffBarCooldownViewer" }) do
         walk(_G[name], function(frame)
 

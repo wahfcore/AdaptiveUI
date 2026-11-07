@@ -109,8 +109,68 @@ local function slateDiamond(self, on)
 end
 
 
+
+
+
+
+
+
+
+
+A.compassGlow = { rest = 0.30, restSize = 1.35, combatSize = 1.6 }
+
+function A:CompassDiamondGlowOn()
+    if not (self.db and self.optionIndex and self.optionIndex.compassDiamondGlow) then return true end
+    return self:GetOption("compassDiamondGlow") ~= false
+end
+
+
+function A:CompassDiamondHosts()
+    local state = self.nativeSkins and self.nativeSkins.actions
+    local root = _G.GamepadMainActionBarFrame
+    local entries = state and root and state.decorations[root]
+    if not entries then return {} end
+    local out = {}
+    local D = entries.groundDivider
+    if D and D.glint then out[#out + 1] = { D, D } end
+    for _, side in ipairs({ "Left", "Right" }) do
+        local B = entries["bumper" .. side]
+        if B and B.glint and B.press then out[#out + 1] = { B, B.press } end
+    end
+    return out
+end
+
+local function compassDiamond(self, on)
+    for _, pair in ipairs(self:CompassDiamondHosts()) do
+        local host, carrier = pair[1], pair[2]
+        local g = host.combatGlow
+        if not (on and host:IsShown()) then
+            if g and g:IsShown() then g.pulse:Stop(); g:Hide() end
+        else
+            if not g then
+                g = glowHost(self, carrier)
+                host.combatGlow = g
+            end
+            local level = (self:Number(carrier.GetFrameLevel, 1, carrier) or 1) + 1
+            if g:GetFrameLevel() ~= level then g:SetFrameLevel(level) end
+            local s = (self:Number(host.glint.GetWidth, 1, host.glint) or 16) * A.compassGlow.combatSize
+            g:ClearAllPoints()
+            g:SetPoint("CENTER", host.glint, "CENTER", 0, 0)
+            g:SetSize(s, s)
+            g.glow:ClearAllPoints()
+            g.glow:SetPoint("CENTER", host.glint, "CENTER", 0, 0)
+            g.glow:SetSize(s, s)
+            if not g:IsShown() then g:Show(); g.pulse:Play() end
+        end
+    end
+end
+
+
 function A:SetCombatDiamonds(fighting)
     local on = fighting == true and self:CombatDiamondsOn()
     pcall(plateDiamond, self, on)
     pcall(slateDiamond, self, on)
+    pcall(compassDiamond, self, on)
+
+    if self.ComboRecheck then pcall(self.ComboRecheck, self) end
 end

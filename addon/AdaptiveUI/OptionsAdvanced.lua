@@ -94,7 +94,8 @@ put("compass", "layout", "compassHeroArm", "compassPreset", "compassAutoSpread",
 put("compass", "buttons", "actionDiamond", "compassIconShape",
     "compassPromptStyle", "compassBumperSkin")
 put("compass", "ground", "compassGround", "clusterTray",
-    "actionWash", "compassDividerLight", "compassBumperGlow")
+    "actionWash", "compassDividerLight", "compassBumperGlow", "compassDiamondGlow",
+    "compassDropShadow")
 put("mapchat", "minimap", "mapSkin", "minimapScale", "minimapCoords", "minimapZone", "chromeCrest")
 put("mapchat", "chat", "chatStyle", "chatAlpha", "chromeChat")
 put("mapchat", "tracker", "trackerStyle", "trackerAlpha", "chromeTrackerHead")

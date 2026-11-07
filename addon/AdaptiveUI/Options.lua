@@ -227,6 +227,10 @@ A.options = {
 
     { key = "trayAnchor", group = "swing", label = "Tray position", type = "enum", default = "plate",
       values = choice("plate", "Follows the player plate", "free", "Anywhere on screen") },
+
+
+    { key = "comboStyle", group = "swing", label = "Combo points", type = "enum", default = "diamond",
+      values = choice("diamond", "Glowing diamonds", "dots", "Dots") },
     { key = "trayBarHeight", group = "swing", label = "Bar thickness", type = "number", default = 6, min = 4, max = 14, step = 1, format = "%.0f px" },
     { key = "trayColorHealth", group = "traycolor", label = "Health", type = "color", default = { 0.42, 0.80, 0.49, 1 } },
     { key = "trayColorMana", group = "traycolor", label = "Mana", type = "color", default = { 0.25, 0.50, 1.00, 1 } },
@@ -896,6 +900,12 @@ A.options = {
 
 
     { key = "compassAutoSpread", group = "compass", label = "Widen the compass for big groups", type = "bool", default = true },
+
+
+    { key = "compassDiamondGlow", group = "compass", label = "Diamonds glow", type = "bool", default = true },
+
+
+    { key = "compassDropShadow", group = "compass", label = "Button shadows", type = "bool", default = true },
 
 
 
@@ -2380,10 +2390,13 @@ A.optionKeywords = {
     plusSwing = "swing timer auto attack melee weapon speed white hit",
     swingVitals = "health mana rage energy power tray swing timer extra bars combat",
     trayBarHeight = "thick thicker thin bar height size tray resource",
+    comboStyle = "combo points diamonds dots glow pulse sparkle cat rogue",
     damageMeterSkin = "damage meter dps details recount skin panel blizzard",
     damageMeterFoot = "damage meter slate plank foot mantle bar",
     trayAnchor = "tray move unlock detach free anywhere anchor position independent",
-    combatDiamonds = "combat diamond glow red fight stud plate slate",
+    combatDiamonds = "combat diamond glow red fight stud plate slate compass divider bumper",
+    compassDiamondGlow = "compass diamond glow stud divider bumper light controller",
+    compassDropShadow = "compass shadow drop background behind buttons dark offset controller",
     actionRangeTint = "range out of range red tint icon keybind distance spell awareness",
     unitTextScale = "font text size bigger smaller unit frame plate name number",
     actionTextScale = "font text size bigger smaller action bar hotkey keybind count stack",
@@ -2490,11 +2503,14 @@ A.optionDesc = {
     plusSwing = "A bar under your plate that fills until your next auto attack.",
     swingVitals = "Health and your rage, energy or mana also shown in the swing timer's tray.",
     trayBarHeight = "How thick the tray's bars are.",
+    comboStyle = "Combo points as glowing diamonds (blue, then gold, pulsing at 4, sparkling at 5), or plain dots.",
     damageMeterSkin = "Blizzard's damage meter on a plain panel, its buttons and bars to match.",
     damageMeterFoot = "The slate plank under the damage meter, like the settings window's foot.",
     trayAnchor = "Under the player plate, or free to move anywhere (Move & size > Resource tray).",
-    combatDiamonds = "In a fight, the player plate's diamond and the slate plank's stud glow red.",
-    actionRangeTint = "Out of range, the keybind turns red and the icon takes a red veil.",
+    combatDiamonds = "In a fight, the player plate's diamond, the slate plank's stud and the controller bars' diamonds glow red.",
+    compassDiamondGlow = "A soft light behind the three diamonds on the controller bars: the divider's and the two bumpers'.",
+    compassDropShadow = "A soft dark shadow under each controller button, a little down and to the right, in your colour scheme.",
+    actionRangeTint = "Out of range, the keybind turns red and the icon takes a red veil (on the controller bars, the veil).",
     unitTextScale = "Names, levels and numbers on every unit plate.",
     actionTextScale = "Keybinds, stack counts and the page number on the action bars.",
     dpsStripMetric = "Damage and DPS, or one of them.",
